@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Business Insights — Biashara App</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .insight-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+    .chart-box{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+    .chart-title{font-size:13px;font-weight:700;margin-bottom:4px}
+    .chart-sub{font-size:11px;color:#64748B;margin-bottom:14px}
+    .insight-card{background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,.07);display:flex;gap:14px;align-items:flex-start;border-left:4px solid transparent;transition:box-shadow .18s}
+    .insight-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.11)}
+    .insight-card.critical{border-left-color:#DC2626}
+    .insight-card.warning{border-left-color:#F59E0B}
+    .insight-card.good{border-left-color:#16A34A}
+    .insight-card.info{border-left-color:#2563EB}
+    .insight-card.tip{border-left-color:#7C3AED}
+    .insight-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+    .insight-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:3px 8px;border-radius:10px}
+    .insight-title{font-size:13px;font-weight:700}
+    .insight-body{font-size:12px;color:#64748B;margin-top:5px;line-height:1.55}
+    .insight-action{display:inline-block;margin-top:8px;font-size:11px;font-weight:700;color:#2563EB;background:#EFF6FF;padding:4px 10px;border-radius:8px;cursor:pointer}
+    .priority-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;padding:2px 7px;border-radius:6px;margin-right:6px}
+    .p1{background:#FEE2E2;color:#991B1B}.p2{background:#FEF3C7;color:#92400E}.p3{background:#DCFCE7;color:#166534}.p4{background:#DBEAFE;color:#1E40AF}.p5{background:#EDE9FE;color:#5B21B6}
+    .mini-bar-wrap{background:#F1F5F9;border-radius:99px;height:6px;margin-top:7px}
+    .mini-bar{height:6px;border-radius:99px}
+    .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+    .kpi-card{background:#fff;border-radius:12px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+    .kpi-label{font-size:11px;color:#64748B;font-weight:600}
+    .kpi-value{font-size:22px;font-weight:800;margin:4px 0 2px}
+    .kpi-change{font-size:11px;font-weight:700}
+    .up{color:#16A34A}.down{color:#DC2626}
+    .section-hd{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:800;margin-bottom:14px;color:#0F172A}
+    .section-hd span{font-size:11px;font-weight:600;color:#64748B}
+    .stock-tbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px}
+    .stock-tbl th{background:#F8FAFC;padding:8px 10px;text-align:left;font-size:11px;color:#64748B;font-weight:700;border-bottom:1px solid #E2E8F0}
+    .stock-tbl td{padding:8px 10px;border-bottom:1px solid #F1F5F9}
+    .stock-tbl tr:last-child td{border-bottom:none}
+    .badge-red{background:#FEE2E2;color:#991B1B;padding:2px 8px;border-radius:6px;font-weight:700;font-size:11px}
+    .badge-amber{background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:6px;font-weight:700;font-size:11px}
+    .divider{border:none;border-top:1px solid #F1F5F9;margin:20px 0}
+  </style>
+</head>
+<body>
+<script src="layout.js"></script>
+<script>renderLayout('insights','Business Insights');</script>
+<script>
+var body = document.getElementById('page-body');
+
+function bar(pct, color) {
+  return '<div class="mini-bar-wrap"><div class="mini-bar" style="width:' + pct + '%;background:' + color + ';"></div></div>';
+}
+
+function dayBars() {
+  var days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  var vals = [98,112,105,140,165,210,180];
+  var colors = ['#BFDBFE','#BFDBFE','#BFDBFE','#93C5FD','#60A5FA','#2563EB','#3B82F6'];
+  var out = '';
+  for (var i = 0; i < days.length; i++) {
+    var h = Math.round(vals[i] / 210 * 100);
+    out += '<div style="display:flex;flex-direction:column;align-items:center;flex:1;">'
+         + '<div style="width:100%;height:' + h + '%;background:' + colors[i] + ';border-radius:4px 4px 0 0;min-height:4px;"></div>'
+         + '<div style="font-size:9px;color:#64748B;margin-top:2px;">' + days[i] + '</div>'
+         + '</div>';
+  }
+  return out;
+}
+
+function revBars() {
+  var months = ['S','O','N','D','J','F'];
+  var heights = [50,60,55,70,65,78];
+  var out = '';
+  for (var i = 0; i < months.length; i++) {
+    out += '<div style="display:flex;flex-direction:column;align-items:center;flex:1;">'
+         + '<div style="width:100%;height:' + heights[i] + '%;background:' + (i === 5 ? '#16A34A' : '#86EFAC') + ';border-radius:4px 4px 0 0;"></div>'
+         + '<div style="font-size:9px;color:#64748B;margin-top:2px;">' + months[i] + '</div>'
+         + '</div>';
+  }
+  return out;
+}
+
+var html = '';
+
+/* KPI row */
+html += '<div class="kpi-row">'
+  + '<div class="kpi-card"><div class="kpi-label">Monthly Revenue</div><div class="kpi-value" style="color:#2563EB;">3.08M <span style="font-size:12px;color:#94A3B8;">TZS</span></div><div class="kpi-change up">&#9650; 18% vs January</div></div>'
+  + '<div class="kpi-card"><div class="kpi-label">Net Profit</div><div class="kpi-value" style="color:#16A34A;">1.16M <span style="font-size:12px;color:#94A3B8;">TZS</span></div><div class="kpi-change up">&#9650; Margin 37.6%</div></div>'
+  + '<div class="kpi-card"><div class="kpi-label">Total Expenses</div><div class="kpi-value" style="color:#F59E0B;">1.93M <span style="font-size:12px;color:#94A3B8;">TZS</span></div><div class="kpi-change down">&#9650; 6.9% vs January</div></div>'
+  + '<div class="kpi-card"><div class="kpi-label">Critical Alerts</div><div class="kpi-value" style="color:#DC2626;">3</div><div class="kpi-change down">Products need restocking</div></div>'
+  + '</div>';
+
+/* Section header */
+html += '<div class="section-hd">&#128269; Business Insights &mdash; February 2026 <span>Sorted by urgency &amp; impact</span></div>';
+html += '<div style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px;">';
+
+/* === PRIORITY 1 — Critical Stock-Out === */
+html += '<div class="insight-card critical">'
+  + '<div class="insight-icon" style="background:#FEF2F2;">&#128680;</div>'
+  + '<div style="flex:1;">'
+  + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">'
+  + '<span class="priority-label p1">Priority 1 &middot; Critical</span>'
+  + '<div class="insight-title">Imminent Stock-Out &mdash; Act Within 24 Hours</div>'
+  + '<span class="insight-tag" style="background:#FEE2E2;color:#991B1B;">Urgent Action</span>'
+  + '</div>'
+  + '<div class="insight-body">Two products will run out within <strong>1&ndash;2 days</strong> at current sales velocity. '
+  + '<strong>Sabuni ya Maji</strong> (4 units, ~1.4 days left) and <strong>Rice 5kg</strong> (3 units, ~2.7 days left) '
+  + 'need immediate restocking. Unga 2kg and Cooking Oil will also need restocking within 10 days. '
+  + 'Running out of staple products directly loses sales and damages customer trust.</div>'
+  + '<table class="stock-tbl">'
+  + '<tr><th>Product</th><th>Units Left</th><th>Daily Rate</th><th>Days to Stockout</th><th>Status</th></tr>'
+  + '<tr><td><strong>Sabuni ya Maji</strong></td><td>4</td><td>~2.8 / day</td><td>~1.4 days</td><td><span class="badge-red">Critical</span></td></tr>'
+  + '<tr><td><strong>Rice 5kg</strong></td><td>3</td><td>~1.1 / day</td><td>~2.7 days</td><td><span class="badge-red">Critical</span></td></tr>'
+  + '<tr><td><strong>Unga 2kg</strong></td><td>32</td><td>~3.8 / day</td><td>~8.4 days</td><td><span class="badge-amber">Restock Soon</span></td></tr>'
+  + '<tr><td><strong>Cooking Oil</strong></td><td>48</td><td>~4.9 / day</td><td>~9.8 days</td><td><span class="badge-amber">Restock Soon</span></td></tr>'
+  + '</table>'
+  + '<span class="insight-action">&#128230; Go to Stock Management &rarr; Restock Now</span>'
+  + '</div></div>';
+
+/* === PRIORITY 2a — Expense ratio === */
+html += '<div class="insight-card warning">'
+  + '<div class="insight-icon" style="background:#FFFBEB;">&#9878;&#65039;</div>'
+  + '<div style="flex:1;">'
+  + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">'
+  + '<span class="priority-label p2">Priority 2 &middot; Warning</span>'
+  + '<div class="insight-title">Expenses Are 62.5% of Revenue &mdash; Your Margin Is at Risk</div>'
+  + '<span class="insight-tag" style="background:#FEF3C7;color:#92400E;">Watch Closely</span>'
+  + '</div>'
+  + '<div class="insight-body">Your expenses (TZS 1,925,000) consume <strong>62.5% of every shilling you earn</strong>. '
+  + 'Salaries (TZS 800,000) are your largest single cost at <strong>26% of revenue</strong>. '
+  + 'If revenue dips even 10%, your profit margin drops from 37% to just <strong>~27%</strong>. '
+  + 'Cutting just TZS 100,000 in miscellaneous costs would improve profit by <strong>8.6%</strong>. '
+  + 'Review all non-essential spending monthly.</div>'
+  + '<div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">'
+  + '<div><div style="font-size:11px;font-weight:700;color:#0F172A;margin-bottom:3px;">Salaries &mdash; 26%</div>' + bar(26,'#DC2626') + '</div>'
+  + '<div><div style="font-size:11px;font-weight:700;color:#0F172A;margin-bottom:3px;">Purchase Costs &mdash; 39%</div>' + bar(39,'#F59E0B') + '</div>'
+  + '<div><div style="font-size:11px;font-weight:700;color:#0F172A;margin-bottom:3px;">Rent &amp; Other &mdash; 16%</div>' + bar(16,'#93C5FD') + '</div>'
+  + '</div>'
+  + '<span class="insight-action">&#128202; View Expense Breakdown &rarr;</span>'
+  + '</div></div>';
+
+/* === PRIORITY 2b — Revenue concentration === */
+html += '<div class="insight-card warning">'
+  + '<div class="insight-icon" style="background:#FFFBEB;">&#9888;&#65039;</div>'
+  + '<div style="flex:1;">'
+  + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">'
+  + '<span class="priority-label p2">Priority 2 &middot; Warning</span>'
+  + '<div class="insight-title">2 Products Drive Over 65% of Revenue &mdash; Risky Dependency</div>'
+  + '<span class="insight-tag" style="background:#FEF3C7;color:#92400E;">Diversify Risk</span>'
+  + '</div>'
+  + '<div class="insight-body"><strong>Cooking Oil</strong> (152 units) and <strong>Unga 2kg</strong> (118 units) '
+  + 'account for an estimated <strong>65&ndash;70% of total monthly revenue</strong>. '
+  + 'A supplier problem or price increase on either product would seriously harm your income. '
+  + 'Consider adding <strong>2&ndash;3 complementary products</strong> such as tomato paste, cooking salt, '
+  + 'or tea leaves to spread income risk and attract more customers.</div>'
+  + '<div style="margin-top:10px;">'
+  + '<div style="display:flex;justify-content:space-between;font-size:11px;color:#64748B;margin-bottom:3px;"><span>Cooking Oil &middot; 152 units</span><strong style="color:#0F172A;">~34%</strong></div>' + bar(34,'#2563EB')
+  + '<div style="display:flex;justify-content:space-between;font-size:11px;color:#64748B;margin:6px 0 3px;"><span>Unga 2kg &middot; 118 units</span><strong style="color:#0F172A;">~31%</strong></div>' + bar(31,'#60A5FA')
+  + '<div style="display:flex;justify-content:space-between;font-size:11px;color:#64748B;margin:6px 0 3px;"><span>Sugar, Sabuni, Rice &middot; combined</span><strong style="color:#0F172A;">~35%</strong></div>' + bar(35,'#E2E8F0')
+  + '</div>'
+  + '<span class="insight-action">&#128161; Explore New Products to Stock &rarr;</span>'
+  + '</div></div>';
+
+/* === PRIORITY 3 — Revenue growth === */
+html += '<div class="insight-card good">'
+  + '<div class="insight-icon" style="background:#F0FDF4;">&#128200;</div>'
+  + '<div style="flex:1;">'
+  + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">'
+  + '<span class="priority-label p3">Priority 3 &middot; Positive</span>'
+  + '<div class="insight-title">Strong 18% Revenue Growth &mdash; Keep the Momentum</div>'
+  + '<span class="insight-tag" style="background:#DCFCE7;color:#166534;">Great Progress</span>'
+  + '</div>'
+  + '<div class="insight-body">Revenue grew from <strong>TZS 2,600,000 (January)</strong> to '
+  + '<strong>TZS 3,080,000 (February)</strong>, a gain of TZS 480,000. Your profit margin also improved '
+  + 'from 31% to <strong>37.6%</strong> &mdash; you are selling more <em>and</em> keeping more of what you earn. '
+  + 'At this growth rate, March could reach <strong>TZS 3.6M+</strong> if you maintain stock and service quality.</div>'
+  + '<div style="background:#F0FDF4;border-radius:8px;padding:10px 14px;margin-top:8px;">'
+  + '<div style="font-size:11px;font-weight:700;color:#166534;margin-bottom:6px;">6-Month Revenue Trend (Sep &rarr; Feb)</div>'
+  + '<div style="display:flex;gap:6px;align-items:flex-end;height:40px;">' + revBars() + '</div>'
+  + '</div>'
+  + '<span class="insight-action">&#128203; View Full Revenue Report &rarr;</span>'
+  + '</div></div>';
+
+/* === PRIORITY 4a — Weekend opportunity === */
+html += '<div class="insight-card info">'
+  + '<div class="insight-icon" style="background:#EFF6FF;">&#128197;</div>'
+  + '<div style="flex:1;">'
+  + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">'
+  + '<span class="priority-label p4">Priority 4 &middot; Opportunity</span>'
+  + '<div class="insight-title">Saturday Earns 2.1&times; More Than Monday &mdash; Maximise Weekends</div>'
+  + '<span class="insight-tag" style="background:#DBEAFE;color:#1E40AF;">Opportunity</span>'
+  + '</div>'
+  + '<div class="insight-body">Saturday (TZS 210,000) and Sunday (TZS 180,000) are your highest-earning days. '
+  + 'Friday is also strong at TZS 165,000. Ensure <strong>maximum stock by Thursday evening</strong> to avoid '
+  + 'weekend shortfalls. Consider a <strong>weekend bundle deal</strong> (e.g. Unga + Cooking Oil at a small discount) '
+  + 'to increase the average basket size on your busiest days.</div>'
+  + '<div style="display:flex;gap:6px;align-items:flex-end;height:50px;margin-top:10px;">' + dayBars() + '</div>'
+  + '<span class="insight-action">&#128197; Plan Weekend Stock Levels &rarr;</span>'
+  + '</div></div>';
+
+/* === PRIORITY 4b — Rice underperforming === */
+html += '<div class="insight-card info">'
+  + '<div class="insight-icon" style="background:#EFF6FF;">&#128201;</div>'
+  + '<div style="flex:1;">'
+  + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">'
+  + '<span class="priority-label p4">Priority 4 &middot; Review</span>'
+  + '<div class="insight-title">Rice 5kg Sells 4.5&times; Slower Than Cooking Oil &mdash; Investigate Why</div>'
+  + '<span class="insight-tag" style="background:#DBEAFE;color:#1E40AF;">Investigate</span>'
+  + '</div>'
+  + '<div class="insight-body">Rice 5kg sold only <strong>34 units</strong> this month versus Cooking Oil&rsquo;s 152. '
+  + 'At TZS 12,000 per bag this slow-mover ties up capital. Possible causes: price too high vs nearby competitors, '
+  + 'or customers prefer smaller quantities. Trial a <em>Rice 1kg or 2kg</em> pack at a lower price point. '
+  + 'If sales don&rsquo;t improve within 30 days, replace it with a faster-moving product.</div>'
+  + '<span class="insight-action">&#128269; Compare Prices with Competitors &rarr;</span>'
+  + '</div></div>';
+
+/* === PRIORITY 5 — Reinvest profit === */
+html += '<div class="insight-card tip">'
+  + '<div class="insight-icon" style="background:#F5F3FF;">&#128176;</div>'
+  + '<div style="flex:1;">'
+  + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">'
+  + '<span class="priority-label p5">Priority 5 &middot; Strategy</span>'
+  + '<div class="insight-title">You Have TZS 1.16M Profit &mdash; Reinvest It Strategically</div>'
+  + '<span class="insight-tag" style="background:#EDE9FE;color:#5B21B6;">Growth Tip</span>'
+  + '</div>'
+  + '<div class="insight-body">Your net profit of <strong>TZS 1,155,000</strong> is excellent. '
+  + 'Rather than withdrawing all earnings, a disciplined reinvestment strategy accelerates growth. '
+  + 'Businesses that consistently reinvest profit grow 2&ndash;3&times; faster than those that withdraw everything each month.</div>'
+  + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">'
+  + '<div style="flex:1;min-width:90px;background:#F5F3FF;border-radius:8px;padding:8px 10px;text-align:center;"><div style="font-size:18px;font-weight:800;color:#7C3AED;">50%</div><div style="font-size:10px;color:#5B21B6;font-weight:600;">Restock Inventory</div><div style="font-size:11px;color:#64748B;">TZS 577,500</div></div>'
+  + '<div style="flex:1;min-width:90px;background:#F0FDF4;border-radius:8px;padding:8px 10px;text-align:center;"><div style="font-size:18px;font-weight:800;color:#16A34A;">30%</div><div style="font-size:10px;color:#166534;font-weight:600;">Emergency Fund</div><div style="font-size:11px;color:#64748B;">TZS 346,500</div></div>'
+  + '<div style="flex:1;min-width:90px;background:#EFF6FF;border-radius:8px;padding:8px 10px;text-align:center;"><div style="font-size:18px;font-weight:800;color:#2563EB;">20%</div><div style="font-size:10px;color:#1E40AF;font-weight:600;">New Products</div><div style="font-size:11px;color:#64748B;">TZS 231,000</div></div>'
+  + '</div>'
+  + '<span class="insight-action">&#128200; View Growth Recommendations &rarr;</span>'
+  + '</div></div>';
+
+html += '</div>'; /* end insights list */
+
+/* Divider */
+html += '<hr class="divider"/>';
+
+/* Charts */
+html += '<div class="section-hd">&#128202; Performance Charts &mdash; February 2026</div>';
+html += '<div class="insight-grid">'
+  + '<div class="chart-box"><div class="chart-title">Monthly Revenue vs Expenses</div><div class="chart-sub">Revenue is growing faster than expenses &mdash; a healthy sign</div><canvas id="compareChart" height="160"></canvas></div>'
+  + '<div class="chart-box"><div class="chart-title">Profit Margin Trend</div><div class="chart-sub">Net profit as % of revenue &mdash; consistent upward trend</div><canvas id="marginChart" height="160"></canvas></div>'
+  + '<div class="chart-box"><div class="chart-title">Best Selling Days</div><div class="chart-sub">Average daily revenue by day &mdash; focus energy on Fri&ndash;Sun</div><canvas id="dayChart" height="160"></canvas></div>'
+  + '<div class="chart-box"><div class="chart-title">Product Sales Velocity</div><div class="chart-sub">Units sold this month &mdash; Rice 5kg significantly underperforming</div><canvas id="velocityChart" height="160"></canvas></div>'
+  + '</div>';
+
+body.innerHTML = html;
+
+/* Render charts */
+new Chart(document.getElementById('compareChart'),{
+  type:'bar',
+  data:{labels:['Sep','Oct','Nov','Dec','Jan','Feb'],datasets:[
+    {label:'Revenue',data:[2100000,2400000,2200000,2800000,2600000,3080000],backgroundColor:'#2563EB',borderRadius:5},
+    {label:'Expenses',data:[1600000,1700000,1650000,2000000,1800000,1925000],backgroundColor:'#FCA5A5',borderRadius:5}
+  ]},
+  options:{plugins:{legend:{position:'top'}},scales:{y:{ticks:{callback:function(v){return (v/1000000).toFixed(1)+'M';}}}}}
+});
+
+new Chart(document.getElementById('marginChart'),{
+  type:'line',
+  data:{labels:['Sep','Oct','Nov','Dec','Jan','Feb'],datasets:[{
+    label:'Profit Margin %',data:[24,29,25,29,31,37],
+    borderColor:'#16A34A',backgroundColor:'#16A34A18',
+    borderWidth:2.5,fill:true,tension:0.4,pointBackgroundColor:'#16A34A',pointRadius:5
+  }]},
+  options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:function(v){return v+'%';}},min:0,max:50}}}
+});
+
+new Chart(document.getElementById('dayChart'),{
+  type:'bar',
+  data:{labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],datasets:[{
+    data:[98000,112000,105000,140000,165000,210000,180000],
+    backgroundColor:['#BFDBFE','#BFDBFE','#BFDBFE','#93C5FD','#60A5FA','#2563EB','#3B82F6'],borderRadius:6
+  }]},
+  options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:function(v){return (v/1000)+'k';}}}}}
+});
+
+new Chart(document.getElementById('velocityChart'),{
+  type:'bar',
+  data:{labels:['Cooking Oil','Unga 2kg','Sugar 1kg','Sabuni','Rice 5kg'],datasets:[{
+    label:'Units Sold',data:[152,118,96,87,34],
+    backgroundColor:['#2563EB','#2563EB','#60A5FA','#93C5FD','#FCA5A5'],borderRadius:6
+  }]},
+  options:{indexAxis:'y',plugins:{legend:{display:false}}}
+});
+</script>
+</body>
+</html>

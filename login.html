@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login — Biashara App</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .login-card {
+      width: 420px;
+      background: #fff;
+      border-radius: 16px;
+      padding: 40px 36px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    }
+    .brand { text-align:center; margin-bottom:28px; }
+    .brand .icon { font-size:36px; }
+    .brand h1 { font-size:17px; font-weight:800; color:#0F172A; margin-top:8px; }
+    .brand p  { font-size:12px; color:#64748B; margin-top:4px; }
+
+    .tabs { display:flex; border-bottom:2px solid #E2E8F0; margin-bottom:24px; }
+    .tab-btn {
+      flex:1; background:none; border:none; padding:10px 0;
+      font-size:13px; font-weight:700; cursor:pointer; font-family:inherit;
+      color:#64748B; border-bottom:2px solid transparent; margin-bottom:-2px;
+      transition:all 0.15s;
+    }
+    .tab-btn.active { color:#2563EB; border-bottom:2px solid #2563EB; }
+
+    .tab-panel { display:none; }
+    .tab-panel.active { display:block; }
+
+    label { font-size:12px; font-weight:600; color:#64748B; margin-bottom:5px; display:block; }
+    input {
+      width:100%; border:1px solid #E2E8F0; border-radius:8px;
+      padding:10px 12px; font-size:13px; outline:none;
+      background:#F8FAFC; font-family:inherit; margin-bottom:14px;
+      transition: border 0.15s;
+    }
+    input:focus { border-color:#2563EB; background:#fff; }
+
+    .btn-login {
+      width:100%; background:#2563EB; color:#fff;
+      border:none; border-radius:8px; padding:12px;
+      font-size:14px; font-weight:700; cursor:pointer;
+      font-family:inherit; margin-top:4px;
+      transition: background 0.15s;
+    }
+    .btn-login:hover { background:#3B82F6; }
+
+    .footer-note { text-align:center; margin-top:20px; font-size:11px; color:#94A3B8; }
+
+    .error-box {
+      background:#FEF2F2; color:#DC2626;
+      padding:10px 12px; border-radius:8px;
+      font-size:12px; margin-bottom:14px; display:none;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <div class="brand">
+      <div class="icon">📊</div>
+      <h1>Sales Data Analysis System</h1>
+      <p>For small and micro businesses in Tanzania</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('login')">Login</button>
+      <button class="tab-btn" onclick="switchTab('register')">Register</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div class="tab-panel active" id="tab-login">
+      <div class="error-box" id="login-error">Invalid email or password. Please try again.</div>
+      <label>Email Address</label>
+      <input type="email" id="login-email" placeholder="your@email.com" value="amina@biashara.co.tz"/>
+      <label>Password</label>
+      <input type="password" id="login-pass" placeholder="••••••••" value="password123"/>
+      <button class="btn-login" onclick="doLogin()">Login to System</button>
+    </div>
+
+    <!-- REGISTER -->
+    <div class="tab-panel" id="tab-register">
+      <label>Business Name</label>
+      <input type="text" placeholder="e.g Duka la Amina"/>
+      <label>Full Name</label>
+      <input type="text" placeholder="Your full name"/>
+      <label>Email Address</label>
+      <input type="email" placeholder="your@email.com"/>
+      <label>Password</label>
+      <input type="password" placeholder="Create password"/>
+      <label>Confirm Password</label>
+      <input type="password" placeholder="Repeat password"/>
+      <button class="btn-login" onclick="window.location='dashboard.html'">Create Account</button>
+    </div>
+
+    <div class="footer-note">
+     
+    </div>
+  </div>
+
+  <script>
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('tab-' + tab).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    function doLogin() {
+      const email = document.getElementById('login-email').value;
+      const pass  = document.getElementById('login-pass').value;
+      if (email && pass) {
+        window.location.href = 'dashboard.html';
+      } else {
+        document.getElementById('login-error').style.display = 'block';
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Dashboard — Biashara App</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:20px; }
+    .kpi-card { background:#fff; border-radius:12px; padding:20px; display:flex; align-items:center; gap:16px; box-shadow:0 1px 4px rgba(0,0,0,0.07); }
+    .charts-row { display:grid; grid-template-columns:2fr 1fr; gap:16px; margin-bottom:20px; }
+    .bottom-row  { display:grid; grid-template-columns:1fr 2fr; gap:16px; }
+    .chart-box { background:#fff; border-radius:12px; padding:20px; box-shadow:0 1px 4px rgba(0,0,0,0.07); }
+    .chart-title { font-size:13px; font-weight:700; margin-bottom:16px; }
+    .legend-item { display:flex; align-items:center; gap:8px; margin-bottom:6px; font-size:11px; }
+    .legend-dot  { width:10px; height:10px; border-radius:2px; flex-shrink:0; }
+  </style>
+</head>
+<body>
+<script src="layout.js"></script>
+<script>renderLayout('dashboard','Dashboard');</script>
+
+<script>
+const body = document.getElementById('page-body');
+body.innerHTML = `
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:#EFF6FF;">💰</div>
+      <div><div class="kpi-label">Today's Revenue</div><div class="kpi-value">TZS 450,000</div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:#F0FDF4;">📈</div>
+      <div><div class="kpi-label">Monthly Profit</div><div class="kpi-value" style="color:#16A34A;">TZS 1,200,000</div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:#EFF6FF;">📦</div>
+      <div><div class="kpi-label">Total Products</div><div class="kpi-value">34</div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:#FFFBEB;">⚠️</div>
+      <div><div class="kpi-label">Low Stock Alerts</div><div class="kpi-value" style="color:#F59E0B;">3</div></div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-row">
+    <div class="chart-box">
+      <div class="chart-title">Sales Trend — Last 30 Days</div>
+      <canvas id="lineChart" height="110"></canvas>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">Top 5 Products by Revenue</div>
+      <canvas id="barChart" height="160"></canvas>
+    </div>
+  </div>
+
+  <!-- Bottom row -->
+  <div class="bottom-row">
+    <div class="chart-box">
+      <div class="chart-title">Expense Breakdown</div>
+      <canvas id="doughnutChart" height="180"></canvas>
+      <div style="margin-top:14px;" id="legend"></div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">Recent Sales</div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead><tr>
+          <th style="text-align:left;padding:8px 10px;font-size:11px;color:#64748B;border-bottom:1px solid #E2E8F0;">Date</th>
+          <th style="text-align:left;padding:8px 10px;font-size:11px;color:#64748B;border-bottom:1px solid #E2E8F0;">Amount</th>
+          <th style="text-align:left;padding:8px 10px;font-size:11px;color:#64748B;border-bottom:1px solid #E2E8F0;">Recorded By</th>
+        </tr></thead>
+        <tbody>
+          <tr><td style="padding:9px 10px;color:#64748B;border-bottom:1px solid #E2E8F0;">19 Feb 2026, 14:32</td><td style="padding:9px 10px;font-weight:700;border-bottom:1px solid #E2E8F0;">TZS 85,000</td><td style="padding:9px 10px;border-bottom:1px solid #E2E8F0;">Amina Juma</td></tr>
+          <tr><td style="padding:9px 10px;color:#64748B;border-bottom:1px solid #E2E8F0;">19 Feb 2026, 11:15</td><td style="padding:9px 10px;font-weight:700;border-bottom:1px solid #E2E8F0;">TZS 42,500</td><td style="padding:9px 10px;border-bottom:1px solid #E2E8F0;">John Mbwana</td></tr>
+          <tr><td style="padding:9px 10px;color:#64748B;border-bottom:1px solid #E2E8F0;">18 Feb 2026, 16:45</td><td style="padding:9px 10px;font-weight:700;border-bottom:1px solid #E2E8F0;">TZS 120,000</td><td style="padding:9px 10px;border-bottom:1px solid #E2E8F0;">Amina Juma</td></tr>
+          <tr><td style="padding:9px 10px;color:#64748B;border-bottom:1px solid #E2E8F0;">18 Feb 2026, 09:20</td><td style="padding:9px 10px;font-weight:700;border-bottom:1px solid #E2E8F0;">TZS 37,000</td><td style="padding:9px 10px;border-bottom:1px solid #E2E8F0;">John Mbwana</td></tr>
+          <tr><td style="padding:9px 10px;color:#64748B;">17 Feb 2026, 13:10</td><td style="padding:9px 10px;font-weight:700;">TZS 95,000</td><td style="padding:9px 10px;">Amina Juma</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+`;
+
+// Line chart
+new Chart(document.getElementById('lineChart'), {
+  type: 'line',
+  data: {
+    labels: ['Feb 1','Feb 5','Feb 8','Feb 12','Feb 15','Feb 18','Feb 22','Feb 25','Feb 28'],
+    datasets: [{ label:'Revenue (TZS)', data:[120000,280000,150000,410000,320000,500000,390000,460000,450000],
+      borderColor:'#2563EB', backgroundColor:'#2563EB18', borderWidth:2.5,
+      pointBackgroundColor:'#2563EB', pointRadius:4, fill:true, tension:0.4 }]
+  },
+  options: { plugins:{legend:{display:false}}, scales:{ y:{ ticks:{ callback: v => (v/1000)+'k' } } } }
+});
+
+// Bar chart
+new Chart(document.getElementById('barChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Cooking Oil','Unga 2kg','Sabuni','Sugar 1kg','Rice 5kg'],
+    datasets: [{ data:[840000,620000,410000,380000,290000],
+      backgroundColor:['#2563EB','#3B82F6','#60A5FA','#93C5FD','#BFDBFE'],
+      borderRadius:6 }]
+  },
+  options: { indexAxis:'y', plugins:{legend:{display:false}}, scales:{ x:{ ticks:{ callback: v=>(v/1000)+'k' } } } }
+});
+
+// Doughnut chart
+const expLabels = ['Purchase Costs','Salaries','Rent','Utilities','Misc'];
+const expColors = ['#2563EB','#16A34A','#F59E0B','#8B5CF6','#94A3B8'];
+const expVals   = [1200000,800000,500000,150000,80000];
+
+new Chart(document.getElementById('doughnutChart'), {
+  type: 'doughnut',
+  data: { labels: expLabels, datasets:[{ data:expVals, backgroundColor:expColors, borderWidth:2 }] },
+  options: { plugins:{ legend:{ display:false } }, cutout:'60%' }
+});
+
+// Legend
+const leg = document.getElementById('legend');
+expLabels.forEach((l,i) => {
+  leg.innerHTML += `<div class="legend-item"><div class="legend-dot" style="background:${expColors[i]}"></div><span style="flex:1">${l}</span><strong>TZS ${expVals[i].toLocaleString()}</strong></div>`;
+});
+</script>
+</body>
+</html>

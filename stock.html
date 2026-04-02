@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Stock Management — Biashara App</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:200; align-items:center; justify-content:center; }
+    .modal-overlay.open { display:flex; }
+    .modal-box { background:#fff; border-radius:14px; padding:30px; width:420px; }
+    .modal-title { font-size:15px; font-weight:700; margin-bottom:20px; }
+    .form-group { margin-bottom:14px; }
+    label { font-size:12px; font-weight:600; color:#64748B; margin-bottom:5px; display:block; }
+    input, select { width:100%; border:1px solid #E2E8F0; border-radius:8px; padding:9px 12px; font-size:13px; font-family:inherit; outline:none; background:#F8FAFC; }
+    input:focus, select:focus { border-color:#2563EB; }
+    .modal-actions { display:flex; gap:10px; margin-top:18px; }
+    .btn-cancel { background:#F1F5F9; border:none; border-radius:8px; padding:9px 18px; font-size:13px; font-weight:600; cursor:pointer; }
+  </style>
+</head>
+<body>
+<script src="layout.js"></script>
+<script>renderLayout('stock','Stock Management');</script>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal-box">
+    <div class="modal-title">Add New Product</div>
+    <div class="form-group"><label>Product Name</label><input type="text" placeholder="e.g Cooking Oil 1L"/></div>
+    <div class="form-group"><label>Category</label>
+      <select><option>Food</option><option>Cleaning</option><option>Beverages</option><option>Other</option></select>
+    </div>
+    <div class="form-group"><label>Purchase Price (TZS)</label><input type="number" placeholder="0"/></div>
+    <div class="form-group"><label>Selling Price (TZS)</label><input type="number" placeholder="0"/></div>
+    <div class="form-group"><label>Initial Quantity</label><input type="number" placeholder="0"/></div>
+    <div class="form-group"><label>Low Stock Threshold</label><input type="number" placeholder="5"/></div>
+    <div class="modal-actions">
+      <button type="button" class="btn-primary-custom" onclick="closeModal()">Save Product</button>
+      <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const body = document.getElementById('page-body');
+body.innerHTML = `
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <input type="text" placeholder="🔍  Search products..." style="border:1px solid #E2E8F0;border-radius:8px;padding:9px 14px;font-size:13px;outline:none;width:280px;background:#fff;font-family:inherit;"/>
+    <button class="btn-primary-custom" onclick="openModal()">+ Add Product</button>
+  </div>
+  <div class="card-custom" style="padding:0;overflow:hidden;">
+    <table class="table-custom" style="width:100%;border-collapse:collapse;">
+      <thead><tr>
+        <th>Product Name</th><th>Category</th><th>Purchase Price</th>
+        <th>Selling Price</th><th>Qty</th><th>Status</th><th>Actions</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Cooking Oil 1L</strong></td><td style="color:#64748B;">Food</td>
+          <td>TZS 4,500</td><td>TZS 5,500</td><td><strong>48</strong></td>
+          <td><span class="badge-success">In Stock</span></td>
+          <td><button class="btn-sm-blue">Edit</button> <button class="btn-sm-green">Restock</button> <button class="btn-sm-red">Delete</button></td>
+        </tr>
+        <tr>
+          <td><strong>Unga wa Dona 2kg</strong></td><td style="color:#64748B;">Food</td>
+          <td>TZS 2,800</td><td>TZS 3,500</td><td><strong>32</strong></td>
+          <td><span class="badge-success">In Stock</span></td>
+          <td><button class="btn-sm-blue">Edit</button> <button class="btn-sm-green">Restock</button> <button class="btn-sm-red">Delete</button></td>
+        </tr>
+        <tr class="row-warning">
+          <td><strong>Sabuni ya Maji 1L</strong></td><td style="color:#64748B;">Cleaning</td>
+          <td>TZS 1,200</td><td>TZS 1,800</td><td><strong style="color:#DC2626;">4</strong></td>
+          <td><span class="badge-warning">Low Stock</span></td>
+          <td><button class="btn-sm-blue">Edit</button> <button class="btn-sm-green">Restock</button> <button class="btn-sm-red">Delete</button></td>
+        </tr>
+        <tr>
+          <td><strong>Sugar 1kg</strong></td><td style="color:#64748B;">Food</td>
+          <td>TZS 2,200</td><td>TZS 2,800</td><td><strong>60</strong></td>
+          <td><span class="badge-success">In Stock</span></td>
+          <td><button class="btn-sm-blue">Edit</button> <button class="btn-sm-green">Restock</button> <button class="btn-sm-red">Delete</button></td>
+        </tr>
+        <tr class="row-warning">
+          <td><strong>Rice 5kg</strong></td><td style="color:#64748B;">Food</td>
+          <td>TZS 9,500</td><td>TZS 12,000</td><td><strong style="color:#DC2626;">3</strong></td>
+          <td><span class="badge-warning">Low Stock</span></td>
+          <td><button class="btn-sm-blue">Edit</button> <button class="btn-sm-green">Restock</button> <button class="btn-sm-red">Delete</button></td>
+        </tr>
+        <tr>
+          <td><strong>Mafuta ya Kupikia 2L</strong></td><td style="color:#64748B;">Food</td>
+          <td>TZS 8,500</td><td>TZS 10,000</td><td><strong>22</strong></td>
+          <td><span class="badge-success">In Stock</span></td>
+          <td><button class="btn-sm-blue">Edit</button> <button class="btn-sm-green">Restock</button> <button class="btn-sm-red">Delete</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+`;
+
+function openModal() { document.getElementById('modal').classList.add('open'); }
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+</script>
+</body>
+</html>

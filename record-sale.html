@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Record Sale — Biashara App</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    .sale-form { max-width:580px; }
+    .item-row { display:grid; grid-template-columns:2fr 1fr 1fr; gap:12px; margin-bottom:14px; align-items:end; }
+    label { font-size:12px; font-weight:600; color:#64748B; margin-bottom:5px; display:block; }
+    select, input { width:100%; border:1px solid #E2E8F0; border-radius:8px; padding:9px 12px; font-size:13px; font-family:inherit; outline:none; background:#F8FAFC; }
+    select:focus, input:focus { border-color:#2563EB; }
+    .readonly-field { background:#F1F5F9; color:#64748B; border:1px solid #E2E8F0; border-radius:8px; padding:9px 12px; font-size:13px; }
+  </style>
+</head>
+<body>
+<script src="layout.js"></script>
+<script>renderLayout('record-sale','Record a Sale');</script>
+
+<script>
+const body = document.getElementById('page-body');
+body.innerHTML = `
+  <div class="sale-form">
+    <div id="success-alert" style="display:none;" class="alert-success-custom">✅ Sale recorded successfully! Stock has been updated.</div>
+    <div class="card-custom">
+      <div style="font-size:14px;font-weight:700;margin-bottom:20px;">Sale Items</div>
+      <div id="items-container">
+        <div class="item-row">
+          <div>
+            <label>Select Product</label>
+            <select onchange="calcTotal()">
+              <option value="">-- Choose product --</option>
+              <option value="5500">Cooking Oil 1L — TZS 5,500</option>
+              <option value="3500">Unga wa Dona 2kg — TZS 3,500</option>
+              <option value="1800">Sabuni ya Maji — TZS 1,800</option>
+              <option value="2800">Sugar 1kg — TZS 2,800</option>
+              <option value="12000">Rice 5kg — TZS 12,000</option>
+              <option value="10000">Mafuta ya Kupikia 2L — TZS 10,000</option>
+            </select>
+          </div>
+          <div>
+            <label>Quantity</label>
+            <input type="number" min="1" value="1" oninput="calcTotal()"/>
+          </div>
+          <div>
+            <label>Subtotal</label>
+            <div class="readonly-field" id="sub-0">—</div>
+          </div>
+        </div>
+      </div>
+
+      <button onclick="addItem()" style="background:none;border:none;color:#2563EB;font-weight:600;font-size:13px;cursor:pointer;padding:0;margin-bottom:20px;font-family:inherit;">
+        + Add Another Item
+      </button>
+
+      <div class="summary-box" style="margin-bottom:20px;">
+        <span class="s-label">Total Amount</span>
+        <span class="s-value" id="total-display">TZS 0</span>
+      </div>
+
+      <button class="btn-success-custom" onclick="confirmSale()" style="width:100%;padding:13px;font-size:14px;">
+        ✅ Confirm Sale
+      </button>
+    </div>
+  </div>
+`;
+
+let itemCount = 1;
+
+function calcTotal() {
+  let total = 0;
+  document.querySelectorAll('.item-row').forEach((row, i) => {
+    const sel = row.querySelector('select');
+    const qty = row.querySelector('input[type=number]');
+    const sub = row.querySelector('.readonly-field');
+    if (sel && qty && sel.value) {
+      const subtotal = parseInt(sel.value) * parseInt(qty.value || 1);
+      sub.textContent = 'TZS ' + subtotal.toLocaleString();
+      total += subtotal;
+    } else if (sub) {
+      sub.textContent = '—';
+    }
+  });
+  document.getElementById('total-display').textContent = 'TZS ' + total.toLocaleString();
+}
+
+function addItem() {
+  const container = document.getElementById('items-container');
+  const idx = itemCount++;
+  container.insertAdjacentHTML('beforeend', `
+    <div class="item-row">
+      <div>
+        <label>Select Product</label>
+        <select onchange="calcTotal()">
+          <option value="">-- Choose product --</option>
+          <option value="5500">Cooking Oil 1L — TZS 5,500</option>
+          <option value="3500">Unga wa Dona 2kg — TZS 3,500</option>
+          <option value="1800">Sabuni ya Maji — TZS 1,800</option>
+          <option value="2800">Sugar 1kg — TZS 2,800</option>
+          <option value="12000">Rice 5kg — TZS 12,000</option>
+          <option value="10000">Mafuta ya Kupikia 2L — TZS 10,000</option>
+        </select>
+      </div>
+      <div>
+        <label>Quantity</label>
+        <input type="number" min="1" value="1" oninput="calcTotal()"/>
+      </div>
+      <div>
+        <label>Subtotal</label>
+        <div class="readonly-field" id="sub-${idx}">—</div>
+      </div>
+    </div>
+  `);
+}
+
+function confirmSale() {
+  const alert = document.getElementById('success-alert');
+  alert.style.display = 'block';
+  setTimeout(() => alert.style.display = 'none', 4000);
+  document.querySelectorAll('.item-row select').forEach(s => s.value = '');
+  document.querySelectorAll('.item-row input[type=number]').forEach(i => i.value = 1);
+  document.querySelectorAll('.readonly-field').forEach(d => d.textContent = '—');
+  document.getElementById('total-display').textContent = 'TZS 0';
+}
+</script>
+</body>
+</html>

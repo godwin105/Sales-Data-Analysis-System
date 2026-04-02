@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Sales History — Biashara App</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    .filter-bar { display:flex; gap:12px; margin-bottom:16px; align-items:center; }
+    input, select { border:1px solid #E2E8F0; border-radius:8px; padding:9px 12px; font-size:13px; font-family:inherit; outline:none; background:#fff; }
+    .detail-row { display:none; background:#F8FAFC; }
+    .detail-row td { padding:12px 14px; }
+    .detail-table { width:100%; border-collapse:collapse; font-size:12px; }
+    .detail-table th { color:#64748B; font-size:11px; padding:6px 10px; border-bottom:1px solid #E2E8F0; }
+    .detail-table td { padding:7px 10px; border-bottom:1px solid #E2E8F0; }
+  </style>
+</head>
+<body>
+<script src="layout.js"></script>
+<script>renderLayout('history','Sales History');</script>
+
+<script>
+const body = document.getElementById('page-body');
+body.innerHTML = `
+  <div class="filter-bar">
+    <input type="text" placeholder="🔍  Search by product or user..." style="flex:2;" oninput="filterTable(this.value)"/>
+    <input type="date" value="2026-02-01" style="flex:1;"/>
+    <input type="date" value="2026-02-19" style="flex:1;"/>
+    <button class="btn-primary-custom">Filter</button>
+  </div>
+
+  <div class="card-custom" style="padding:0;overflow:hidden;">
+    <table class="table-custom" style="width:100%;border-collapse:collapse;" id="sales-table">
+      <thead><tr>
+        <th>Date & Time</th><th>Total Amount</th><th>Recorded By</th><th>Items</th><th>Details</th>
+      </tr></thead>
+      <tbody>
+        <tr onclick="toggleDetail('d1')">
+          <td style="color:#64748B;">19 Feb 2026, 14:32</td>
+          <td><strong>TZS 85,000</strong></td>
+          <td>Amina Juma</td>
+          <td><span class="badge-blue">2 items</span></td>
+          <td><button class="btn-sm-blue">View ▾</button></td>
+        </tr>
+        <tr class="detail-row" id="d1"><td colspan="5">
+          <table class="detail-table"><thead><tr><th>Product</th><th>Qty</th><th>Unit Price</th><th>Subtotal</th></tr></thead>
+          <tbody><tr><td>Cooking Oil 1L</td><td>10</td><td>TZS 5,500</td><td>TZS 55,000</td></tr>
+          <tr><td>Sugar 1kg</td><td>10</td><td>TZS 3,000</td><td>TZS 30,000</td></tr></tbody></table>
+        </td></tr>
+
+        <tr onclick="toggleDetail('d2')">
+          <td style="color:#64748B;">19 Feb 2026, 11:15</td>
+          <td><strong>TZS 42,500</strong></td>
+          <td>John Mbwana</td>
+          <td><span class="badge-blue">1 item</span></td>
+          <td><button class="btn-sm-blue">View ▾</button></td>
+        </tr>
+        <tr class="detail-row" id="d2"><td colspan="5">
+          <table class="detail-table"><thead><tr><th>Product</th><th>Qty</th><th>Unit Price</th><th>Subtotal</th></tr></thead>
+          <tbody><tr><td>Unga wa Dona 2kg</td><td>12</td><td>TZS 3,500</td><td>TZS 42,000</td></tr></tbody></table>
+        </td></tr>
+
+        <tr onclick="toggleDetail('d3')">
+          <td style="color:#64748B;">18 Feb 2026, 16:45</td>
+          <td><strong>TZS 120,000</strong></td>
+          <td>Amina Juma</td>
+          <td><span class="badge-blue">3 items</span></td>
+          <td><button class="btn-sm-blue">View ▾</button></td>
+        </tr>
+        <tr class="detail-row" id="d3"><td colspan="5">
+          <table class="detail-table"><thead><tr><th>Product</th><th>Qty</th><th>Unit Price</th><th>Subtotal</th></tr></thead>
+          <tbody>
+            <tr><td>Cooking Oil 1L</td><td>8</td><td>TZS 5,500</td><td>TZS 44,000</td></tr>
+            <tr><td>Rice 5kg</td><td>4</td><td>TZS 12,000</td><td>TZS 48,000</td></tr>
+            <tr><td>Sabuni ya Maji</td><td>16</td><td>TZS 1,800</td><td>TZS 28,000</td></tr>
+          </tbody></table>
+        </td></tr>
+
+        <tr onclick="toggleDetail('d4')">
+          <td style="color:#64748B;">18 Feb 2026, 09:20</td>
+          <td><strong>TZS 37,000</strong></td>
+          <td>John Mbwana</td>
+          <td><span class="badge-blue">1 item</span></td>
+          <td><button class="btn-sm-blue">View ▾</button></td>
+        </tr>
+        <tr class="detail-row" id="d4"><td colspan="5">
+          <table class="detail-table"><thead><tr><th>Product</th><th>Qty</th><th>Unit Price</th><th>Subtotal</th></tr></thead>
+          <tbody><tr><td>Sugar 1kg</td><td>13</td><td>TZS 2,800</td><td>TZS 36,400</td></tr></tbody></table>
+        </td></tr>
+
+        <tr onclick="toggleDetail('d5')">
+          <td style="color:#64748B;">17 Feb 2026, 13:10</td>
+          <td><strong>TZS 95,000</strong></td>
+          <td>Amina Juma</td>
+          <td><span class="badge-blue">2 items</span></td>
+          <td><button class="btn-sm-blue">View ▾</button></td>
+        </tr>
+        <tr class="detail-row" id="d5"><td colspan="5">
+          <table class="detail-table"><thead><tr><th>Product</th><th>Qty</th><th>Unit Price</th><th>Subtotal</th></tr></thead>
+          <tbody>
+            <tr><td>Mafuta ya Kupikia 2L</td><td>6</td><td>TZS 10,000</td><td>TZS 60,000</td></tr>
+            <tr><td>Unga wa Dona 2kg</td><td>10</td><td>TZS 3,500</td><td>TZS 35,000</td></tr>
+          </tbody></table>
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+`;
+
+function toggleDetail(id) {
+  const row = document.getElementById(id);
+  row.style.display = row.style.display === 'table-row' ? 'none' : 'table-row';
+}
+
+function filterTable(val) {
+  const rows = document.querySelectorAll('#sales-table tbody tr:not(.detail-row)');
+  rows.forEach(r => {
+    r.style.display = r.textContent.toLowerCase().includes(val.toLowerCase()) ? '' : 'none';
+  });
+}
+</script>
+</body>
+</html>

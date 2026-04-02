@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Expenses — Biashara App</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    .layout { display:grid; grid-template-columns:300px 1fr; gap:20px; align-items:start; }
+    label { font-size:12px; font-weight:600; color:#64748B; margin-bottom:5px; display:block; }
+    input, select, textarea { width:100%; border:1px solid #E2E8F0; border-radius:8px; padding:9px 12px; font-size:13px; font-family:inherit; outline:none; background:#F8FAFC; margin-bottom:14px; }
+    input:focus, select:focus { border-color:#2563EB; }
+    .cat-badge { display:inline-block; padding:5px 14px; border-radius:20px; font-size:12px; font-weight:700; margin:4px; }
+  </style>
+</head>
+<body>
+<script src="layout.js"></script>
+<script>renderLayout('expenses','Expenses');</script>
+
+<script>
+const body = document.getElementById('page-body');
+body.innerHTML = `
+  <div id="save-alert" class="alert-success-custom" style="display:none;">✅ Expense saved successfully!</div>
+  <div class="layout">
+    <!-- Form -->
+    <div class="card-custom">
+      <div style="font-size:14px;font-weight:700;margin-bottom:18px;">Add New Expense</div>
+      <label>Category</label>
+      <select>
+        <option value="">Select category</option>
+        <option>Rent</option>
+        <option>Utilities</option>
+        <option>Salaries</option>
+        <option>Purchase Costs</option>
+        <option>Miscellaneous</option>
+      </select>
+      <label>Description</label>
+      <input type="text" placeholder="Brief description..."/>
+      <label>Amount (TZS)</label>
+      <input type="number" placeholder="0"/>
+      <label>Date</label>
+      <input type="date" value="2026-02-19"/>
+      <button class="btn-primary-custom" onclick="saveExpense()" style="width:100%;padding:11px;font-size:14px;">Save Expense</button>
+    </div>
+
+    <!-- Right side -->
+    <div>
+      <!-- Category summary badges -->
+      <div class="card-custom" style="margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;">Expense Summary by Category</div>
+        <div>
+          <span class="cat-badge" style="background:#FEF3C7;color:#92400E;">Rent: TZS 500,000</span>
+          <span class="cat-badge" style="background:#F0FDF4;color:#166534;">Salaries: TZS 800,000</span>
+          <span class="cat-badge" style="background:#F5F3FF;color:#6D28D9;">Utilities: TZS 95,000</span>
+          <span class="cat-badge" style="background:#EFF6FF;color:#1D4ED8;">Purchase Costs: TZS 450,000</span>
+          <span class="cat-badge" style="background:#F1F5F9;color:#475569;">Misc: TZS 80,000</span>
+        </div>
+      </div>
+
+      <!-- Expenses table -->
+      <div class="card-custom" style="padding:0;overflow:hidden;">
+        <table class="table-custom" style="width:100%;border-collapse:collapse;">
+          <thead><tr>
+            <th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Action</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td style="color:#64748B;">01 Feb 2026</td>
+              <td><span class="cat-badge" style="background:#FEF3C7;color:#92400E;padding:3px 10px;font-size:11px;">Rent</span></td>
+              <td style="color:#64748B;">Shop rent for February</td>
+              <td><strong>TZS 500,000</strong></td>
+              <td><button class="btn-sm-red">Delete</button></td>
+            </tr>
+            <tr>
+              <td style="color:#64748B;">05 Feb 2026</td>
+              <td><span class="cat-badge" style="background:#F0FDF4;color:#166534;padding:3px 10px;font-size:11px;">Salaries</span></td>
+              <td style="color:#64748B;">Staff wages for January</td>
+              <td><strong>TZS 800,000</strong></td>
+              <td><button class="btn-sm-red">Delete</button></td>
+            </tr>
+            <tr>
+              <td style="color:#64748B;">10 Feb 2026</td>
+              <td><span class="cat-badge" style="background:#F5F3FF;color:#6D28D9;padding:3px 10px;font-size:11px;">Utilities</span></td>
+              <td style="color:#64748B;">Electricity bill</td>
+              <td><strong>TZS 95,000</strong></td>
+              <td><button class="btn-sm-red">Delete</button></td>
+            </tr>
+            <tr>
+              <td style="color:#64748B;">12 Feb 2026</td>
+              <td><span class="cat-badge" style="background:#EFF6FF;color:#1D4ED8;padding:3px 10px;font-size:11px;">Purchase Costs</span></td>
+              <td style="color:#64748B;">Restocked cooking oil</td>
+              <td><strong>TZS 450,000</strong></td>
+              <td><button class="btn-sm-red">Delete</button></td>
+            </tr>
+            <tr>
+              <td style="color:#64748B;">15 Feb 2026</td>
+              <td><span class="cat-badge" style="background:#F1F5F9;color:#475569;padding:3px 10px;font-size:11px;">Misc</span></td>
+              <td style="color:#64748B;">Cleaning supplies</td>
+              <td><strong>TZS 80,000</strong></td>
+              <td><button class="btn-sm-red">Delete</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+`;
+
+function saveExpense() {
+  const alert = document.getElementById('save-alert');
+  alert.style.display = 'block';
+  setTimeout(() => alert.style.display = 'none', 3000);
+}
+</script>
+</body>
+</html>

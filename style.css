@@ -1,0 +1,230 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --navy: #0F172A;
+  --navy-light: #1E293B;
+  --blue: #2563EB;
+  --blue-light: #3B82F6;
+  --green: #16A34A;
+  --amber: #F59E0B;
+  --red: #DC2626;
+  --bg: #F1F5F9;
+  --card: #FFFFFF;
+  --border: #E2E8F0;
+  --text: #1E293B;
+  --muted: #64748B;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 230px;
+  background: var(--navy);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0;
+  z-index: 100;
+}
+
+.sidebar-brand {
+  padding: 24px 20px 16px;
+  border-bottom: 1px solid #1E3A5F;
+}
+
+.sidebar-brand .app-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: #94A3B8;
+  letter-spacing: 1px;
+}
+
+.sidebar-brand .app-sub {
+  font-size: 11px;
+  color: #475569;
+  margin-top: 2px;
+}
+
+.sidebar nav { flex: 1; padding: 12px 0; }
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 20px;
+  color: #94A3B8;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: all 0.15s;
+}
+
+.nav-item:hover { background: #1E3A8A22; color: #fff; }
+
+.nav-item.active {
+  background: #1E3A8A;
+  border-left: 3px solid var(--blue-light);
+  color: #fff;
+  font-weight: 700;
+}
+
+.sidebar-footer {
+  padding: 16px 20px;
+  border-top: 1px solid #1E3A5F;
+}
+
+.sidebar-footer .sf-label { font-size: 11px; color: #475569; }
+.sidebar-footer .sf-name  { font-size: 13px; color: #CBD5E1; font-weight: 700; }
+.sidebar-footer .sf-role  { font-size: 10px; color: #475569; text-transform: uppercase; letter-spacing: 1px; }
+
+/* ── Main layout ── */
+.main-content {
+  margin-left: 230px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.topbar {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.topbar-title { font-size: 17px; font-weight: 700; }
+.topbar-date  { font-size: 11px; color: var(--muted); }
+
+.avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--blue);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 13px;
+}
+
+.page-body { padding: 28px; flex: 1; }
+
+/* ── Cards ── */
+.card-custom {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+}
+
+/* ── KPI cards ── */
+.kpi-icon {
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+}
+
+.kpi-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.kpi-value { font-size: 20px; font-weight: 800; margin-top: 2px; }
+
+/* ── Tables ── */
+.table-custom th {
+  background: #F8FAFC;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.table-custom td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.table-custom tr:last-child td { border-bottom: none; }
+.table-custom tr:hover td { background: #F8FAFC; }
+.row-warning td { background: #FFFBEB !important; }
+
+/* ── Badges ── */
+.badge-success { background: #DCFCE7; color: #166534; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.badge-warning { background: #FEF3C7; color: #92400E; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.badge-blue    { background: #EFF6FF; color: var(--blue); padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.badge-purple  { background: #F5F3FF; color: #6D28D9; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+
+/* ── Buttons ── */
+.btn-primary-custom {
+  background: var(--blue); color: #fff;
+  border: none; border-radius: 8px;
+  padding: 9px 18px; font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+  transition: background 0.15s;
+}
+.btn-primary-custom:hover { background: var(--blue-light); }
+
+.btn-success-custom {
+  background: var(--green); color: #fff;
+  border: none; border-radius: 8px;
+  padding: 9px 18px; font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+}
+
+.btn-sm-blue   { background: #EFF6FF; color: var(--blue);  border: none; border-radius: 6px; padding: 5px 11px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.btn-sm-green  { background: #F0FDF4; color: var(--green); border: none; border-radius: 6px; padding: 5px 11px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.btn-sm-red    { background: #FEF2F2; color: var(--red);   border: none; border-radius: 6px; padding: 5px 11px; font-size: 12px; font-weight: 600; cursor: pointer; }
+
+/* ── Forms ── */
+.form-label-custom { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 5px; display: block; }
+
+.form-control-custom {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  background: #F8FAFC;
+  transition: border 0.15s;
+}
+.form-control-custom:focus { border-color: var(--blue); background: #fff; }
+
+/* ── Alert ── */
+.alert-success-custom {
+  background: #DCFCE7; color: #166534;
+  padding: 12px 16px; border-radius: 8px;
+  font-size: 13px; font-weight: 600; margin-bottom: 16px;
+}
+
+/* ── Summary box ── */
+.summary-box {
+  background: #F8FAFC;
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.summary-box .s-label { font-weight: 600; color: var(--muted); font-size: 13px; }
+.summary-box .s-value { font-size: 22px; font-weight: 800; color: var(--blue); }

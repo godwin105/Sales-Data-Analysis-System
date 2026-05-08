@@ -1,0 +1,99 @@
+/**
+ * ToastContext — application-wide toast notifications.
+ *
+ * Replaces the server-side `flash()` mechanism from the Jinja2 era.
+ * Renders a fixed-position stack of dismissible toasts at the top right.
+ *
+ * Usage:
+ *   const toast = useToast();
+ *   toast.success('Sale recorded!');
+ *   toast.error('Insufficient stock');
+ *   toast.warning('Date ignored');
+ *   toast.info('Tip: ...');
+ */
+import { createContext, useCallback, useContext, useState, useEffect } from 'react';
+import { CheckCircle2, AlertCircle, AlertTriangle, Info, X } from 'lucide-react';
+
+const ToastContext = createContext(null);
+
+const VARIANTS = {
+  success: { Icon: CheckCircle2, classes: 'bg-green-50 border-green-300 text-green-800 dark:bg-green-900/40 dark:border-green-700 dark:text-green-200' },
+  error:   { Icon: AlertCircle,  classes: 'bg-red-50 border-red-300 text-red-800 dark:bg-red-900/40 dark:border-red-700 dark:text-red-200' },
+  warning: { Icon: AlertTriangle, classes: 'bg-amber-50 border-amber-300 text-amber-800 dark:bg-amber-900/40 dark:border-amber-700 dark:text-amber-200' },
+  info:    { Icon: Info,         classes: 'bg-blue-50 border-blue-300 text-blue-800 dark:bg-blue-900/40 dark:border-blue-700 dark:text-blue-200' },
+};
+
+export function ToastProvider({ children }) {
+  const [toasts, setToasts] = useState([]);
+
+  const dismiss = useCallback((id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  const push = useCallback((variant, message, duration = 4500) => {
+    const id = Math.random().toString(36).slice(2);
+    setToasts((prev) => [...prev, { id, variant, message }]);
+    if (duration > 0) {
+      setTimeout(() => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+      }, duration);
+    }
+    return id;
+  }, []);
+
+  const value = {
+    success: (msg, dur) => push('success', msg, dur),
+    error:   (msg, dur) => push('error', msg, dur),
+    warning: (msg, dur) => push('warning', msg, dur),
+    info:    (msg, dur) => push('info', msg, dur),
+    dismiss,
+  };
+
+  return (
+    <ToastContext.Provider value={value}>
+      {children}
+      <ToastStack toasts={toasts} dismiss={dismiss} />
+    </ToastContext.Provider>
+  );
+}
+
+function ToastStack({ toasts, dismiss }) {
+  if (toasts.length === 0) return null;
+  return (
+    <div className="fixed top-4 right-4 z-[1000] flex flex-col gap-2 max-w-sm w-[calc(100%-2rem)] sm:w-auto">
+      {toasts.map((t) => {
+        const v = VARIANTS[t.variant] || VARIANTS.info;
+        const Icon = v.Icon;
+        return (
+          <div
+            key={t.id}
+            role="alert"
+            className={`flex items-start gap-3 px-4 py-3 rounded-lg border shadow-lg ${v.classes} animate-[slideIn_0.2s_ease-out]`}
+          >
+            <Icon size={20} className="flex-shrink-0 mt-0.5" />
+            <p className="text-sm font-medium flex-1">{t.message}</p>
+            <button
+              onClick={() => dismiss(t.id)}
+              className="flex-shrink-0 hover:opacity-70 transition-opacity"
+              aria-label="Dismiss"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        );
+      })}
+      <style>{`
+        @keyframes slideIn {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+export function useToast() {
+  const ctx = useContext(ToastContext);
+  if (!ctx) throw new Error('useToast must be used inside <ToastProvider>');
+  return ctx;
+}

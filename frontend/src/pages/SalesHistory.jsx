@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Search, History as HistoryIcon, ChevronDown, ChevronUp, Filter, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { salesApi } from '../api/sales';
 import { useToast } from '../context/ToastContext';
 import { extractError } from '../api/client';
@@ -9,6 +10,7 @@ import EmptyState from '../components/EmptyState';
 
 export default function SalesHistory() {
   const toast = useToast();
+  const { t, i18n } = useTranslation();
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ q: '', from: '', to: '' });
@@ -21,7 +23,7 @@ export default function SalesHistory() {
       setSales(data.sales);
       (data.warnings || []).forEach((w) => toast.warning(w));
     } catch (err) {
-      toast.error(extractError(err, 'Could not load sales history.'));
+      toast.error(extractError(err, t('history.errorLoad')));
     } finally {
       setLoading(false);
     }
@@ -47,24 +49,23 @@ export default function SalesHistory() {
 
   return (
     <div className="space-y-5">
-      {/* Filter bar */}
       <form onSubmit={applyFilters} className="card">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
           <div>
-            <label className="form-label">Search</label>
+            <label className="form-label">{t('history.search')}</label>
             <div className="relative">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
               <input
                 type="text"
                 value={filters.q}
                 onChange={(e) => setFilters({ ...filters, q: e.target.value })}
-                placeholder="Product or recorder..."
+                placeholder={t('history.searchPlaceholder')}
                 className="form-input pl-10"
               />
             </div>
           </div>
           <div>
-            <label className="form-label">From</label>
+            <label className="form-label">{t('history.from')}</label>
             <input
               type="date"
               value={filters.from}
@@ -73,7 +74,7 @@ export default function SalesHistory() {
             />
           </div>
           <div>
-            <label className="form-label">To</label>
+            <label className="form-label">{t('history.to')}</label>
             <input
               type="date"
               value={filters.to}
@@ -84,14 +85,14 @@ export default function SalesHistory() {
           <div className="flex gap-2">
             <button type="submit" className="btn-primary flex-1">
               <Filter size={15} />
-              Apply
+              {t('common.apply')}
             </button>
             {hasActiveFilters && (
               <button
                 type="button"
                 onClick={clearFilters}
                 className="btn-secondary"
-                title="Clear filters"
+                title={t('history.clearFilters')}
               >
                 <X size={15} />
               </button>
@@ -100,22 +101,21 @@ export default function SalesHistory() {
         </div>
       </form>
 
-      {/* Results */}
       {loading ? (
-        <PageSpinner label="Loading sales..." />
+        <PageSpinner label={t('history.loading')} />
       ) : sales.length === 0 ? (
         <div className="card">
           <EmptyState
             icon={HistoryIcon}
-            title={hasActiveFilters ? 'No sales match your filters' : 'No sales recorded yet'}
-            message={hasActiveFilters ? 'Try widening your search.' : 'Sales will appear here once recorded.'}
+            title={hasActiveFilters ? t('history.noMatching') : t('history.noSales')}
+            message={hasActiveFilters ? t('history.noMatchingMessage') : t('history.noSalesMessage')}
           />
         </div>
       ) : (
         <div className="card !p-0">
           <div className="px-5 py-3 border-b border-slate-200 dark:border-slate-700 text-sm text-slate-500 dark:text-slate-400">
-            Showing <span className="font-bold text-slate-700 dark:text-slate-200">{sales.length}</span> sale{sales.length === 1 ? '' : 's'}
-            {sales.length === 200 && ' (limit reached — narrow your filters for more)'}
+            {t('history.showing')} <span className="font-bold text-slate-700 dark:text-slate-200">{t('history.salesCount', { count: sales.length })}</span>
+            {sales.length === 200 && ` ${t('history.limitReached')}`}
           </div>
           <div className="divide-y divide-slate-200 dark:divide-slate-700">
             {sales.map((s) => (
@@ -124,12 +124,12 @@ export default function SalesHistory() {
                      onClick={() => setExpanded((m) => ({ ...m, [s.sale_id]: !m[s.sale_id] }))}>
                   <div className="min-w-0">
                     <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                      {formatDateTime(s.sale_date)}
+                      {formatDateTime(s.sale_date, i18n.language)}
                     </div>
                     <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      Recorded by <span className="font-medium">{s.recorder_name || '—'}</span>
+                      {t('history.recordedBy')} <span className="font-medium">{s.recorder_name || '—'}</span>
                       {' · '}
-                      {s.items?.length || 0} item{s.items?.length === 1 ? '' : 's'}
+                      {t('history.items', { count: s.items?.length || 0 })}
                     </div>
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">
@@ -150,10 +150,10 @@ export default function SalesHistory() {
                       <table className="w-full text-sm">
                         <thead className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">
                           <tr>
-                            <th className="text-left pb-2 font-semibold">Product</th>
-                            <th className="text-right pb-2 font-semibold">Qty</th>
-                            <th className="text-right pb-2 font-semibold">Unit</th>
-                            <th className="text-right pb-2 font-semibold">Subtotal</th>
+                            <th className="text-left pb-2 font-semibold">{t('history.tableProduct')}</th>
+                            <th className="text-right pb-2 font-semibold">{t('history.tableQty')}</th>
+                            <th className="text-right pb-2 font-semibold">{t('history.tableUnit')}</th>
+                            <th className="text-right pb-2 font-semibold">{t('history.tableSubtotal')}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -170,7 +170,7 @@ export default function SalesHistory() {
                     </div>
                     {s.notes && (
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 italic">
-                        Note: {s.notes}
+                        {t('history.noteLabel', { text: s.notes })}
                       </p>
                     )}
                   </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import AuthLayout from '../components/AuthLayout';
 import PasswordInput from '../components/PasswordInput';
 import { useAuth } from '../context/AuthContext';
@@ -12,6 +13,7 @@ export default function Login() {
   const toast = useToast();
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
   const from = location.state?.from?.pathname || '/dashboard';
 
   const [email, setEmail] = useState('');
@@ -24,17 +26,17 @@ export default function Login() {
     setPageError(null);
 
     if (!email || !password) {
-      setPageError('Email and password are required.');
+      setPageError(t('auth.login.errorRequired'));
       return;
     }
 
     setSubmitting(true);
     try {
       const data = await login(email.trim(), password);
-      toast.success(data.message || 'Welcome back!');
+      toast.success(data.message || t('auth.login.welcomeToast'));
       navigate(from, { replace: true });
     } catch (err) {
-      setPageError(extractError(err, 'Login failed.'));
+      setPageError(extractError(err, t('auth.login.errorFailed')));
     } finally {
       setSubmitting(false);
     }
@@ -44,10 +46,10 @@ export default function Login() {
     <AuthLayout>
       <form onSubmit={handleSubmit} className="p-7">
         <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-1">
-          Welcome back
+          {t('auth.login.title')}
         </h2>
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-          Log in to your business account
+          {t('auth.login.subtitle')}
         </p>
 
         {pageError && (
@@ -58,7 +60,7 @@ export default function Login() {
 
         <div className="space-y-4">
           <div>
-            <label htmlFor="email" className="form-label">Email Address</label>
+            <label htmlFor="email" className="form-label">{t('auth.login.emailLabel')}</label>
             <div className="relative">
               <Mail
                 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
@@ -79,12 +81,12 @@ export default function Login() {
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label htmlFor="password" className="form-label !mb-0">Password</label>
+              <label htmlFor="password" className="form-label !mb-0">{t('auth.login.passwordLabel')}</label>
               <Link
                 to="/forgot-password"
                 className="text-xs font-semibold text-brand-600 hover:text-brand-700 dark:text-brand-500"
               >
-                Forgot password?
+                {t('auth.login.forgotPassword')}
               </Link>
             </div>
             <PasswordInput
@@ -102,17 +104,17 @@ export default function Login() {
             className="btn-primary w-full mt-2"
             disabled={submitting}
           >
-            {submitting ? 'Logging in...' : 'Log in'}
+            {submitting ? t('auth.login.submitting') : t('auth.login.submit')}
           </button>
         </div>
 
         <p className="text-center text-sm text-slate-500 dark:text-slate-400 mt-7">
-          New to the system?{' '}
+          {t('auth.login.noAccount')}{' '}
           <Link
             to="/register"
             className="font-semibold text-brand-600 hover:text-brand-700 dark:text-brand-500"
           >
-            Create an account
+            {t('auth.login.createAccount')}
           </Link>
         </p>
       </form>

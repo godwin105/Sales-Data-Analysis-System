@@ -10,6 +10,7 @@ import {
 import {
   DollarSign, TrendingUp, Package, AlertTriangle, ShoppingCart,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { dashboardApi } from '../api/misc';
 import { useToast } from '../context/ToastContext';
@@ -32,31 +33,28 @@ export default function Dashboard() {
   const toast = useToast();
   const { isDark } = useTheme();
   const { isCashier } = useAuth();
+  const { t, i18n } = useTranslation();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (isCashier) {
-      // Cashiers don't get the dashboard — they go straight to record-sale
-      // (handled at the routing level normally — defensive here)
-      return;
-    }
+    if (isCashier) return;
     let active = true;
     dashboardApi
       .load()
       .then(({ data }) => active && setData(data))
-      .catch((err) => active && toast.error(extractError(err, 'Could not load dashboard.')))
+      .catch((err) => active && toast.error(extractError(err, t('dashboard.errorLoad'))))
       .finally(() => active && setLoading(false));
     return () => { active = false; };
   }, []);  // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (loading) return <PageSpinner label="Loading dashboard..." />;
+  if (loading) return <PageSpinner label={t('dashboard.loading')} />;
   if (!data) {
     return (
       <EmptyState
         icon={AlertTriangle}
-        title="Dashboard unavailable"
-        message="Could not load dashboard data. Try refreshing the page."
+        title={t('dashboard.unavailable')}
+        message={t('dashboard.unavailableMessage')}
       />
     );
   }
@@ -67,39 +65,17 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* KPI cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard
-          label="Today's Revenue"
-          value={formatTZS(kpi.today_revenue)}
-          icon={DollarSign}
-          color="brand"
-        />
-        <KpiCard
-          label="Monthly Profit"
-          value={formatTZS(kpi.monthly_profit)}
-          icon={TrendingUp}
-          color={kpi.monthly_profit >= 0 ? 'success' : 'danger'}
-        />
-        <KpiCard
-          label="Total Products"
-          value={formatNumber(kpi.total_products)}
-          icon={Package}
-          color="warning"
-        />
-        <KpiCard
-          label="Low Stock Alerts"
-          value={formatNumber(kpi.low_stock_count)}
-          icon={AlertTriangle}
-          color={kpi.low_stock_count > 0 ? 'danger' : 'slate'}
-        />
+        <KpiCard label={t('dashboard.todayRevenue')} value={formatTZS(kpi.today_revenue)} icon={DollarSign} color="brand" />
+        <KpiCard label={t('dashboard.monthlyProfit')} value={formatTZS(kpi.monthly_profit)} icon={TrendingUp} color={kpi.monthly_profit >= 0 ? 'success' : 'danger'} />
+        <KpiCard label={t('dashboard.totalProducts')} value={formatNumber(kpi.total_products)} icon={Package} color="warning" />
+        <KpiCard label={t('dashboard.lowStockAlerts')} value={formatNumber(kpi.low_stock_count)} icon={AlertTriangle} color={kpi.low_stock_count > 0 ? 'danger' : 'slate'} />
       </div>
 
-      {/* Top charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="card">
           <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-4">
-            Sales Trend — Last 30 Days
+            {t('dashboard.salesTrend')}
           </h3>
           {charts.trend.values.some((v) => v > 0) ? (
             <div className="h-64">
@@ -107,15 +83,12 @@ export default function Dashboard() {
                 data={{
                   labels: charts.trend.labels,
                   datasets: [{
-                    label: 'Revenue',
+                    label: t('dashboard.todayRevenue'),
                     data: charts.trend.values,
                     borderColor: '#2563EB',
                     backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                    fill: true,
-                    tension: 0.3,
-                    pointRadius: 0,
-                    pointHoverRadius: 4,
-                    borderWidth: 2,
+                    fill: true, tension: 0.3,
+                    pointRadius: 0, pointHoverRadius: 4, borderWidth: 2,
                   }],
                 }}
                 options={lineOpts(tickColor, gridColor)}
@@ -123,14 +96,14 @@ export default function Dashboard() {
             </div>
           ) : (
             <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-12">
-              No sales data for the last 30 days yet.
+              {t('dashboard.noSalesData')}
             </p>
           )}
         </div>
 
         <div className="card">
           <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-4">
-            Top 5 Products by Revenue
+            {t('dashboard.topProducts')}
           </h3>
           {charts.top_products.values.length > 0 ? (
             <div className="h-64">
@@ -138,7 +111,7 @@ export default function Dashboard() {
                 data={{
                   labels: charts.top_products.labels,
                   datasets: [{
-                    label: 'Revenue (TZS)',
+                    label: 'TZS',
                     data: charts.top_products.values,
                     backgroundColor: CHART_COLORS,
                     borderRadius: 6,
@@ -149,17 +122,16 @@ export default function Dashboard() {
             </div>
           ) : (
             <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-12">
-              No product sales this month yet.
+              {t('dashboard.noProductSales')}
             </p>
           )}
         </div>
       </div>
 
-      {/* Bottom row: doughnut + recent sales */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="card">
           <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-4">
-            Expense Breakdown
+            {t('dashboard.expenseBreakdown')}
           </h3>
           {charts.expenses.values.length > 0 ? (
             <div className="h-64 flex items-center justify-center">
@@ -186,7 +158,7 @@ export default function Dashboard() {
             </div>
           ) : (
             <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-12">
-              No expenses recorded this month.
+              {t('dashboard.noExpenses')}
             </p>
           )}
         </div>
@@ -194,17 +166,17 @@ export default function Dashboard() {
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200">
-              Recent Sales
+              {t('dashboard.recentSales')}
             </h3>
             <Link to="/sales/history" className="text-xs font-semibold text-brand-600 hover:text-brand-700 dark:text-brand-500">
-              View all →
+              {t('common.viewAll')} →
             </Link>
           </div>
           {recent_sales.length === 0 ? (
             <EmptyState
               icon={ShoppingCart}
-              title="No sales yet"
-              message="Recorded sales will appear here."
+              title={t('dashboard.noSalesYet')}
+              message={t('dashboard.noSalesMessage')}
             />
           ) : (
             <div className="space-y-2">
@@ -215,10 +187,10 @@ export default function Dashboard() {
                 >
                   <div className="min-w-0">
                     <div className="text-xs text-slate-500 dark:text-slate-400">
-                      {formatDateTime(s.sale_date)}
+                      {formatDateTime(s.sale_date, i18n.language)}
                     </div>
                     <div className="text-xs text-slate-600 dark:text-slate-300 truncate">
-                      by {s.recorder_name}
+                      {t('dashboard.by', { name: s.recorder_name })}
                     </div>
                   </div>
                   <div className="font-bold text-slate-800 dark:text-slate-100 text-sm">
@@ -267,12 +239,8 @@ function lineOpts(tickColor, gridColor) {
     scales: {
       x: { ticks: { color: tickColor, font: { size: 10 } }, grid: { display: false } },
       y: {
-        ticks: {
-          color: tickColor, font: { size: 10 },
-          callback: (v) => 'TZS ' + (v >= 1000 ? `${v / 1000}k` : v),
-        },
-        grid: { color: gridColor, drawBorder: false },
-        beginAtZero: true,
+        ticks: { color: tickColor, font: { size: 10 }, callback: (v) => 'TZS ' + (v >= 1000 ? `${v / 1000}k` : v) },
+        grid: { color: gridColor, drawBorder: false }, beginAtZero: true,
       },
     },
   };

@@ -1,21 +1,26 @@
-import { useTheme } from '../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 import { Sun, Moon } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 import BrandMark from './BrandMark';
+import LanguageSwitcher from './LanguageSwitcher';
 
 /**
  * Shared layout for the public auth pages (login, register, forgot/reset).
- * A centered card on a soft branded background, with theme toggle.
+ * A centered card on a soft branded background, with theme + language toggles.
  */
 export default function AuthLayout({ children }) {
   const { isDark, toggle } = useTheme();
+  const { t } = useTranslation();
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-950 p-4">
-      {/* Theme toggle in corner */}
-      <div className="flex justify-end p-2">
+      {/* Top-right controls */}
+      <div className="flex justify-end p-2 gap-2">
+        <LanguageSwitcher variant="auth" />
         <button
           onClick={toggle}
           className="p-2 rounded-lg bg-white/70 dark:bg-slate-800/70 backdrop-blur text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 shadow-sm transition-colors"
-          aria-label="Toggle theme"
+          aria-label={t('nav.toggleTheme')}
         >
           {isDark ? <Sun size={18} /> : <Moon size={18} />}
         </button>
@@ -31,7 +36,7 @@ export default function AuthLayout({ children }) {
             {children}
           </div>
           <p className="text-center text-xs text-slate-500 dark:text-slate-500 mt-5">
-            Developed for micro &amp; small businesses · Dar es Salaam, Tanzania
+            {t('brand.footer')}
           </p>
         </div>
       </div>

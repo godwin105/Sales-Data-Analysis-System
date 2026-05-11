@@ -1,9 +1,9 @@
 import { NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard, Package, ShoppingCart, History,
   Receipt, FileText, TrendingUp, X,
 } from 'lucide-react';
-import BrandMark from './BrandMark';
 import { useAuth } from '../context/AuthContext';
 
 /**
@@ -12,16 +12,17 @@ import { useAuth } from '../context/AuthContext';
  */
 export default function Sidebar({ isOpen, onClose }) {
   const { isAdmin } = useAuth();
+  const { t } = useTranslation();
 
   // All nav items; cashier sees a subset (only sales recording + history)
   const allItems = [
-    { to: '/dashboard',     label: 'Dashboard',     icon: LayoutDashboard, adminOnly: true },
-    { to: '/stock',         label: 'Stock',         icon: Package,         adminOnly: true },
-    { to: '/sales/new',     label: 'Record Sale',   icon: ShoppingCart,    adminOnly: false },
-    { to: '/sales/history', label: 'Sales History', icon: History,         adminOnly: false },
-    { to: '/expenses',      label: 'Expenses',      icon: Receipt,         adminOnly: true },
-    { to: '/reports',       label: 'Reports',       icon: FileText,        adminOnly: true },
-    { to: '/insights',      label: 'Business Insights', icon: TrendingUp,  adminOnly: true },
+    { to: '/dashboard',     labelKey: 'nav.dashboard',     icon: LayoutDashboard, adminOnly: true },
+    { to: '/stock',         labelKey: 'nav.stock',         icon: Package,         adminOnly: true },
+    { to: '/sales/new',     labelKey: 'nav.recordSale',    icon: ShoppingCart,    adminOnly: false },
+    { to: '/sales/history', labelKey: 'nav.salesHistory',  icon: History,         adminOnly: false },
+    { to: '/expenses',      labelKey: 'nav.expenses',      icon: Receipt,         adminOnly: true },
+    { to: '/reports',       labelKey: 'nav.reports',       icon: FileText,        adminOnly: true },
+    { to: '/insights',      labelKey: 'nav.insights',      icon: TrendingUp,      adminOnly: true },
   ];
   const items = allItems.filter((item) => !item.adminOnly || isAdmin);
 
@@ -48,13 +49,17 @@ export default function Sidebar({ isOpen, onClose }) {
         {/* Brand */}
         <div className="px-5 py-5 border-b border-slate-700 flex items-center justify-between">
           <div>
-            <div className="text-xs font-extrabold tracking-widest text-slate-400">BIASHARA APP</div>
-            <div className="text-[10px] text-slate-500 mt-1">Sales Analysis System</div>
+            <div className="text-xs font-extrabold tracking-widest text-slate-400">
+              {t('brand.shortName')}
+            </div>
+            <div className="text-[10px] text-slate-500 mt-1">
+              {t('brand.subtitle')}
+            </div>
           </div>
           <button
             onClick={onClose}
             className="lg:hidden text-slate-400 hover:text-white"
-            aria-label="Close menu"
+            aria-label={t('nav.closeMenu')}
           >
             <X size={20} />
           </button>
@@ -79,13 +84,11 @@ export default function Sidebar({ isOpen, onClose }) {
                 `}
               >
                 <Icon size={18} strokeWidth={2} />
-                <span>{item.label}</span>
+                <span>{t(item.labelKey)}</span>
               </NavLink>
             );
           })}
         </nav>
-
-      
       </aside>
     </>
   );

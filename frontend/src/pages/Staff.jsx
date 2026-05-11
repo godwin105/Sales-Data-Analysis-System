@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Plus, Users, KeyRound, Trash2, Mail } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { authApi } from '../api/auth';
 import { useToast } from '../context/ToastContext';
 import { extractError, extractFieldErrors } from '../api/client';
@@ -12,6 +13,7 @@ import PasswordInput from '../components/PasswordInput';
 
 export default function Staff() {
   const toast = useToast();
+  const { t, i18n } = useTranslation();
   const [cashiers, setCashiers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -25,7 +27,7 @@ export default function Staff() {
       const { data } = await authApi.listStaff();
       setCashiers(data.cashiers);
     } catch (err) {
-      toast.error(extractError(err, 'Could not load staff.'));
+      toast.error(extractError(err, t('staff.errorLoad')));
     } finally {
       setLoading(false);
     }
@@ -40,7 +42,7 @@ export default function Staff() {
       toast.success(data.message);
       await load();
     } catch (err) {
-      toast.error(extractError(err, 'Could not remove cashier.'));
+      toast.error(extractError(err, t('staff.errorRemove')));
     } finally {
       setBusyRemove(false);
       setRemoveCandidate(null);
@@ -51,26 +53,26 @@ export default function Staff() {
     <div className="space-y-5">
       <div className="flex justify-between items-center">
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          Manage cashier accounts who can record sales for your business.
+          {t('staff.subtitle')}
         </p>
         <button onClick={() => setShowAdd(true)} className="btn-primary">
           <Plus size={16} />
-          Add Cashier
+          {t('staff.addCashier')}
         </button>
       </div>
 
       {loading ? (
-        <PageSpinner label="Loading staff..." />
+        <PageSpinner label={t('staff.loading')} />
       ) : cashiers.length === 0 ? (
         <div className="card">
           <EmptyState
             icon={Users}
-            title="No cashiers yet"
-            message="Add a cashier to let staff record sales without giving them admin access."
+            title={t('staff.noCashiers')}
+            message={t('staff.noCashiersMessage')}
             action={
               <button onClick={() => setShowAdd(true)} className="btn-primary">
                 <Plus size={16} />
-                Add Cashier
+                {t('staff.addCashier')}
               </button>
             }
           />
@@ -93,7 +95,7 @@ export default function Staff() {
               </div>
 
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-                Added {formatDate(c.created_at)}
+                {t('staff.added', { date: formatDate(c.created_at, i18n.language) })}
               </p>
 
               <div className="flex gap-2">
@@ -102,12 +104,12 @@ export default function Staff() {
                   className="btn-secondary flex-1 text-xs !px-3 !py-2"
                 >
                   <KeyRound size={14} />
-                  Reset Password
+                  {t('staff.resetPassword')}
                 </button>
                 <button
                   onClick={() => setRemoveCandidate(c)}
                   className="text-danger hover:bg-red-50 dark:hover:bg-red-900/30 px-3 py-2 rounded-lg"
-                  title="Remove"
+                  title={t('common.remove')}
                 >
                   <Trash2 size={15} />
                 </button>
@@ -117,19 +119,17 @@ export default function Staff() {
         </div>
       )}
 
-      {/* Add cashier modal */}
-      <Modal open={showAdd} onClose={() => setShowAdd(false)} title="Add Cashier">
+      <Modal open={showAdd} onClose={() => setShowAdd(false)} title={t('staff.addForm.title')}>
         <AddCashierForm
           onCancel={() => setShowAdd(false)}
           onSuccess={() => { setShowAdd(false); load(); }}
         />
       </Modal>
 
-      {/* Reset password modal */}
       <Modal
         open={!!resetCandidate}
         onClose={() => setResetCandidate(null)}
-        title={`Reset Password — ${resetCandidate?.full_name || ''}`}
+        title={t('staff.resetForm.title', { name: resetCandidate?.full_name || '' })}
       >
         {resetCandidate && (
           <ResetPasswordForm
@@ -140,12 +140,11 @@ export default function Staff() {
         )}
       </Modal>
 
-      {/* Remove confirmation */}
       <ConfirmDialog
         open={!!removeCandidate}
-        title={`Remove ${removeCandidate?.full_name}?`}
-        message="If they have sales history, their account will be deactivated and history preserved. Otherwise it will be permanently deleted."
-        confirmLabel="Remove"
+        title={t('staff.removeConfirmTitle', { name: removeCandidate?.full_name })}
+        message={t('staff.removeConfirmMessage')}
+        confirmLabel={t('common.remove')}
         variant="danger"
         onConfirm={handleRemove}
         onCancel={() => setRemoveCandidate(null)}
@@ -155,9 +154,9 @@ export default function Staff() {
   );
 }
 
-// =========================================================================
 function AddCashierForm({ onCancel, onSuccess }) {
   const toast = useToast();
+  const { t } = useTranslation();
   const [form, setForm] = useState({ full_name: '', email: '', password: '' });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -175,7 +174,7 @@ function AddCashierForm({ onCancel, onSuccess }) {
       if (Object.keys(fields).length > 0) {
         setErrors(fields);
       } else {
-        toast.error(extractError(err, 'Could not add cashier.'));
+        toast.error(extractError(err, t('staff.addForm.error')));
       }
     } finally {
       setSubmitting(false);
@@ -185,7 +184,7 @@ function AddCashierForm({ onCancel, onSuccess }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="form-label">Full Name *</label>
+        <label className="form-label">{t('staff.addForm.fullName')}</label>
         <input
           type="text" required
           value={form.full_name}
@@ -195,7 +194,7 @@ function AddCashierForm({ onCancel, onSuccess }) {
         {errors.full_name && <p className="form-error">{errors.full_name}</p>}
       </div>
       <div>
-        <label className="form-label">Email *</label>
+        <label className="form-label">{t('staff.addForm.email')}</label>
         <input
           type="email" required
           value={form.email}
@@ -205,23 +204,23 @@ function AddCashierForm({ onCancel, onSuccess }) {
         {errors.email && <p className="form-error">{errors.email}</p>}
       </div>
       <div>
-        <label className="form-label">Temporary Password *</label>
+        <label className="form-label">{t('staff.addForm.tempPassword')}</label>
         <PasswordInput
           required
-          placeholder="At least 8 characters"
+          placeholder={t('profile.passwordPlaceholder')}
           value={form.password}
           onChange={(e) => setForm({ ...form, password: e.target.value })}
           error={!!errors.password}
         />
-        <p className="form-help">Share this with the cashier securely. They can change it after first login.</p>
+        <p className="form-help">{t('staff.addForm.tempHelp')}</p>
         {errors.password && <p className="form-error">{errors.password}</p>}
       </div>
       <div className="flex justify-end gap-3 pt-2">
         <button type="button" onClick={onCancel} className="btn-secondary" disabled={submitting}>
-          Cancel
+          {t('common.cancel')}
         </button>
         <button type="submit" className="btn-primary" disabled={submitting}>
-          {submitting ? 'Adding...' : 'Add Cashier'}
+          {submitting ? t('staff.addForm.submitting') : t('staff.addForm.submit')}
         </button>
       </div>
     </form>
@@ -230,6 +229,7 @@ function AddCashierForm({ onCancel, onSuccess }) {
 
 function ResetPasswordForm({ cashier, onCancel, onSuccess }) {
   const toast = useToast();
+  const { t } = useTranslation();
   const [newPassword, setNewPassword] = useState('');
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -250,7 +250,7 @@ function ResetPasswordForm({ cashier, onCancel, onSuccess }) {
       if (Object.keys(fields).length > 0) {
         setErrors(fields);
       } else {
-        toast.error(extractError(err, 'Could not reset password.'));
+        toast.error(extractError(err, t('staff.resetForm.error')));
       }
     } finally {
       setSubmitting(false);
@@ -261,19 +261,19 @@ function ResetPasswordForm({ cashier, onCancel, onSuccess }) {
     return (
       <div className="space-y-4">
         <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-4">
-          <p className="text-sm font-bold text-green-800 dark:text-green-200">Password reset successfully.</p>
+          <p className="text-sm font-bold text-green-800 dark:text-green-200">{t('staff.resetForm.successTitle')}</p>
           <p className="text-sm text-green-700 dark:text-green-300 mt-2">
-            New password for <strong>{cashier.full_name}</strong>:
+            {t('staff.resetForm.successFor', { name: cashier.full_name })}
           </p>
           <p className="font-mono text-base bg-white dark:bg-slate-900 px-3 py-2 rounded mt-2 border border-green-300 dark:border-green-700">
             {done}
           </p>
           <p className="text-xs text-green-700 dark:text-green-300 mt-3">
-            Please share this securely with the cashier (in person or via a private channel).
+            {t('staff.resetForm.successHelp')}
           </p>
         </div>
         <div className="flex justify-end">
-          <button onClick={onSuccess} className="btn-primary">Done</button>
+          <button onClick={onSuccess} className="btn-primary">{t('staff.resetForm.done')}</button>
         </div>
       </div>
     );
@@ -282,13 +282,13 @@ function ResetPasswordForm({ cashier, onCancel, onSuccess }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <p className="text-sm text-slate-600 dark:text-slate-300">
-        Set a new password for <strong>{cashier.full_name}</strong>. They'll use this to log in.
+        {t('staff.resetForm.introA')}<strong>{cashier.full_name}</strong>{t('staff.resetForm.introB')}
       </p>
       <div>
-        <label className="form-label">New Password *</label>
+        <label className="form-label">{t('staff.resetForm.newPassword')}</label>
         <PasswordInput
           required
-          placeholder="At least 8 characters"
+          placeholder={t('profile.passwordPlaceholder')}
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
           error={!!errors.new_password}
@@ -297,10 +297,10 @@ function ResetPasswordForm({ cashier, onCancel, onSuccess }) {
       </div>
       <div className="flex justify-end gap-3 pt-2">
         <button type="button" onClick={onCancel} className="btn-secondary" disabled={submitting}>
-          Cancel
+          {t('common.cancel')}
         </button>
         <button type="submit" className="btn-primary" disabled={submitting}>
-          {submitting ? 'Resetting...' : 'Reset Password'}
+          {submitting ? t('staff.resetForm.submitting') : t('staff.resetForm.submit')}
         </button>
       </div>
     </form>

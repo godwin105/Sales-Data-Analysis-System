@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import AuthLayout from '../components/AuthLayout';
 import PasswordInput from '../components/PasswordInput';
 import PageSpinner from '../components/PageSpinner';
@@ -12,6 +13,7 @@ export default function ResetPassword() {
   const { token } = useParams();
   const toast = useToast();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [verifying, setVerifying] = useState(true);
   const [tokenValid, setTokenValid] = useState(false);
@@ -31,11 +33,11 @@ export default function ResetPassword() {
       .then(() => active && setTokenValid(true))
       .catch((err) => {
         if (!active) return;
-        setTokenError(extractError(err, 'Invalid or expired reset link.'));
+        setTokenError(extractError(err, t('auth.reset.expiredMessage')));
       })
       .finally(() => active && setVerifying(false));
     return () => { active = false; };
-  }, [token]);
+  }, [token, t]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -43,7 +45,7 @@ export default function ResetPassword() {
     setErrors({});
 
     if (password !== confirmPassword) {
-      setErrors({ confirm_password: 'Passwords must match.' });
+      setErrors({ confirm_password: t('auth.reset.errorMatch') });
       return;
     }
 
@@ -61,7 +63,7 @@ export default function ResetPassword() {
       if (Object.keys(fields).length > 0) {
         setErrors(fields);
       } else {
-        setPageError(extractError(err, 'Reset failed.'));
+        setPageError(extractError(err, t('auth.reset.errorFailed')));
       }
     } finally {
       setSubmitting(false);
@@ -71,7 +73,7 @@ export default function ResetPassword() {
   if (verifying) {
     return (
       <AuthLayout>
-        <PageSpinner label="Verifying reset link..." />
+        <PageSpinner label={t('auth.reset.verifying')} />
       </AuthLayout>
     );
   }
@@ -84,13 +86,13 @@ export default function ResetPassword() {
             <AlertCircle className="text-danger" size={28} />
           </div>
           <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">
-            Link expired or invalid
+            {t('auth.reset.expiredTitle')}
           </h2>
           <p className="text-sm text-slate-600 dark:text-slate-300 mb-6">
-            {tokenError || 'This password reset link is no longer valid.'}
+            {tokenError || t('auth.reset.expiredMessage')}
           </p>
           <Link to="/forgot-password" className="btn-primary inline-flex">
-            Request a new link
+            {t('auth.reset.requestNew')}
           </Link>
         </div>
       </AuthLayout>
@@ -105,10 +107,10 @@ export default function ResetPassword() {
             <CheckCircle2 className="text-success" size={28} />
           </div>
           <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">
-            Password reset!
+            {t('auth.reset.doneTitle')}
           </h2>
           <p className="text-sm text-slate-600 dark:text-slate-300 mb-6">
-            Redirecting you to login...
+            {t('auth.reset.doneMessage')}
           </p>
         </div>
       </AuthLayout>
@@ -119,10 +121,10 @@ export default function ResetPassword() {
     <AuthLayout>
       <form onSubmit={handleSubmit} className="p-7">
         <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-1">
-          Set a new password
+          {t('auth.reset.title')}
         </h2>
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-          Choose a strong password you'll remember.
+          {t('auth.reset.subtitle')}
         </p>
 
         {pageError && (
@@ -133,10 +135,10 @@ export default function ResetPassword() {
 
         <div className="space-y-4">
           <div>
-            <label className="form-label">New Password</label>
+            <label className="form-label">{t('auth.reset.newPasswordLabel')}</label>
             <PasswordInput
               autoComplete="new-password"
-              placeholder="At least 8 characters"
+              placeholder={t('auth.reset.newPasswordPlaceholder')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               error={!!errors.password}
@@ -146,10 +148,10 @@ export default function ResetPassword() {
           </div>
 
           <div>
-            <label className="form-label">Confirm New Password</label>
+            <label className="form-label">{t('auth.reset.confirmNewLabel')}</label>
             <PasswordInput
               autoComplete="new-password"
-              placeholder="Re-enter password"
+              placeholder={t('auth.reset.confirmNewPlaceholder')}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               error={!!errors.confirm_password}
@@ -159,7 +161,7 @@ export default function ResetPassword() {
           </div>
 
           <button type="submit" className="btn-primary w-full" disabled={submitting}>
-            {submitting ? 'Resetting...' : 'Reset Password'}
+            {submitting ? t('auth.reset.submitting') : t('auth.reset.submit')}
           </button>
         </div>
 
@@ -169,7 +171,7 @@ export default function ResetPassword() {
             className="inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
           >
             <ArrowLeft size={14} />
-            Back to login
+            {t('auth.reset.backToLogin')}
           </Link>
         </div>
       </form>

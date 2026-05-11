@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Plus, Search, Edit2, Package2, RefreshCw, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { stockApi } from '../api/stock';
 import { useToast } from '../context/ToastContext';
 import { extractError, extractFieldErrors } from '../api/client';
@@ -11,6 +12,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function Stock() {
   const toast = useToast();
+  const { t } = useTranslation();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,7 +31,7 @@ export default function Stock() {
       setProducts(data.products);
       setCategories(data.categories);
     } catch (err) {
-      toast.error(extractError(err, 'Could not load products.'));
+      toast.error(extractError(err, t('stock.errorLoad')));
     } finally {
       setLoading(false);
     }
@@ -54,7 +56,7 @@ export default function Stock() {
       toast.success(data.message);
       await load();
     } catch (err) {
-      toast.error(extractError(err, 'Could not delete product.'));
+      toast.error(extractError(err, t('stock.errorDelete')));
     } finally {
       setBusyDelete(false);
       setDeleteCandidate(null);
@@ -63,39 +65,35 @@ export default function Stock() {
 
   return (
     <div className="space-y-5">
-      {/* Top action bar */}
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
         <div className="relative flex-1 sm:max-w-sm">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
           <input
             type="text"
-            placeholder="Search products..."
+            placeholder={t('stock.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="form-input pl-10"
           />
         </div>
-        <button
-          onClick={() => setShowAdd(true)}
-          className="btn-primary"
-        >
+        <button onClick={() => setShowAdd(true)} className="btn-primary">
           <Plus size={16} />
-          Add Product
+          {t('stock.addProduct')}
         </button>
       </div>
 
       {loading ? (
-        <PageSpinner label="Loading products..." />
+        <PageSpinner label={t('stock.loading')} />
       ) : filtered.length === 0 ? (
         <div className="card">
           <EmptyState
             icon={Package2}
-            title={search ? 'No matching products' : 'No products yet'}
-            message={search ? 'Try a different search term.' : 'Add your first product to get started.'}
+            title={search ? t('stock.noMatching') : t('stock.noProducts')}
+            message={search ? t('stock.noMatchingMessage') : t('stock.noProductsMessage')}
             action={!search && (
               <button onClick={() => setShowAdd(true)} className="btn-primary">
                 <Plus size={16} />
-                Add Product
+                {t('stock.addProduct')}
               </button>
             )}
           />
@@ -106,13 +104,13 @@ export default function Stock() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Category</th>
-                  <th>Purchase</th>
-                  <th>Selling</th>
-                  <th>Qty</th>
-                  <th>Status</th>
-                  <th className="text-right">Actions</th>
+                  <th>{t('stock.headerName')}</th>
+                  <th>{t('stock.headerCategory')}</th>
+                  <th>{t('stock.headerPurchase')}</th>
+                  <th>{t('stock.headerSelling')}</th>
+                  <th>{t('stock.headerQty')}</th>
+                  <th>{t('stock.headerStatus')}</th>
+                  <th className="text-right">{t('stock.headerActions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -124,33 +122,19 @@ export default function Stock() {
                     <td>{formatTZS(p.selling_price)}</td>
                     <td>{formatNumber(p.quantity)}</td>
                     <td>
-                      {p.is_low_stock ? (
-                        <span className="badge-warning">Low Stock</span>
-                      ) : (
-                        <span className="badge-success">In Stock</span>
-                      )}
+                      {p.is_low_stock
+                        ? <span className="badge-warning">{t('stock.lowStock')}</span>
+                        : <span className="badge-success">{t('stock.inStock')}</span>}
                     </td>
                     <td>
                       <div className="flex justify-end gap-1.5">
-                        <button
-                          onClick={() => setEditingProduct(p)}
-                          className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-brand-600"
-                          title="Edit"
-                        >
+                        <button onClick={() => setEditingProduct(p)} className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-brand-600" title={t('stock.edit')}>
                           <Edit2 size={15} />
                         </button>
-                        <button
-                          onClick={() => setRestockingProduct(p)}
-                          className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-success"
-                          title="Restock"
-                        >
+                        <button onClick={() => setRestockingProduct(p)} className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-success" title={t('stock.restock')}>
                           <RefreshCw size={15} />
                         </button>
-                        <button
-                          onClick={() => setDeleteCandidate(p)}
-                          className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-danger"
-                          title="Delete"
-                        >
+                        <button onClick={() => setDeleteCandidate(p)} className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-danger" title={t('stock.delete')}>
                           <Trash2 size={15} />
                         </button>
                       </div>
@@ -163,8 +147,7 @@ export default function Stock() {
         </div>
       )}
 
-      {/* Add modal */}
-      <Modal open={showAdd} onClose={() => setShowAdd(false)} title="Add Product">
+      <Modal open={showAdd} onClose={() => setShowAdd(false)} title={t('stock.form.addTitle')}>
         <ProductForm
           categories={categories}
           onCancel={() => setShowAdd(false)}
@@ -172,11 +155,10 @@ export default function Stock() {
         />
       </Modal>
 
-      {/* Edit modal */}
       <Modal
         open={!!editingProduct}
         onClose={() => setEditingProduct(null)}
-        title={`Edit Product — ${editingProduct?.name || ''}`}
+        title={t('stock.form.editTitle', { name: editingProduct?.name || '' })}
       >
         {editingProduct && (
           <ProductForm
@@ -188,11 +170,10 @@ export default function Stock() {
         )}
       </Modal>
 
-      {/* Restock modal */}
       <Modal
         open={!!restockingProduct}
         onClose={() => setRestockingProduct(null)}
-        title={`Restock — ${restockingProduct?.name || ''}`}
+        title={`${t('stock.restock')} — ${restockingProduct?.name || ''}`}
       >
         {restockingProduct && (
           <RestockForm
@@ -203,12 +184,11 @@ export default function Stock() {
         )}
       </Modal>
 
-      {/* Delete confirmation */}
       <ConfirmDialog
         open={!!deleteCandidate}
-        title={`Delete '${deleteCandidate?.name}'?`}
-        message="If this product has sales history, it will be archived (soft-deleted) to preserve your records. Otherwise it will be permanently removed."
-        confirmLabel="Delete"
+        title={t('stock.deleteConfirmTitle', { name: deleteCandidate?.name })}
+        message={t('stock.deleteConfirmMessage')}
+        confirmLabel={t('common.delete')}
         variant="danger"
         onConfirm={handleDelete}
         onCancel={() => setDeleteCandidate(null)}
@@ -218,11 +198,9 @@ export default function Stock() {
   );
 }
 
-// =========================================================================
-// Add/Edit form
-// =========================================================================
 function ProductForm({ initial, categories, onCancel, onSuccess }) {
   const toast = useToast();
+  const { t } = useTranslation();
   const isEdit = !!initial;
   const [form, setForm] = useState({
     name: initial?.name || '',
@@ -259,7 +237,7 @@ function ProductForm({ initial, categories, onCancel, onSuccess }) {
       if (Object.keys(fields).length > 0) {
         setErrors(fields);
       } else {
-        toast.error(extractError(err, 'Could not save product.'));
+        toast.error(extractError(err, t('stock.form.errorSave')));
       }
     } finally {
       setSubmitting(false);
@@ -269,25 +247,25 @@ function ProductForm({ initial, categories, onCancel, onSuccess }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="form-label">Product Name *</label>
+        <label className="form-label">{t('stock.form.productName')}</label>
         <input
           type="text" required
           value={form.name}
           onChange={(e) => update('name', e.target.value)}
           className={`form-input ${errors.name ? 'error' : ''}`}
-          placeholder="e.g. Sugar 1kg"
+          placeholder={t('stock.form.productPlaceholder')}
         />
         {errors.name && <p className="form-error">{errors.name}</p>}
       </div>
 
       <div>
-        <label className="form-label">Category</label>
+        <label className="form-label">{t('stock.form.category')}</label>
         <select
           value={form.category || ''}
           onChange={(e) => update('category', e.target.value)}
           className={`form-input ${errors.category ? 'error' : ''}`}
         >
-          <option value="">— None —</option>
+          <option value="">{t('stock.form.categoryNone')}</option>
           {categories.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
         {errors.category && <p className="form-error">{errors.category}</p>}
@@ -295,7 +273,7 @@ function ProductForm({ initial, categories, onCancel, onSuccess }) {
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="form-label">Purchase Price (TZS) *</label>
+          <label className="form-label">{t('stock.form.purchasePrice')}</label>
           <input
             type="number" step="0.01" min="0" required
             value={form.purchase_price}
@@ -305,7 +283,7 @@ function ProductForm({ initial, categories, onCancel, onSuccess }) {
           {errors.purchase_price && <p className="form-error">{errors.purchase_price}</p>}
         </div>
         <div>
-          <label className="form-label">Selling Price (TZS) *</label>
+          <label className="form-label">{t('stock.form.sellingPrice')}</label>
           <input
             type="number" step="0.01" min="0" required
             value={form.selling_price}
@@ -318,7 +296,7 @@ function ProductForm({ initial, categories, onCancel, onSuccess }) {
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="form-label">{isEdit ? 'Quantity' : 'Initial Quantity'}</label>
+          <label className="form-label">{isEdit ? t('stock.form.quantity') : t('stock.form.initialQuantity')}</label>
           <input
             type="number" min="0"
             value={form.quantity}
@@ -328,35 +306,33 @@ function ProductForm({ initial, categories, onCancel, onSuccess }) {
           {errors.quantity && <p className="form-error">{errors.quantity}</p>}
         </div>
         <div>
-          <label className="form-label">Low Stock Threshold</label>
+          <label className="form-label">{t('stock.form.lowStockThreshold')}</label>
           <input
             type="number" min="0"
             value={form.low_stock_threshold}
             onChange={(e) => update('low_stock_threshold', e.target.value)}
             className={`form-input ${errors.low_stock_threshold ? 'error' : ''}`}
           />
-          <p className="form-help">Alert when stock drops below this</p>
+          <p className="form-help">{t('stock.form.thresholdHelp')}</p>
           {errors.low_stock_threshold && <p className="form-error">{errors.low_stock_threshold}</p>}
         </div>
       </div>
 
       <div className="flex justify-end gap-3 pt-2">
         <button type="button" onClick={onCancel} className="btn-secondary" disabled={submitting}>
-          Cancel
+          {t('common.cancel')}
         </button>
         <button type="submit" className="btn-primary" disabled={submitting}>
-          {submitting ? 'Saving...' : (isEdit ? 'Save Changes' : 'Add Product')}
+          {submitting ? t('common.saving') : (isEdit ? t('stock.form.saveChanges') : t('stock.form.addButton'))}
         </button>
       </div>
     </form>
   );
 }
 
-// =========================================================================
-// Restock form
-// =========================================================================
 function RestockForm({ product, onCancel, onSuccess }) {
   const toast = useToast();
+  const { t } = useTranslation();
   const [quantity, setQuantity] = useState('');
   const [purchasePrice, setPurchasePrice] = useState('');
   const [errors, setErrors] = useState({});
@@ -377,7 +353,7 @@ function RestockForm({ product, onCancel, onSuccess }) {
       if (Object.keys(fields).length > 0) {
         setErrors(fields);
       } else {
-        toast.error(extractError(err, 'Could not restock.'));
+        toast.error(extractError(err, t('stock.restockForm.errorRestock')));
       }
     } finally {
       setSubmitting(false);
@@ -387,41 +363,43 @@ function RestockForm({ product, onCancel, onSuccess }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 text-sm">
-        <div className="text-slate-500 dark:text-slate-400">Current stock</div>
-        <div className="font-bold text-slate-800 dark:text-slate-100">{formatNumber(product.quantity)} units</div>
+        <div className="text-slate-500 dark:text-slate-400">{t('stock.restockForm.currentStock')}</div>
+        <div className="font-bold text-slate-800 dark:text-slate-100">
+          {t('stock.restockForm.unitsLabel', { count: product.quantity })}
+        </div>
       </div>
 
       <div>
-        <label className="form-label">Additional Quantity *</label>
+        <label className="form-label">{t('stock.restockForm.additionalQuantity')}</label>
         <input
           type="number" min="1" required
           value={quantity}
           onChange={(e) => setQuantity(e.target.value)}
           className={`form-input ${errors.quantity ? 'error' : ''}`}
-          placeholder="e.g. 50"
+          placeholder={t('stock.restockForm.qtyPlaceholder')}
         />
         {errors.quantity && <p className="form-error">{errors.quantity}</p>}
       </div>
 
       <div>
-        <label className="form-label">New Purchase Price (optional)</label>
+        <label className="form-label">{t('stock.restockForm.newPurchasePrice')}</label>
         <input
           type="number" step="0.01" min="0"
           value={purchasePrice}
           onChange={(e) => setPurchasePrice(e.target.value)}
           className={`form-input ${errors.purchase_price ? 'error' : ''}`}
-          placeholder={`Current: ${formatTZS(product.purchase_price)}`}
+          placeholder={t('stock.restockForm.currentPlaceholder', { price: formatTZS(product.purchase_price) })}
         />
-        <p className="form-help">Leave blank to keep current price</p>
+        <p className="form-help">{t('stock.restockForm.keepCurrent')}</p>
         {errors.purchase_price && <p className="form-error">{errors.purchase_price}</p>}
       </div>
 
       <div className="flex justify-end gap-3 pt-2">
         <button type="button" onClick={onCancel} className="btn-secondary" disabled={submitting}>
-          Cancel
+          {t('common.cancel')}
         </button>
         <button type="submit" className="btn-success" disabled={submitting}>
-          {submitting ? 'Restocking...' : 'Restock'}
+          {submitting ? t('stock.restockForm.submitting') : t('stock.restockForm.submit')}
         </button>
       </div>
     </form>

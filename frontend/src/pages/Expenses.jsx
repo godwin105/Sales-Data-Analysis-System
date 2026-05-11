@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Plus, Receipt, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { expensesApi } from '../api/expenses';
 import { useToast } from '../context/ToastContext';
 import { extractError, extractFieldErrors } from '../api/client';
@@ -18,6 +19,7 @@ const CATEGORY_COLORS = {
 
 export default function Expenses() {
   const toast = useToast();
+  const { t, i18n } = useTranslation();
   const [list, setList] = useState([]);
   const [categoryTotals, setCategoryTotals] = useState({});
   const [categories, setCategories] = useState([]);
@@ -45,7 +47,7 @@ export default function Expenses() {
         setForm((f) => ({ ...f, category: data.categories[0] }));
       }
     } catch (err) {
-      toast.error(extractError(err, 'Could not load expenses.'));
+      toast.error(extractError(err, t('expenses.errorLoad')));
     } finally {
       setLoading(false);
     }
@@ -67,7 +69,7 @@ export default function Expenses() {
       if (Object.keys(fields).length > 0) {
         setErrors(fields);
       } else {
-        toast.error(extractError(err, 'Could not save expense.'));
+        toast.error(extractError(err, t('expenses.errorSave')));
       }
     } finally {
       setSubmitting(false);
@@ -82,7 +84,7 @@ export default function Expenses() {
       toast.success(data.message);
       await load();
     } catch (err) {
-      toast.error(extractError(err, 'Could not delete expense.'));
+      toast.error(extractError(err, t('expenses.errorDelete')));
     } finally {
       setBusyDelete(false);
       setDeleteCandidate(null);
@@ -91,42 +93,41 @@ export default function Expenses() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-      {/* Add form */}
       <div className="card lg:col-span-1 self-start">
         <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
           <Plus size={18} />
-          Add Expense
+          {t('expenses.addExpense')}
         </h3>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="form-label">Category *</label>
+            <label className="form-label">{t('expenses.categoryLabel')}</label>
             <select
               required
               value={form.category}
               onChange={(e) => setForm({ ...form, category: e.target.value })}
               className={`form-input ${errors.category ? 'error' : ''}`}
             >
-              <option value="">— Select —</option>
+              <option value="">{t('expenses.selectCategory')}</option>
               {categories.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
             {errors.category && <p className="form-error">{errors.category}</p>}
           </div>
 
           <div>
-            <label className="form-label">Description</label>
+            <label className="form-label">{t('expenses.descriptionLabel')}</label>
             <input
               type="text"
               maxLength={255}
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               className={`form-input ${errors.description ? 'error' : ''}`}
-              placeholder="e.g. Shop rent for February"
+              placeholder={t('expenses.descPlaceholder')}
             />
             {errors.description && <p className="form-error">{errors.description}</p>}
           </div>
 
           <div>
-            <label className="form-label">Amount (TZS) *</label>
+            <label className="form-label">{t('expenses.amountLabel')}</label>
             <input
               type="number" step="0.01" min="0.01" required
               value={form.amount}
@@ -137,7 +138,7 @@ export default function Expenses() {
           </div>
 
           <div>
-            <label className="form-label">Date *</label>
+            <label className="form-label">{t('expenses.dateLabel')}</label>
             <input
               type="date" required
               max={toIsoDate()}
@@ -149,18 +150,16 @@ export default function Expenses() {
           </div>
 
           <button type="submit" className="btn-primary w-full" disabled={submitting}>
-            {submitting ? 'Saving...' : 'Save Expense'}
+            {submitting ? t('expenses.saving') : t('expenses.save')}
           </button>
         </form>
       </div>
 
-      {/* Right column: totals + list */}
       <div className="lg:col-span-2 space-y-5">
-        {/* Category totals */}
         {Object.keys(categoryTotals).length > 0 && (
           <div className="card">
             <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 uppercase tracking-wider">
-              Totals by Category
+              {t('expenses.totalsByCategory')}
             </h3>
             <div className="flex flex-wrap gap-2">
               {Object.entries(categoryTotals).map(([cat, total]) => (
@@ -172,15 +171,14 @@ export default function Expenses() {
           </div>
         )}
 
-        {/* List */}
         {loading ? (
-          <PageSpinner label="Loading expenses..." />
+          <PageSpinner label={t('expenses.loading')} />
         ) : list.length === 0 ? (
           <div className="card">
             <EmptyState
               icon={Receipt}
-              title="No expenses recorded yet"
-              message="Use the form on the left to record your first expense."
+              title={t('expenses.noExpenses')}
+              message={t('expenses.noExpensesMessage')}
             />
           </div>
         ) : (
@@ -189,17 +187,17 @@ export default function Expenses() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Date</th>
-                    <th>Category</th>
-                    <th>Description</th>
-                    <th className="text-right">Amount</th>
-                    <th className="text-right">Actions</th>
+                    <th>{t('expenses.tableDate')}</th>
+                    <th>{t('expenses.tableCategory')}</th>
+                    <th>{t('expenses.tableDescription')}</th>
+                    <th className="text-right">{t('expenses.tableAmount')}</th>
+                    <th className="text-right">{t('expenses.tableActions')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {list.map((e) => (
                     <tr key={e.expense_id}>
-                      <td className="whitespace-nowrap">{formatDate(e.expense_date)}</td>
+                      <td className="whitespace-nowrap">{formatDate(e.expense_date, i18n.language)}</td>
                       <td>
                         <span className={`badge ${CATEGORY_COLORS[e.category] || CATEGORY_COLORS.Miscellaneous}`}>
                           {e.category}
@@ -214,7 +212,7 @@ export default function Expenses() {
                           <button
                             onClick={() => setDeleteCandidate(e)}
                             className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-danger"
-                            title="Delete"
+                            title={t('common.delete')}
                           >
                             <Trash2 size={15} />
                           </button>
@@ -231,9 +229,9 @@ export default function Expenses() {
 
       <ConfirmDialog
         open={!!deleteCandidate}
-        title="Delete this expense?"
-        message="This action cannot be undone."
-        confirmLabel="Delete"
+        title={t('expenses.deleteConfirmTitle')}
+        message={t('expenses.deleteConfirmMessage')}
+        confirmLabel={t('common.delete')}
         variant="danger"
         onConfirm={handleDelete}
         onCancel={() => setDeleteCandidate(null)}

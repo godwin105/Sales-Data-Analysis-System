@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Building2, User } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import AuthLayout from '../components/AuthLayout';
 import PasswordInput from '../components/PasswordInput';
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +12,7 @@ export default function Register() {
   const { register } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [form, setForm] = useState({
     business_name: '',
@@ -34,21 +36,21 @@ export default function Register() {
     setErrors({});
 
     if (form.password !== form.confirm_password) {
-      setErrors({ confirm_password: 'Passwords must match.' });
+      setErrors({ confirm_password: t('auth.register.passwordMismatch') });
       return;
     }
 
     setSubmitting(true);
     try {
       await register(form);
-      toast.success('Account created — please log in.');
+      toast.success(t('auth.register.successToast'));
       navigate('/login', { replace: true });
     } catch (err) {
       const fields = extractFieldErrors(err);
       if (Object.keys(fields).length > 0) {
         setErrors(fields);
       } else {
-        setPageError(extractError(err, 'Registration failed.'));
+        setPageError(extractError(err, t('auth.register.errorFailed')));
       }
     } finally {
       setSubmitting(false);
@@ -59,10 +61,10 @@ export default function Register() {
     <AuthLayout>
       <form onSubmit={handleSubmit} className="p-7">
         <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-1">
-          Create your account
+          {t('auth.register.title')}
         </h2>
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-          Register your business in under a minute
+          {t('auth.register.subtitle')}
         </p>
 
         {pageError && (
@@ -73,12 +75,12 @@ export default function Register() {
 
         <div className="space-y-4">
           <div>
-            <label className="form-label">Business Name</label>
+            <label className="form-label">{t('auth.register.businessNameLabel')}</label>
             <div className="relative">
               <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input
                 type="text"
-                placeholder="Duka la Amina"
+                placeholder={t('auth.register.businessNamePlaceholder')}
                 value={form.business_name}
                 onChange={(e) => update('business_name', e.target.value)}
                 className={`form-input pl-10 ${errors.business_name ? 'error' : ''}`}
@@ -89,12 +91,12 @@ export default function Register() {
           </div>
 
           <div>
-            <label className="form-label">Full Name</label>
+            <label className="form-label">{t('auth.register.fullNameLabel')}</label>
             <div className="relative">
               <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input
                 type="text"
-                placeholder="Amina Juma"
+                placeholder={t('auth.register.fullNamePlaceholder')}
                 value={form.full_name}
                 onChange={(e) => update('full_name', e.target.value)}
                 className={`form-input pl-10 ${errors.full_name ? 'error' : ''}`}
@@ -105,13 +107,13 @@ export default function Register() {
           </div>
 
           <div>
-            <label className="form-label">Email</label>
+            <label className="form-label">{t('auth.register.emailLabel')}</label>
             <div className="relative">
               <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input
                 type="email"
                 autoComplete="email"
-                placeholder="amina@duka.co.tz"
+                placeholder={t('auth.register.emailPlaceholder')}
                 value={form.email}
                 onChange={(e) => update('email', e.target.value)}
                 className={`form-input pl-10 ${errors.email ? 'error' : ''}`}
@@ -122,10 +124,10 @@ export default function Register() {
           </div>
 
           <div>
-            <label className="form-label">Password</label>
+            <label className="form-label">{t('auth.register.passwordLabel')}</label>
             <PasswordInput
               autoComplete="new-password"
-              placeholder="At least 8 characters"
+              placeholder={t('auth.register.passwordPlaceholder')}
               value={form.password}
               onChange={(e) => update('password', e.target.value)}
               error={!!errors.password}
@@ -135,10 +137,10 @@ export default function Register() {
           </div>
 
           <div>
-            <label className="form-label">Confirm Password</label>
+            <label className="form-label">{t('auth.register.confirmPasswordLabel')}</label>
             <PasswordInput
               autoComplete="new-password"
-              placeholder="Re-enter password"
+              placeholder={t('auth.register.confirmPasswordPlaceholder')}
               value={form.confirm_password}
               onChange={(e) => update('confirm_password', e.target.value)}
               error={!!errors.confirm_password}
@@ -152,17 +154,17 @@ export default function Register() {
             className="btn-primary w-full mt-2"
             disabled={submitting}
           >
-            {submitting ? 'Creating account...' : 'Create Account'}
+            {submitting ? t('auth.register.submitting') : t('auth.register.submit')}
           </button>
         </div>
 
         <p className="text-center text-sm text-slate-500 dark:text-slate-400 mt-6">
-          Already have an account?{' '}
+          {t('auth.register.haveAccount')}{' '}
           <Link
             to="/login"
             className="font-semibold text-brand-600 hover:text-brand-700 dark:text-brand-500"
           >
-            Log in
+            {t('auth.register.logIn')}
           </Link>
         </p>
       </form>

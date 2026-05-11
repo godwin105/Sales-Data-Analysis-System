@@ -46,7 +46,7 @@ export default function Sidebar({ isOpen, onClose }) {
         `}
       >
         {/* Brand */}
-        <div className="px-5 py-6 border-b border-slate-700 flex items-center justify-between">
+        <div className="px-5 py-5 border-b border-slate-700 flex items-center justify-between">
           <div>
             <div className="text-xs font-extrabold tracking-widest text-slate-400">BIASHARA APP</div>
             <div className="text-[10px] text-slate-500 mt-1">Sales Analysis System</div>

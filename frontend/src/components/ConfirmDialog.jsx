@@ -1,30 +1,24 @@
 import { AlertTriangle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Confirmation modal. Renders nothing when `open` is false.
  *
- * Usage:
- *   <ConfirmDialog
- *     open={showConfirm}
- *     title="Remove cashier?"
- *     message="This action cannot be undone."
- *     confirmLabel="Remove"
- *     onConfirm={handleRemove}
- *     onCancel={() => setShowConfirm(false)}
- *     variant="danger"
- *   />
+ * If confirmLabel/cancelLabel are not passed, defaults to translated
+ * "Confirm" and "Cancel".
  */
 export default function ConfirmDialog({
   open,
   title,
   message,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel,
+  cancelLabel,
   variant = 'primary',
   onConfirm,
   onCancel,
   busy = false,
 }) {
+  const { t } = useTranslation();
   if (!open) return null;
 
   const confirmClass =
@@ -64,7 +58,7 @@ export default function ConfirmDialog({
             className="btn-secondary"
             disabled={busy}
           >
-            {cancelLabel}
+            {cancelLabel || t('common.cancel')}
           </button>
           <button
             type="button"
@@ -72,7 +66,7 @@ export default function ConfirmDialog({
             className={confirmClass}
             disabled={busy}
           >
-            {busy ? 'Working...' : confirmLabel}
+            {busy ? t('common.working') : (confirmLabel || t('common.confirm'))}
           </button>
         </div>
       </div>

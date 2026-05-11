@@ -1,9 +1,11 @@
 import { BarChart3 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 /**
- * Brand mark used in the auth pages and sidebar.
+ * Brand mark used in the auth pages.
  */
 export default function BrandMark({ size = 'md', tagline = true }) {
+  const { t } = useTranslation();
   const sizes = {
     sm: { logoBox: 'w-8 h-8', icon: 16, title: 'text-base', subtitle: 'text-[10px]' },
     md: { logoBox: 'w-12 h-12', icon: 24, title: 'text-xl', subtitle: 'text-xs' },
@@ -18,11 +20,11 @@ export default function BrandMark({ size = 'md', tagline = true }) {
       </div>
       <div className="text-center">
         <div className={`${s.title} font-bold text-slate-800 dark:text-slate-100`}>
-          Sales Data Analysis System
+          {t('brand.title')}
         </div>
         {tagline && (
           <div className={`${s.subtitle} text-slate-500 dark:text-slate-400 mt-0.5`}>
-            For small businesses in Tanzania
+            {t('brand.tagline')}
           </div>
         )}
       </div>

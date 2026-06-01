@@ -3,17 +3,7 @@ import { Languages } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { SUPPORTED_LANGUAGES } from '../i18n';
 
-/**
- * Compact language picker.
- *
- * Renders an icon + 2-letter code button. Clicking opens a small dropdown
- * with the full language names. Persists choice via i18next-browser-languagedetector
- * (configured in src/i18n/index.js).
- *
- * Usage:
- *   <LanguageSwitcher />            // default style for topbar
- *   <LanguageSwitcher variant="auth" /> // for the auth pages (lighter background)
- */
+
 export default function LanguageSwitcher({ variant = 'default' }) {
   const { i18n } = useTranslation();
   const [open, setOpen] = useState(false);

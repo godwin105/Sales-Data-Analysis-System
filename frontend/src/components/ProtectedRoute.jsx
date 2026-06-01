@@ -2,9 +2,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 
-/**
- * Wraps a route to require authentication. Optionally also requires admin role.
- */
+/** Wraps a route to require authentication. Optionally also requires admin role.*/
 export default function ProtectedRoute({ children, adminOnly = false }) {
   const { isAuthenticated, isAdmin, isLoading } = useAuth();
   const location = useLocation();

@@ -6,10 +6,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-/**
- * Sidebar navigation. On mobile/tablet (<1024px) it slides in from the left
- * when `isOpen` is true. On desktop it's always visible.
- */
+/* Sidebar navigation. On mobile/tablet (<1024px) it slides in from the left when `isOpen` is true. On desktop it's always visible.*/
 export default function Sidebar({ isOpen, onClose }) {
   const { isAdmin } = useAuth();
   const { t } = useTranslation();

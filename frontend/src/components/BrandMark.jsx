@@ -1,9 +1,7 @@
 import { BarChart3 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-/**
- * Brand mark used in the auth pages.
- */
+
 export default function BrandMark({ size = 'md', tagline = true }) {
   const { t } = useTranslation();
   const sizes = {

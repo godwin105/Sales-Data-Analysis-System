@@ -1,20 +1,3 @@
-"""
-Expense Tracking API blueprint.
-
-Implements Release 4 of the XP plan — Weeks 7-8.
-Covers UC-04 (Track Expenses):
-    FR-16  Record expense (category, description, amount, date)
-    FR-17  Categories: Rent, Utilities, Salaries, Purchase Costs, Miscellaneous
-    FR-18  Category totals + period totals
-
-Also provides the `profit_loss_for_period()` helper used by Dashboard,
-Analytics, and Reports.
-
-Endpoints:
-    GET    /api/expenses
-    POST   /api/expenses
-    DELETE /api/expenses/<id>
-"""
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from collections import defaultdict
@@ -29,13 +12,12 @@ from utils.decorators import admin_required
 
 expenses_bp = Blueprint("expenses", __name__, url_prefix="/api/expenses")
 
-# FR-17: exact categories from FYP documentation
+
 EXPENSE_CATEGORIES = ["Rent", "Utilities", "Salaries", "Purchase Costs", "Miscellaneous"]
 
 
-# =========================================================================
 # SHARED HELPER — used by dashboard, analytics, reports
-# =========================================================================
+
 def profit_loss_for_period(owner_id, start_dt, end_dt):
     """
     Computes revenue, COGS, expenses, and net profit for a window

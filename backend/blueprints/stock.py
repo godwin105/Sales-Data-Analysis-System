@@ -1,21 +1,3 @@
-"""
-Stock Management API blueprint.
-
-Implements Release 2 of the XP plan — Weeks 3-4.
-Covers UC-02 (Manage Stock), UC-08 (Restock Inventory):
-    FR-06  Add product
-    FR-07  Edit and delete products
-    FR-08  Restock product
-    FR-10  Low-stock alerts when quantity <= threshold
-
-Endpoints:
-    GET    /api/stock
-    GET    /api/stock/<id>
-    POST   /api/stock                  (add)
-    PUT    /api/stock/<id>             (edit)
-    POST   /api/stock/<id>/restock
-    DELETE /api/stock/<id>
-"""
 from decimal import Decimal, InvalidOperation
 from sqlalchemy import func, exists
 
@@ -32,9 +14,6 @@ stock_bp = Blueprint("stock", __name__, url_prefix="/api/stock")
 PRODUCT_CATEGORIES = ["Food", "Cleaning", "Beverages", "Other"]
 
 
-# =========================================================================
-# VALIDATION
-# =========================================================================
 def _validate_decimal(value, field_name, *, min_value=Decimal("0"), required=True):
     if value is None or value == "":
         if required:
@@ -64,7 +43,7 @@ def _validate_int(value, field_name, *, min_value=0, required=True, default=None
 
 
 def _validate_product_payload(data, *, editing_id=None):
-    """Validate the body of an add/edit product request. Returns (clean, errors)."""
+    #Validate the body of an add/edit product request. Returns (clean, errors)
     errors = {}
 
     name = (data.get("name") or "").strip()
@@ -85,9 +64,10 @@ def _validate_product_payload(data, *, editing_id=None):
     if err:
         errors["selling_price"] = err
 
-    quantity, err = _validate_int(
+    quantity, err = _validate_decimal(
         data.get("quantity"), "Quantity",
-        required=False, default=0,
+        min_value=Decimal("0"),
+        required=False,
     )
     if err:
         errors["quantity"] = err
@@ -119,13 +99,13 @@ def _validate_product_payload(data, *, editing_id=None):
         "category": category or None,
         "purchase_price": purchase_price,
         "selling_price": selling_price,
-        "quantity": quantity if quantity is not None else 0,
+        "quantity": quantity if quantity is not None else Decimal("0"),
         "low_stock_threshold": low_stock_threshold if low_stock_threshold is not None else 5,
     }, None
 
 
 def _get_owned_product(product_id):
-    """Fetch a product belonging to the current user's business, or None."""
+    #Fetch a product belonging to the current user's business, or None
     return db.session.query(Product).filter(
         Product.product_id == product_id,
         Product.user_id == current_user.owner_id,
@@ -133,13 +113,11 @@ def _get_owned_product(product_id):
     ).first()
 
 
-# =========================================================================
-# ROUTES
-# =========================================================================
+#routes
 @stock_bp.route("", methods=["GET"])
 @admin_required
 def list_products():
-    """List all active products. Optional ?q=search."""
+    #List all active products. Optional ?q=search.
     q = (request.args.get("q") or "").strip()
 
     query = db.session.query(Product).filter(
@@ -160,7 +138,7 @@ def list_products():
 @stock_bp.route("/<int:product_id>", methods=["GET"])
 @admin_required
 def get_product(product_id):
-    """Get a single product by id."""
+#Get a single product by id
     product = _get_owned_product(product_id)
     if product is None:
         return jsonify({"error": "Product not found."}), 404
@@ -170,7 +148,7 @@ def get_product(product_id):
 @stock_bp.route("", methods=["POST"])
 @admin_required
 def add_product():
-    """FR-06: create a new product."""
+    #FR-06: create a new product
     data = request.get_json(silent=True) or {}
     clean, errors = _validate_product_payload(data)
 
@@ -198,7 +176,7 @@ def add_product():
 @stock_bp.route("/<int:product_id>", methods=["PUT"])
 @admin_required
 def edit_product(product_id):
-    """FR-07: edit existing product."""
+    #edit existing product
     product = _get_owned_product(product_id)
     if product is None:
         return jsonify({"error": "Product not found."}), 404
@@ -226,7 +204,7 @@ def edit_product(product_id):
 @stock_bp.route("/<int:product_id>/restock", methods=["POST"])
 @admin_required
 def restock_product(product_id):
-    """FR-08 / UC-08: add stock to an existing product."""
+    #"""add stock to an existing product
     product = _get_owned_product(product_id)
     if product is None:
         return jsonify({"error": "Product not found."}), 404
@@ -247,7 +225,7 @@ def restock_product(product_id):
             }), 400
         new_purchase_price = d
 
-    product.quantity = (product.quantity or 0) + qty
+    product.quantity = (product.quantity or Decimal("0")) + qty
     if new_purchase_price is not None:
         product.purchase_price = new_purchase_price
     db.session.commit()

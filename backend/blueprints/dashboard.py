@@ -1,16 +1,3 @@
-"""
-Dashboard API blueprint.
-
-Release 5 (Weeks 9-10): aggregated data feed for the React dashboard.
-    FR-19  Total revenue / expenses / net profit for selected period
-    FR-20  Sales Trend Line Chart (revenue over time)
-    FR-21  Top Products Bar Chart (best sellers by revenue)
-    FR-22  Expense Breakdown Doughnut Chart (by category)
-    FR-23  KPI cards
-
-Endpoint:
-    GET /api/dashboard
-"""
 from datetime import datetime, date, timedelta
 
 from flask import Blueprint, jsonify
@@ -31,9 +18,7 @@ def dashboard():
     owner_id = current_user.owner_id
     today = date.today()
 
-    # ========================================================================
-    # KPI CARDS (FR-23)
-    # ========================================================================
+
     today_start = datetime.combine(today, datetime.min.time())
     today_end = today_start + timedelta(days=1)
     today_rev = (

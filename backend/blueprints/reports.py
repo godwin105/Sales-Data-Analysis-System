@@ -1,16 +1,3 @@
-"""
-Reports API blueprint.
-
-Implements Release 6 of the XP plan — Weeks 11-12.
-Covers UC-06 (Generate and Download PDF Reports):
-    FR-19  Revenue / expenses / net profit
-    FR-24  Generate and download PDF
-    FR-25  Filterable by daily, weekly, monthly, custom range
-
-Endpoints:
-    GET /api/reports/preview?type=&period=&from=&to=    JSON preview
-    GET /api/reports/download?type=&period=&from=&to=   binary PDF stream
-"""
 from datetime import datetime, date, timedelta
 from io import BytesIO
 
@@ -32,9 +19,7 @@ from utils.decorators import admin_required
 reports_bp = Blueprint("reports", __name__, url_prefix="/api/reports")
 
 
-# =========================================================================
-# PERIOD RESOLUTION — FR-25
-# =========================================================================
+
 def resolve_period(period, date_from_str, date_to_str):
     """Returns (start_dt, end_dt, period_label, error_msg)."""
     today = date.today()
@@ -77,9 +62,7 @@ def resolve_period(period, date_from_str, date_to_str):
     return start_dt, end_dt, label, err
 
 
-# =========================================================================
-# BUILD REPORT DATA
-# =========================================================================
+#report building function
 def build_report(owner_id, report_type, start_dt, end_dt, label):
     pl = profit_loss_for_period(owner_id, start_dt, end_dt)
 
@@ -112,7 +95,7 @@ def build_report(owner_id, report_type, start_dt, end_dt, label):
 
 
 def _report_to_json(report):
-    """Convert Decimal-heavy report dict to JSON-friendly form."""
+    #Convert Decimal-heavy report dict to JSON-friendly form.
     return {
         "title":          report["title"],
         "show_revenue":   report["show_revenue"],
@@ -128,9 +111,6 @@ def _report_to_json(report):
     }
 
 
-# =========================================================================
-# ROUTES
-# =========================================================================
 @reports_bp.route("/preview", methods=["GET"])
 @admin_required
 def preview():
@@ -184,9 +164,8 @@ def download_pdf():
     )
 
 
-# =========================================================================
 # PDF RENDERING (unchanged from original)
-# =========================================================================
+
 def _render_pdf(report, business_name):
     buf = BytesIO()
     doc = SimpleDocTemplate(

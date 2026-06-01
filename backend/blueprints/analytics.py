@@ -1,18 +1,3 @@
-"""
-Analytics & Insights API blueprint.
-
-Release 5 (Weeks 9-10) — Business Insights with real computations:
-  Priority 1: Stock-out projections (based on recent sales velocity)
-  Priority 2: Expense ratio warning (when expenses > 60% of revenue)
-  Priority 3: Revenue growth vs previous period
-  Performance charts: revenue-vs-expenses, margin trend, day-of-week, velocity
-
-NOTE: Business Insights is the M6 extension beyond the original FYP
-Chapter 4 documentation.
-
-Endpoint:
-    GET /api/insights
-"""
 from datetime import datetime, date, timedelta
 from decimal import Decimal
 from collections import defaultdict
@@ -32,7 +17,8 @@ analytics_bp = Blueprint("analytics", __name__, url_prefix="/api/insights")
 @analytics_bp.route("", methods=["GET"])
 @admin_required
 def insights():
-    """Priority-sorted business insights data."""
+
+    #Priority-sorted business insights data
     owner_id = current_user.owner_id
     today = date.today()
 

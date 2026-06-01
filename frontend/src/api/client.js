@@ -34,7 +34,7 @@ api.interceptors.response.use(
     const status = error?.response?.status;
     const code = error?.response?.data?.code;
 
-    // Token expired or missing — kick to login (but don't loop on /auth/* itself)
+    // Token expired or missing kick to login (but don't loop on /auth/* itself)
     if (status === 401 && !error.config?.url?.includes('/auth/login')) {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
@@ -51,9 +51,7 @@ api.interceptors.response.use(
   }
 );
 
-/**
- * Helper to extract a friendly message from an axios error.
- */
+/*Helper to extract a friendly message from an axios error.*/
 export function extractError(err, fallback = 'Something went wrong.') {
   if (!err) return fallback;
   if (err.response?.data?.error) return err.response.data.error;
@@ -63,10 +61,8 @@ export function extractError(err, fallback = 'Something went wrong.') {
   return err.message || fallback;
 }
 
-/**
- * Helper to extract field-level validation errors from a 400 response.
- * Returns an object like {email: 'Invalid email', password: 'Too short'} or {}.
- */
+//Helper to extract field-level validation errors from a 400 response. Returns an object like {email: 'Invalid email', password: 'Too short'} or {}.
+ 
 export function extractFieldErrors(err) {
   return err?.response?.data?.fields || {};
 }

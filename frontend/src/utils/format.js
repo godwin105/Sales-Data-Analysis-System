@@ -1,13 +1,3 @@
-/**
- * Display helpers used across the app.
- *
- * Date helpers accept an optional `locale` (e.g. 'sw' or 'en') so they
- * render in the user's chosen language. Pass `i18n.language` from
- * react-i18next when calling. Defaults to English (en-GB) for stability
- * when locale data is missing.
- */
-
-/** Map app language codes to BCP-47 locale strings used by Intl. */
 function resolveLocale(locale) {
   if (!locale) return 'en-GB';
   const code = String(locale).slice(0, 2).toLowerCase();

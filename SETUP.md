@@ -1,8 +1,6 @@
 # Setup Guide — First-Time Installation
 
-Follow this guide if you're setting up the project on your machine for the first time. **Time required: 30–45 minutes.**
-
-> 💡 If you already had the previous Flask-only version running, you still need to install Node.js and the frontend dependencies — see [§ Migrating from the old version](#-migrating-from-the-old-version) at the bottom.
+Follow this guide if you are setting up the project on your machine for the first time.
 
 ---
 
@@ -33,7 +31,7 @@ If any command says "not recognized", install that piece first.
 ## 2. Clone the repository
 
 ```powershell
-cd "D:\4th Year\FYP"   # or wherever you keep the project
+cd to  wherever you keep the project
 git clone https://github.com/godwin105/Sales-Data-Analysis-System.git "Sales Data Analysis System"
 cd "Sales Data Analysis System"
 ```
@@ -72,9 +70,8 @@ python -m venv venv
 # Install dependencies
 pip install -r requirements.txt
 
-# Create .env from the template
-Copy-Item .env.example .env
-notepad .env
+# Create .env file
+
 ```
 
 In `.env`, fill in the following at minimum:
@@ -97,7 +94,7 @@ FRONTEND_URL=http://localhost:5173
 # MAIL_DEFAULT_SENDER=youraddress@gmail.com
 ```
 
-> 🔐 **Generate strong secrets** with: `python -c "import secrets; print(secrets.token_hex(32))"`
+>  **Generate strong secrets** with: `python -c "import secrets; print(secrets.token_hex(32))"`
 
 Now start the Flask server:
 
@@ -105,7 +102,7 @@ Now start the Flask server:
 python app.py
 ```
 
-You should see:
+You will see:
 ```
 * Running on http://127.0.0.1:5000
 ```
@@ -119,13 +116,12 @@ Open <http://localhost:5000/api/health> in your browser — you should get `{"st
 Open a **new** PowerShell window (keep the backend running in the first one):
 
 ```powershell
-cd "D:\4th Year\FYP\Sales Data Analysis System\frontend"
+cd "D:\4th Year\FYP\Sales Data Analysis System\frontend" (Mine use your directory where project is located)
 
 # Install Node dependencies (takes 1–3 minutes the first time)
 npm install
 
-# Create .env from the template
-Copy-Item .env.example .env
+# Create .env
 # The default value (VITE_API_URL=http://localhost:5000) works as-is.
 
 # Start the dev server
@@ -151,13 +147,13 @@ After the initial setup, you only need to do this each time you work on the proj
 1. **Start XAMPP MySQL.**
 2. **Terminal #1 (backend):**
    ```powershell
-   cd "D:\4th Year\FYP\Sales Data Analysis System\backend"
+   cd choose your working directory
    .\venv\Scripts\Activate.ps1
    python app.py
    ```
 3. **Terminal #2 (frontend):**
    ```powershell
-   cd "D:\4th Year\FYP\Sales Data Analysis System\frontend"
+   cd choose your working directory
    npm run dev
    ```
 4. Open <http://localhost:5173>.
@@ -166,10 +162,10 @@ To stop: press `Ctrl+C` in each terminal.
 
 ---
 
-## 🐛 Troubleshooting
+## 7. Troubleshooting
 
 ### "ModuleNotFoundError" when running `python app.py`
-You haven't activated the venv. Run `.\venv\Scripts\Activate.ps1` first — your prompt should change to `(venv)`.
+You haven't activated the venv. Run `.\venv\Scripts\Activate.ps1` first your prompt should change to `(venv)`.
 
 ### "ImportError: No module named 'flask_jwt_extended'"
 Run `pip install -r requirements.txt` again from inside the activated venv.
@@ -193,20 +189,3 @@ Run PowerShell as Administrator, or delete `node_modules/` and `package-lock.jso
 JWT secret changed since you last logged in. Clear browser localStorage:
 - Open DevTools (F12) → Application → Local Storage → Clear All
 
----
-
-## 🔄 Migrating from the old version
-
-If you previously had the **Jinja2-only** Flask version running locally:
-
-1. **Pull the latest code** with `git pull`.
-2. The old `app.py`, `templates/`, and `static/` are still on `main` — they're just no longer the active UI. You can safely ignore them.
-3. The new code lives in `backend/` and `frontend/`. Follow steps 4 and 5 above as if it were a fresh install.
-4. Your existing MySQL database **does not need to be recreated** — same schema. Just make sure all three migration files have been imported.
-5. Your existing user accounts will continue to work — bcrypt password hashes are compatible.
-
----
-
-## 📞 Need help?
-
-Ping the team WhatsApp group, or open an issue on GitHub.

@@ -1,10 +1,7 @@
 # Web-Based Sales Data Analysis System
-
-> **Final Year Project** — University of Dar es Salaam, College of Information and Communication Technologies (CoICT), Department of Computer Science and Engineering (CSE).
-
 A web-based system that helps small and micro businesses in Tanzania record stock, sales, and expenses, and visualise their performance through interactive analytics — replacing manual book-keeping with simple, accessible digital workflows.
 
-## 🏗️ Architecture
+##  Architecture
 
 This is a **decoupled web application** with two parts:
 
@@ -37,14 +34,6 @@ This is a **decoupled web application** with two parts:
 └─────────────────────────────────────────────────────────┘
 ```
 
-> **Note about the architecture migration**: The system was originally
-> built with Flask + Jinja2 server-rendered templates (Releases 1–6 of the
-> XP plan). Following supervisor approval, the frontend was migrated to a
-> React 18 single-page application for improved interactivity and mobile
-> responsiveness. The Flask backend, MySQL schema, and all business logic
-> were preserved; routes were refactored to expose JSON instead of HTML.
-> See `docs/architecture-migration.md` for the full rationale.
-
 ## ✅ Functional Coverage
 
 The system implements all 25 functional requirements from the FYP report:
@@ -61,21 +50,21 @@ The system implements all 25 functional requirements from the FYP report:
 
 Plus all UAT-driven additions: responsive design, password show/hide, profile editing, admin password reset for cashiers, email-based forgot password, dark mode, and soft-delete for accounts with sales history.
 
-## 🚀 Quick Start (Local Development)
+##   Quick Start (Local Development)
 
-You'll run **two processes** during development:
+You will run **two processes** during development:
 
 1. **Flask backend** on port `5000` (serves the JSON API)
 2. **Vite dev server** on port `5173` (serves the React app)
 
 ### Prerequisites
 
-| Software | Version |
-|---|---|
-| Python | 3.11+ |
-| Node.js | 18+ |
-| MySQL | via XAMPP or standalone |
-| Git | any recent version |
+| Software Version 
+|------
+| Python 3.11+ 
+| Node.js 18+ 
+| MySQL via XAMPP or standalone
+| Git any recent version 
 
 See [SETUP.md](./SETUP.md) for full installation instructions including XAMPP setup.
 
@@ -91,19 +80,19 @@ cd backend
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-Copy-Item .env.example .env   # then edit .env with your MySQL credentials
-python app.py                 # http://localhost:5000
+Create .env # then edit .env with your MySQL credentials
+python app.py     # http://localhost:5000
 
 # 3. Frontend setup (terminal 2)
 cd frontend
 npm install
-Copy-Item .env.example .env   # default points to localhost:5000
+Create .env   # default points to localhost:5000
 npm run dev                   # http://localhost:5173
 ```
 
 Open <http://localhost:5173> in your browser. Register a new account, log in, and start using the system.
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 Sales Data Analysis System/
@@ -155,7 +144,7 @@ Sales Data Analysis System/
 └── .gitignore
 ```
 
-## 🔐 Authentication Flow
+##  Authentication Flow
 
 1. User submits email + password to `POST /api/auth/login`
 2. Backend verifies credentials (bcrypt) and issues a JWT access token
@@ -163,7 +152,7 @@ Sales Data Analysis System/
 4. The token expires after 8 hours; on 401, React redirects to `/login`
 5. Logout is client-side: React simply removes the token from `localStorage`
 
-## 🎨 Design System
+##  Design System
 
 Tailwind CSS with a custom theme matching the original branding:
 
@@ -179,7 +168,7 @@ Tailwind CSS with a custom theme matching the original branding:
 
 Dark mode is toggled via the `dark` class on `<html>` (managed by `ThemeContext`) and persisted to `localStorage`.
 
-## 👥 Team
+## Our Team
 
 | Name | Reg. No. | Programme |
 |---|---|---|

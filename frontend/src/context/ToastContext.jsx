@@ -1,16 +1,3 @@
-/**
- * ToastContext — application-wide toast notifications.
- *
- * Replaces the server-side `flash()` mechanism from the Jinja2 era.
- * Renders a fixed-position stack of dismissible toasts at the top right.
- *
- * Usage:
- *   const toast = useToast();
- *   toast.success('Sale recorded!');
- *   toast.error('Insufficient stock');
- *   toast.warning('Date ignored');
- *   toast.info('Tip: ...');
- */
 import { createContext, useCallback, useContext, useState, useEffect } from 'react';
 import { CheckCircle2, AlertCircle, AlertTriangle, Info, X } from 'lucide-react';
 

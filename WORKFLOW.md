@@ -2,7 +2,7 @@
 
 This is the daily routine for committing and merging code on this project. Everyone on the team follows the same flow so we don't end up with tangled history again.
 
-## 🌳 Branching rules
+## Branching rules
 
 - **Never commit directly to `main`.**
 - One branch per feature/fix. Use a clear prefix:
@@ -12,12 +12,12 @@ This is the daily routine for committing and merging code on this project. Every
   - `chore/<short-name>` — config, deps, refactors
 - Delete the branch after the PR is merged.
 
-## 📅 Daily routine
+## Daily routine
 
-### 1. Start your day — sync with `main`
+### 1. Start your day sync with `main`
 
 ```powershell
-cd "D:\4th Year\FYP\Sales Data Analysis System"
+cd to your working directory
 git checkout main
 git pull origin main
 ```
@@ -41,7 +41,7 @@ git add .                           # stage everything (be careful)
 git commit -m "Add CSV export to insights page"
 ```
 
-> 💡 **Commit message style**: present tense, imperative. "Add foo", "Fix bar", "Update baz" — not "Added", "Fixed", "Updates".
+> **Commit message style**: present tense, imperative. "Add foo", "Fix bar", "Update baz" not "Added", "Fixed", "Updates".
 
 ### 4. Push your branch to GitHub
 
@@ -74,7 +74,7 @@ git push origin --delete feature/insights-export-csv   # delete remote branch
 
 ---
 
-## 🔍 Common situations
+## Common situations
 
 ### "I started on the wrong branch"
 
@@ -112,7 +112,7 @@ git merge main                          # bring main's changes into your branch
 ```powershell
 git reset --soft HEAD~1                 # undo commit, keep changes staged
 git reset HEAD~1                        # undo commit, keep changes unstaged
-git reset --hard HEAD~1                 # undo commit AND throw away changes ⚠️
+git reset --hard HEAD~1                 # undo commit AND throw away changes 
 ```
 
 ### "I committed `.env` by accident"
@@ -139,7 +139,7 @@ git clone https://github.com/godwin105/Sales-Data-Analysis-System.git "Sales Dat
 
 ---
 
-## 🚫 Things we never do
+##  Things we never do
 
 - ❌ `git push --force` to `main` (or to anyone else's branch)
 - ❌ Committing `.env`, `node_modules/`, `venv/`, or `__pycache__/`
@@ -149,7 +149,7 @@ git clone https://github.com/godwin105/Sales-Data-Analysis-System.git "Sales Dat
 
 ---
 
-## 📋 PR checklist
+##  PR checklist
 
 Before opening a PR, run through:
 
@@ -163,7 +163,7 @@ Before opening a PR, run through:
 
 ---
 
-## 🆘 Quick reference
+##  Quick reference
 
 | What I want to do | Command |
 |---|---|

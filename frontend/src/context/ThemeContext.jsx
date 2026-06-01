@@ -1,9 +1,3 @@
-/**
- * ThemeContext — light/dark mode toggle.
- *
- * Persists to localStorage. Adds/removes the `dark` class on <html> so
- * Tailwind's class-based dark mode picks it up.
- */
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
 const ThemeContext = createContext(null);

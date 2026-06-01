@@ -19,9 +19,7 @@ import Insights from './pages/Insights';
 import Profile from './pages/Profile';
 import Staff from './pages/Staff';
 
-/**
- * Sends authenticated cashiers to /sales/new and admins to /dashboard.
- */
+/*Sends authenticated cashiers to /sales/new and admins to /dashboard.*/
 function HomeRedirect() {
   const { isAuthenticated, isCashier, isLoading } = useAuth();
   if (isLoading) return null;

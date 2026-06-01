@@ -1,18 +1,3 @@
-/**
- * AuthContext — global auth state for the React app.
- *
- * On mount, hydrates from localStorage if a token exists, then verifies
- * the token by calling /api/auth/me. If verification fails, clears storage.
- *
- * Exposes:
- *   - user: the User object or null
- *   - isAuthenticated: boolean
- *   - isLoading: boolean (during initial token check)
- *   - login(email, password): logs in, stores token, sets user
- *   - register(payload): registers a new business owner (does NOT auto-login)
- *   - logout(): clears token and user
- *   - refreshUser(): re-fetches /api/auth/me (after profile updates)
- */
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { authApi } from '../api/auth';
 import { TOKEN_KEY, USER_KEY } from '../api/client';
@@ -67,7 +52,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const register = useCallback(async (payload) => {
-    // Does not log in — user is redirected to /login after success
+    // Does not log in. user is redirected to /login after success
     return await authApi.register(payload);
   }, []);
 

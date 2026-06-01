@@ -2,9 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* =========================================================================
-   GLOBAL BASE STYLES
-   ========================================================================= */
+/* GLOBAL BASE STYLES */
+  
 @layer base {
   html {
     font-family: 'DM Sans', system-ui, sans-serif;
@@ -31,9 +30,7 @@ input[type='number'] {
 }
 }
 
-/* =========================================================================
-   COMPONENT CLASSES
-   ========================================================================= */
+/*COMPONENT CLASSES*/
 @layer components {
   /* ----- Buttons ----- */
   .btn {
@@ -135,9 +132,7 @@ input[type='number'] {
   }
 }
 
-/* =========================================================================
-   UTILITIES
-   ========================================================================= */
+/* UTILITIES */
 @layer utilities {
   /* Hide scrollbar but keep scrolling */
   .no-scrollbar::-webkit-scrollbar {

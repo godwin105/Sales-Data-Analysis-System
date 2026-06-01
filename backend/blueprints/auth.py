@@ -1,29 +1,3 @@
-"""
-Authentication API blueprint — JWT-based.
-
-Covers UC-01 (Register/Login), UC-07 (Manage Staff Accounts), and the UAT
-additions (profile editing, admin password reset, email-based forgot password).
-
-All endpoints accept and return JSON. Authentication is via JWT bearer
-tokens (Authorization: Bearer <token>) issued at /api/auth/login.
-
-Endpoints:
-    POST   /api/auth/register
-    POST   /api/auth/login
-    POST   /api/auth/logout                       (stateless — client just discards token)
-    GET    /api/auth/me
-    PUT    /api/auth/me                           (update profile)
-    PUT    /api/auth/me/password                  (change own password)
-
-    GET    /api/auth/staff                        (admin: list cashiers)
-    POST   /api/auth/staff                        (admin: add cashier)
-    DELETE /api/auth/staff/<cashier_id>           (admin: remove cashier)
-    POST   /api/auth/staff/<cashier_id>/reset-password  (admin: reset cashier password)
-
-    POST   /api/auth/forgot-password
-    GET    /api/auth/reset-password/<token>       (verify token validity)
-    POST   /api/auth/reset-password/<token>       (set new password)
-"""
 from datetime import datetime, timedelta
 import re
 import secrets
@@ -41,14 +15,13 @@ from utils.email_utils import send_email
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
 
-# =========================================================================
 # VALIDATION HELPERS
-# =========================================================================
+
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 def _err(message, status=400, **extra):
-    """Standard JSON error response."""
+    
     body = {"error": message}
     body.update(extra)
     return jsonify(body), status
@@ -86,15 +59,16 @@ def _validate_required_str(value, field_name, min_len=2, max_len=100):
     return None
 
 
-# =========================================================================
-# REGISTER (FR-01)
-# =========================================================================
+#registration: this section of code enable user to perform registration
+
 @auth_bp.route("/register", methods=["POST"])
 def register():
-    """Business owner self-registration. Creates an admin account."""
+    # Business owner self-registration. Creates an admin account
     data = request.get_json(silent=True) or {}
 
     business_name = (data.get("business_name") or "").strip()
+
+    #user full name
     full_name = (data.get("full_name") or "").strip()
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
@@ -116,7 +90,7 @@ def register():
     if errors:
         return jsonify({"error": "Validation failed", "fields": errors}), 400
 
-    # Uniqueness
+    # Uniqueness(email excistance check)
     if User.query.filter_by(email=email).first():
         return jsonify({
             "error": "Validation failed",
@@ -143,12 +117,10 @@ def register():
     }), 201
 
 
-# =========================================================================
-# LOGIN (FR-02 + FR-05)
-# =========================================================================
+#login session
 @auth_bp.route("/login", methods=["POST"])
 def login():
-    """Authenticate user and issue JWT. Enforces 5-strike lockout (FR-05)."""
+    #Authenticate user and issue JWT. Enforces 5-strike lockout (FR-05).
     data = request.get_json(silent=True) or {}
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""

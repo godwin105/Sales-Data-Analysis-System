@@ -1,21 +1,3 @@
-"""
-Sales Recording & History API blueprint.
-
-Implements Release 3 of the XP plan — Weeks 5-6.
-Covers UC-03 (Record a Sale) and UC-09 (View Sales History):
-    FR-09  Automatic stock deduction
-    FR-11  Record multi-item sale
-    FR-12  Automatic subtotal + total
-    FR-13  Timestamp + recorder linkage
-    FR-14  Reject sale if qty > stock
-    FR-15  Searchable/filterable sales history
-
-Endpoints:
-    GET  /api/sales/products     (in-stock products for sale form)
-    POST /api/sales              (record a sale)
-    GET  /api/sales              (sales history with filters)
-    GET  /api/sales/<id>         (single sale with line items)
-"""
 from datetime import datetime
 from decimal import Decimal
 
@@ -33,7 +15,7 @@ sales_bp = Blueprint("sales", __name__, url_prefix="/api/sales")
 @sales_bp.route("/products", methods=["GET"])
 @cashier_or_admin_required
 def in_stock_products():
-    """List products available to sell (qty > 0, not deleted)."""
+    #List products available to sell (qty > 0, not deleted).
     products = (
         db.session.query(Product)
         .filter(
@@ -50,7 +32,7 @@ def in_stock_products():
 @sales_bp.route("", methods=["POST"])
 @cashier_or_admin_required
 def record_sale():
-    """UC-03: record a new multi-item sale."""
+    #......record a new multi-item sale.
     owner_id = current_user.owner_id
     data = request.get_json(silent=True) or {}
 
@@ -62,18 +44,19 @@ def record_sale():
     # Aggregate items per product (handle duplicates)
     qty_per_product = {}
     for item in raw_items:
+        from decimal import Decimal, InvalidOperation
         if not isinstance(item, dict):
             return jsonify({"error": "Invalid sale submission."}), 400
         try:
             pid = int(item.get("product_id"))
-            qty = int(item.get("quantity"))
-        except (TypeError, ValueError):
+            qty = Decimal(str(item.get("quantity")))
+        except (TypeError, ValueError, InvalidOperation):
             return jsonify({"error": "Product or quantity had invalid value."}), 400
 
-        if qty < 1:
-            return jsonify({"error": "Quantity must be at least 1."}), 400
+        if qty < Decimal("0"):
+            return jsonify({"error": "Quantity must be a positive number."}), 400
 
-        qty_per_product[pid] = qty_per_product.get(pid, 0) + qty
+        qty_per_product[pid] = qty_per_product.get(pid, Decimal("0")) + qty
 
     if not qty_per_product:
         return jsonify({"error": "Please add at least one product to the sale."}), 400
@@ -106,7 +89,7 @@ def record_sale():
                 )
 
             unit_price = product.selling_price
-            subtotal = Decimal(qty) * unit_price
+            subtotal = unit_price * qty
             total_amount += subtotal
             resolved_items.append((product, qty, unit_price, subtotal))
 

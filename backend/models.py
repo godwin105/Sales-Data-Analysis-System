@@ -1,19 +1,10 @@
-"""
-SQLAlchemy models for the Web-Based Sales Data Analysis System.
-
-Each class maps 1:1 to a table in schema.sql and to an entity in
-the ERD (FYP Report, Chapter 4).
-
-NOTE: UserMixin removed (was Flask-Login dependency). Authentication
-now uses JWT via Flask-JWT-Extended — see blueprints/auth.py.
-"""
 from datetime import datetime
+from sqlalchemy import Numeric
 from extensions import db
 
 
-# =========================================================================
-# USER (M1: Authentication)
-# =========================================================================
+# USER (Authentication)
+
 class User(db.Model):
     __tablename__ = "users"
 
@@ -52,7 +43,7 @@ class User(db.Model):
         foreign_keys="Expense.user_id",
     )
 
-    # --- Convenience helpers ---
+    #Convenience helpers
     @property
     def is_admin(self):
         return self.role == "admin"
@@ -82,9 +73,7 @@ class User(db.Model):
         return f"<User {self.email} ({self.role})>"
 
 
-# =========================================================================
-# PRODUCT (M2: Stock Management) — wired in Release 2
-# =========================================================================
+# PRODUCT (Stock Management)
 class Product(db.Model):
     __tablename__ = "products"
 
@@ -97,7 +86,7 @@ class Product(db.Model):
     category = db.Column(db.String(50), nullable=True, index=True)
     purchase_price = db.Column(db.Numeric(10, 2), nullable=False)
     selling_price = db.Column(db.Numeric(10, 2), nullable=False)
-    quantity = db.Column(db.Integer, nullable=False, default=0)
+    quantity =  db.Column(Numeric(10, 2), nullable=False, default=0)
     low_stock_threshold = db.Column(db.Integer, nullable=False, default=5)
     is_deleted = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
@@ -120,9 +109,8 @@ class Product(db.Model):
         }
 
 
-# =========================================================================
-# SALE (M3: Sales Recording) — wired in Release 3
-# =========================================================================
+# SALE (Sales Recording)
+
 class Sale(db.Model):
     __tablename__ = "sales"
 
@@ -170,7 +158,7 @@ class SaleItem(db.Model):
         db.Integer, db.ForeignKey("products.product_id", ondelete="RESTRICT"),
         nullable=False,
     )
-    quantity = db.Column(db.Integer, nullable=False)
+    quantity = db.Column(Numeric(10, 2), nullable=False)
     unit_price = db.Column(db.Numeric(10, 2), nullable=False)
     subtotal = db.Column(db.Numeric(10, 2), nullable=False)
 
@@ -187,9 +175,9 @@ class SaleItem(db.Model):
         }
 
 
-# =========================================================================
-# EXPENSE (M4: Expense Tracking) — wired in Release 4
-# =========================================================================
+
+# EXPENSE (Expense Tracking)
+
 class Expense(db.Model):
     __tablename__ = "expenses"
 
@@ -215,9 +203,9 @@ class Expense(db.Model):
         }
 
 
-# =========================================================================
+
 # PASSWORD RESET (UAT addition)
-# =========================================================================
+
 class PasswordReset(db.Model):
     __tablename__ = "password_resets"
 

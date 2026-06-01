@@ -1,9 +1,7 @@
 import { X } from 'lucide-react';
 import { useEffect } from 'react';
 
-/**
- * Reusable modal. Closes on Escape, click outside, or X button.
- */
+
 export default function Modal({ open, onClose, title, children, size = 'md' }) {
   useEffect(() => {
     if (!open) return;

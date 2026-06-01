@@ -1,6 +1,4 @@
-/**
- * Friendly empty state placeholder.
- */
+
 export default function EmptyState({ icon: Icon, title, message, action }) {
   return (
     <div className="text-center py-12 px-4">

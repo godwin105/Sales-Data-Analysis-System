@@ -1,8 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
-/**
- * Loading indicator for pages while data is being fetched.
- */
+
 export default function PageSpinner({ label }) {
   const { t } = useTranslation();
   const text = label || t('common.loading');

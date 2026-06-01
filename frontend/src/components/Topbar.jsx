@@ -8,9 +8,7 @@ import { useToast } from '../context/ToastContext';
 import { initials, todayLong } from '../utils/format';
 import LanguageSwitcher from './LanguageSwitcher';
 
-/**
- * Top bar: page title, date, language switcher, theme toggle, avatar dropdown.
- */
+//Top bar: page title, date, language switcher, theme toggle, avatar dropdown.
 export default function Topbar({ title, onOpenMenu }) {
   const { user, isAdmin, logout } = useAuth();
   const { isDark, toggle: toggleTheme } = useTheme();

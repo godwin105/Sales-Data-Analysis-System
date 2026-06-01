@@ -1,11 +1,7 @@
 import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 
-/**
- * Password input with show/hide toggle (👁 icon).
- *
- * Props mirror a regular <input>; pass `error` to apply red styling.
- */
+
 export default function PasswordInput({ error, className = '', ...rest }) {
   const [show, setShow] = useState(false);
   return (

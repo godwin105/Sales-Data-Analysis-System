@@ -1,12 +1,7 @@
 import { AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-/**
- * Confirmation modal. Renders nothing when `open` is false.
- *
- * If confirmLabel/cancelLabel are not passed, defaults to translated
- * "Confirm" and "Cancel".
- */
+
 export default function ConfirmDialog({
   open,
   title,

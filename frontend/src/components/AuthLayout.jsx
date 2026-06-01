@@ -4,10 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 import BrandMark from './BrandMark';
 import LanguageSwitcher from './LanguageSwitcher';
 
-/**
- * Shared layout for the public auth pages (login, register, forgot/reset).
- * A centered card on a soft branded background, with theme + language toggles.
- */
+
 export default function AuthLayout({ children }) {
   const { isDark, toggle } = useTheme();
   const { t } = useTranslation();

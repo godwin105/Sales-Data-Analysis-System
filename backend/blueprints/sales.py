@@ -97,7 +97,7 @@ def record_sale():
             user_id=owner_id,
             recorded_by=current_user.user_id,
             total_amount=total_amount,
-            sale_date=datetime.utcnow(),
+            sale_date=datetime.now(),
             notes=notes,
         )
         db.session.add(sale)

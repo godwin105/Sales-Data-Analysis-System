@@ -4,7 +4,7 @@ import { Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import AuthLayout from '../components/AuthLayout';
 import { authApi } from '../api/auth';
-import { extractError } from '../api/client';
+import { extractError, extractFieldErrors } from '../api/client';
 
 export default function ForgotPassword() {
   const { t } = useTranslation();
@@ -13,13 +13,15 @@ export default function ForgotPassword() {
   const [submitting, setSubmitting] = useState(false);
   const [pageError, setPageError] = useState(null);
   const [pageMessage, setPageMessage] = useState(null);
+  const [errors, setErrors] = useState({});
 
   async function handleSubmit(e) {
     e.preventDefault();
     setPageError(null);
+    setErrors({});
 
     if (!email) {
-      setPageError(t('auth.forgot.errorRequired'));
+      setErrors({ email: t('auth.forgot.errorRequired') });
       return;
     }
 
@@ -29,7 +31,12 @@ export default function ForgotPassword() {
       setPageMessage(data.message);
       setSubmitted(true);
     } catch (err) {
-      setPageError(extractError(err, t('auth.forgot.errorFailed')));
+      const fields = extractFieldErrors(err);
+      if (Object.keys(fields).length > 0) {
+        setErrors(fields);
+      } else {
+        setPageError(extractError(err, t('auth.forgot.errorFailed')));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -83,10 +90,11 @@ export default function ForgotPassword() {
                 placeholder={t('auth.forgot.emailPlaceholder')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="form-input pl-10"
+                className={`form-input pl-10 ${errors.email ? 'border-red-400 focus:ring-red-500' : ''}`}
                 required
               />
             </div>
+            {errors.email && <p className="form-error">{errors.email}</p>}
           </div>
 
           <button type="submit" className="btn-primary w-full" disabled={submitting}>

@@ -124,7 +124,7 @@ class Sale(db.Model):
         nullable=False,
     )
     total_amount = db.Column(db.Numeric(10, 2), nullable=False)
-    sale_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
+    sale_date = db.Column(db.DateTime, nullable=False, default=datetime.now, index=True)
     notes = db.Column(db.Text, nullable=True)
 
     items = db.relationship(

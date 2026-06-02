@@ -10,9 +10,9 @@ export default function AuthLayout({ children }) {
   const { t } = useTranslation();
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-950 p-4">
+    <div className="relative h-[100dvh] overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-950">
       {/* Top-right controls */}
-      <div className="flex justify-end p-2 gap-2">
+      <div className="absolute right-4 top-6 z-20 flex gap-2 sm:right-8">
         <LanguageSwitcher variant="auth" />
         <button
           onClick={toggle}
@@ -24,17 +24,14 @@ export default function AuthLayout({ children }) {
       </div>
 
       {/* Centered card */}
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex h-full items-center justify-center overflow-y-auto px-4 py-4">
         <div className="w-full max-w-md">
-          <div className="mb-7">
-            <BrandMark size="lg" />
+          <div className="mb-4">
+            <BrandMark size="md" />
           </div>
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
             {children}
           </div>
-          <p className="text-center text-xs text-slate-500 dark:text-slate-500 mt-5">
-            {t('brand.footer')}
-          </p>
         </div>
       </div>
     </div>

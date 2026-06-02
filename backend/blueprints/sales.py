@@ -53,8 +53,12 @@ def record_sale():
         except (TypeError, ValueError, InvalidOperation):
             return jsonify({"error": "Product or quantity had invalid value."}), 400
 
-        if qty < Decimal("0"):
+        if qty <= Decimal("0"):
             return jsonify({"error": "Quantity must be a positive number."}), 400
+        if qty % Decimal("0.25") != 0:
+            return jsonify({
+                "error": "Quantity must be a whole number, half (0.5), quarter (0.25), or three-quarter (0.75).",
+            }), 400
 
         qty_per_product[pid] = qty_per_product.get(pid, Decimal("0")) + qty
 

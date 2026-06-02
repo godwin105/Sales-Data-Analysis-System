@@ -48,8 +48,8 @@ CREATE TABLE IF NOT EXISTS products (
   category            VARCHAR(50)     NULL,
   purchase_price      DECIMAL(10,2)   NOT NULL,
   selling_price       DECIMAL(10,2)   NOT NULL,
-  quantity            INT             NOT NULL DEFAULT 0,
-  low_stock_threshold INT             NOT NULL DEFAULT 5,
+  quantity            DECIMAL(10,2)   NOT NULL DEFAULT 0,
+  low_stock_threshold DECIMAL(10,2)   NOT NULL DEFAULT 5,
   is_deleted          BOOLEAN         NOT NULL DEFAULT FALSE, -- Release 2: soft-delete (UC-02)
   created_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS sale_items (
   item_id     INT             AUTO_INCREMENT PRIMARY KEY,
   sale_id     INT             NOT NULL,
   product_id  INT             NOT NULL,
-  quantity    INT             NOT NULL,
+  quantity    DECIMAL(10,2)   NOT NULL,
   unit_price  DECIMAL(10,2)   NOT NULL,
   subtotal    DECIMAL(10,2)   NOT NULL,
 

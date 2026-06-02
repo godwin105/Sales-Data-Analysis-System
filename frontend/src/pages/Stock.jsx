@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { stockApi } from '../api/stock';
 import { useToast } from '../context/ToastContext';
 import { extractError, extractFieldErrors } from '../api/client';
-import { formatTZS, formatNumber } from '../utils/format';
+import { formatTZS, formatQuantity } from '../utils/format';
 import PageSpinner from '../components/PageSpinner';
 import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
@@ -120,7 +120,7 @@ export default function Stock() {
                     <td className="text-slate-500 dark:text-slate-400">{p.category || '—'}</td>
                     <td>{formatTZS(p.purchase_price)}</td>
                     <td>{formatTZS(p.selling_price)}</td>
-                    <td>{formatNumber(p.quantity)}</td>
+                    <td>{formatQuantity(p.quantity)}</td>
                     <td>
                       {p.is_low_stock
                         ? <span className="badge-warning">{t('stock.lowStock')}</span>
@@ -298,7 +298,7 @@ function ProductForm({ initial, categories, onCancel, onSuccess }) {
         <div>
           <label className="form-label">{isEdit ? t('stock.form.quantity') : t('stock.form.initialQuantity')}</label>
           <input
-            type="number" min="0"
+            type="number" min="0" step="0.25"
             value={form.quantity}
             onChange={(e) => update('quantity', e.target.value)}
             className={`form-input ${errors.quantity ? 'error' : ''}`}
@@ -308,7 +308,7 @@ function ProductForm({ initial, categories, onCancel, onSuccess }) {
         <div>
           <label className="form-label">{t('stock.form.lowStockThreshold')}</label>
           <input
-            type="number" min="0"
+            type="number" min="0" step="0.25"
             value={form.low_stock_threshold}
             onChange={(e) => update('low_stock_threshold', e.target.value)}
             className={`form-input ${errors.low_stock_threshold ? 'error' : ''}`}
@@ -365,14 +365,14 @@ function RestockForm({ product, onCancel, onSuccess }) {
       <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 text-sm">
         <div className="text-slate-500 dark:text-slate-400">{t('stock.restockForm.currentStock')}</div>
         <div className="font-bold text-slate-800 dark:text-slate-100">
-          {t('stock.restockForm.unitsLabel', { count: product.quantity })}
+          {t('stock.restockForm.unitsLabel', { count: formatQuantity(product.quantity) })}
         </div>
       </div>
 
       <div>
         <label className="form-label">{t('stock.restockForm.additionalQuantity')}</label>
         <input
-          type="number" min="1" required
+          type="number" min="0.25" step="0.25" required
           value={quantity}
           onChange={(e) => setQuantity(e.target.value)}
           className={`form-input ${errors.quantity ? 'error' : ''}`}

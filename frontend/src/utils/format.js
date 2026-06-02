@@ -16,6 +16,13 @@ export function formatNumber(value) {
   return Number(value || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
 }
 
+export function formatQuantity(value) {
+  return Number(value || 0).toLocaleString('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+}
+
 /** "AJ" from "Amina Juma" — for the avatar circle. */
 export function initials(fullName) {
   if (!fullName) return '?';

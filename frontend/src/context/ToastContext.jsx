@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useState, useEffect } from 'react';
+import { createContext, useCallback, useContext, useState } from 'react';
 import { CheckCircle2, AlertCircle, AlertTriangle, Info, X } from 'lucide-react';
 
 const ToastContext = createContext(null);
@@ -10,6 +10,9 @@ const VARIANTS = {
   info:    { Icon: Info,         classes: 'bg-blue-50 border-blue-300 text-blue-800 dark:bg-blue-900/40 dark:border-blue-700 dark:text-blue-200' },
 };
 
+const DEFAULT_DURATION = 1000;
+const MAX_VISIBLE_TOASTS = 3;
+
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
 
@@ -17,9 +20,12 @@ export function ToastProvider({ children }) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const push = useCallback((variant, message, duration = 4500) => {
+  const push = useCallback((variant, message, duration = DEFAULT_DURATION) => {
     const id = Math.random().toString(36).slice(2);
-    setToasts((prev) => [...prev, { id, variant, message }]);
+    setToasts((prev) => {
+      const deduped = prev.filter((t) => t.message !== message || t.variant !== variant);
+      return [...deduped, { id, variant, message }].slice(-MAX_VISIBLE_TOASTS);
+    });
     if (duration > 0) {
       setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -47,7 +53,7 @@ export function ToastProvider({ children }) {
 function ToastStack({ toasts, dismiss }) {
   if (toasts.length === 0) return null;
   return (
-    <div className="fixed top-4 right-4 z-[1000] flex flex-col gap-2 max-w-sm w-[calc(100%-2rem)] sm:w-auto">
+    <div className="fixed bottom-4 right-4 z-[1000] pointer-events-none flex flex-col-reverse gap-2 max-w-sm w-[calc(100%-2rem)] sm:w-auto">
       {toasts.map((t) => {
         const v = VARIANTS[t.variant] || VARIANTS.info;
         const Icon = v.Icon;
@@ -55,13 +61,13 @@ function ToastStack({ toasts, dismiss }) {
           <div
             key={t.id}
             role="alert"
-            className={`flex items-start gap-3 px-4 py-3 rounded-lg border shadow-lg ${v.classes} animate-[slideIn_0.2s_ease-out]`}
+            className={`flex items-start gap-3 px-3.5 py-2.5 rounded-md border shadow-lg ${v.classes} animate-[slideIn_0.18s_ease-out]`}
           >
             <Icon size={20} className="flex-shrink-0 mt-0.5" />
             <p className="text-sm font-medium flex-1">{t.message}</p>
             <button
               onClick={() => dismiss(t.id)}
-              className="flex-shrink-0 hover:opacity-70 transition-opacity"
+              className="pointer-events-auto flex-shrink-0 hover:opacity-70 transition-opacity"
               aria-label="Dismiss"
             >
               <X size={16} />
@@ -71,8 +77,8 @@ function ToastStack({ toasts, dismiss }) {
       })}
       <style>{`
         @keyframes slideIn {
-          from { transform: translateX(100%); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
+          from { transform: translateY(12px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
         }
       `}</style>
     </div>

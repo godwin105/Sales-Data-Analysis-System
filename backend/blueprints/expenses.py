@@ -8,7 +8,7 @@ from sqlalchemy import func
 
 from extensions import db
 from models import Expense, Sale, SaleItem, Product
-from utils.decorators import admin_required
+from utils.decorators import cashier_or_admin_required
 
 expenses_bp = Blueprint("expenses", __name__, url_prefix="/api/expenses")
 
@@ -142,7 +142,7 @@ def _validate_expense_payload(data):
 # ROUTES
 # =========================================================================
 @expenses_bp.route("", methods=["GET"])
-@admin_required
+@cashier_or_admin_required
 def list_expenses():
     owner_id = current_user.owner_id
 
@@ -172,7 +172,7 @@ def list_expenses():
 
 
 @expenses_bp.route("", methods=["POST"])
-@admin_required
+@cashier_or_admin_required
 def add_expense():
     """FR-16: record an expense."""
     data = request.get_json(silent=True) or {}
@@ -200,7 +200,7 @@ def add_expense():
 
 
 @expenses_bp.route("/<int:expense_id>", methods=["DELETE"])
-@admin_required
+@cashier_or_admin_required
 def delete_expense(expense_id):
     expense = db.session.query(Expense).filter(
         Expense.expense_id == expense_id,

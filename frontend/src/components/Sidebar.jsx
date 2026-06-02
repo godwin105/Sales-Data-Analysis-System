@@ -11,13 +11,13 @@ export default function Sidebar({ isOpen, onClose }) {
   const { isAdmin } = useAuth();
   const { t } = useTranslation();
 
-  // All nav items; cashier sees a subset (only sales recording + history)
+  // All nav items; cashier sees a subset for daily operations.
   const allItems = [
     { to: '/dashboard',     labelKey: 'nav.dashboard',     icon: LayoutDashboard, adminOnly: true },
     { to: '/stock',         labelKey: 'nav.stock',         icon: Package,         adminOnly: true },
     { to: '/sales/new',     labelKey: 'nav.recordSale',    icon: ShoppingCart,    adminOnly: false },
     { to: '/sales/history', labelKey: 'nav.salesHistory',  icon: History,         adminOnly: false },
-    { to: '/expenses',      labelKey: 'nav.expenses',      icon: Receipt,         adminOnly: true },
+    { to: '/expenses',      labelKey: 'nav.expenses',      icon: Receipt,         adminOnly: false },
     { to: '/reports',       labelKey: 'nav.reports',       icon: FileText,        adminOnly: true },
     { to: '/insights',      labelKey: 'nav.insights',      icon: TrendingUp,      adminOnly: true },
   ];

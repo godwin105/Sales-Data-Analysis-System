@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { salesApi } from '../api/sales';
 import { useToast } from '../context/ToastContext';
 import { extractError } from '../api/client';
-import { formatTZS, formatDateTime, formatNumber } from '../utils/format';
+import { formatTZS, formatDateTime, formatQuantity } from '../utils/format';
 import PageSpinner from '../components/PageSpinner';
 import EmptyState from '../components/EmptyState';
 
@@ -160,7 +160,7 @@ export default function SalesHistory() {
                           {s.items?.map((it) => (
                             <tr key={it.item_id} className="text-slate-700 dark:text-slate-300">
                               <td className="py-1.5">{it.product_name}</td>
-                              <td className="py-1.5 text-right">{formatNumber(it.quantity)}</td>
+                              <td className="py-1.5 text-right">{formatQuantity(it.quantity)}</td>
                               <td className="py-1.5 text-right">{formatTZS(it.unit_price)}</td>
                               <td className="py-1.5 text-right font-bold">{formatTZS(it.subtotal)}</td>
                             </tr>

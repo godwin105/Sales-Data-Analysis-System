@@ -154,7 +154,7 @@ export default function RecordSale() {
 
               <div className="sm:col-span-2">
                 <input
-                  type="number" min="1"
+                  type="number" min="0.25" step="0.25"
                   value={line.quantity}
                   onChange={(e) => updateRow(line.rowId, 'quantity', e.target.value)}
                   className={`form-input ${line.exceedsStock ? 'error' : ''}`}
@@ -205,7 +205,7 @@ export default function RecordSale() {
         />
       </div>
 
-      <div className="card flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-gradient-to-r from-brand-50 to-white dark:from-brand-900/20 dark:to-slate-800 border-brand-200 dark:border-brand-800">
+      <div className="card flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-gradient-to-r from-brand-50 to-white border-brand-200 dark:bg-slate-800 dark:bg-none dark:border-slate-700">
         <div>
           <div className="text-xs uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400">
             {t('sales.totalAmount')}

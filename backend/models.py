@@ -87,7 +87,7 @@ class Product(db.Model):
     purchase_price = db.Column(db.Numeric(10, 2), nullable=False)
     selling_price = db.Column(db.Numeric(10, 2), nullable=False)
     quantity =  db.Column(Numeric(10, 2), nullable=False, default=0)
-    low_stock_threshold = db.Column(db.Integer, nullable=False, default=5)
+    low_stock_threshold = db.Column(Numeric(10, 2), nullable=False, default=5)
     is_deleted = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
@@ -102,8 +102,8 @@ class Product(db.Model):
             "category": self.category,
             "purchase_price": float(self.purchase_price),
             "selling_price": float(self.selling_price),
-            "quantity": self.quantity,
-            "low_stock_threshold": self.low_stock_threshold,
+            "quantity": float(self.quantity),
+            "low_stock_threshold": float(self.low_stock_threshold),
             "is_low_stock": self.is_low_stock,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
@@ -169,7 +169,7 @@ class SaleItem(db.Model):
             "item_id": self.item_id,
             "product_id": self.product_id,
             "product_name": self.product.name if self.product else None,
-            "quantity": self.quantity,
+            "quantity": float(self.quantity),
             "unit_price": float(self.unit_price),
             "subtotal": float(self.subtotal),
         }

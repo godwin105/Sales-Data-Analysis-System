@@ -28,6 +28,15 @@ def _validate_decimal(value, field_name, *, min_value=Decimal("0"), required=Tru
     return d, None
 
 
+def _validate_quantity(value, field_name, *, min_value=Decimal("0"), required=True):
+    d, err = _validate_decimal(value, field_name, min_value=min_value, required=required)
+    if err or d is None:
+        return d, err
+    if d % Decimal("0.25") != 0:
+        return None, f"{field_name} must use whole, half (0.5), quarter (0.25), or three-quarter (0.75) units."
+    return d, None
+
+
 def _validate_int(value, field_name, *, min_value=0, required=True, default=None):
     if value is None or value == "":
         if required:
@@ -64,7 +73,7 @@ def _validate_product_payload(data, *, editing_id=None):
     if err:
         errors["selling_price"] = err
 
-    quantity, err = _validate_decimal(
+    quantity, err = _validate_quantity(
         data.get("quantity"), "Quantity",
         min_value=Decimal("0"),
         required=False,
@@ -72,9 +81,10 @@ def _validate_product_payload(data, *, editing_id=None):
     if err:
         errors["quantity"] = err
 
-    low_stock_threshold, err = _validate_int(
+    low_stock_threshold, err = _validate_quantity(
         data.get("low_stock_threshold"), "Low stock threshold",
-        required=False, default=5,
+        min_value=Decimal("0"),
+        required=False,
     )
     if err:
         errors["low_stock_threshold"] = err
@@ -100,7 +110,7 @@ def _validate_product_payload(data, *, editing_id=None):
         "purchase_price": purchase_price,
         "selling_price": selling_price,
         "quantity": quantity if quantity is not None else Decimal("0"),
-        "low_stock_threshold": low_stock_threshold if low_stock_threshold is not None else 5,
+        "low_stock_threshold": low_stock_threshold if low_stock_threshold is not None else Decimal("5"),
     }, None
 
 
@@ -211,7 +221,10 @@ def restock_product(product_id):
 
     data = request.get_json(silent=True) or {}
 
-    qty, err = _validate_int(data.get("quantity"), "Additional quantity", min_value=1)
+    qty, err = _validate_quantity(
+        data.get("quantity"), "Additional quantity",
+        min_value=Decimal("0.25"),
+    )
     if err:
         return jsonify({"error": "Validation failed", "fields": {"quantity": err}}), 400
 

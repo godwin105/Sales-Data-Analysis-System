@@ -10,6 +10,7 @@ import EmptyState from '../components/EmptyState';
 export default function Reports() {
   const toast = useToast();
   const { t } = useTranslation();
+  const expenseCategoryLabel = (category) => t(`categories.expenses.${category}`, category);
   const [filters, setFilters] = useState({
     type: 'summary',
     period: 'monthly',
@@ -208,7 +209,7 @@ export default function Reports() {
               ) : (
                 <>
                   {Object.entries(report.expenses).map(([cat, amt]) => (
-                    <Row key={cat} label={cat} value={formatTZS(amt)} />
+                    <Row key={cat} label={expenseCategoryLabel(cat)} value={formatTZS(amt)} />
                   ))}
                   <Row label={t('reports.totalExpenses')} value={formatTZS(report.total_expenses)} bold />
                 </>

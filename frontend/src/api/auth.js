@@ -1,11 +1,20 @@
 import { api } from './client';
 
+function multipartConfig() {
+  return { headers: { 'Content-Type': 'multipart/form-data' } };
+}
+
 export const authApi = {
   register: (data) => api.post('/api/auth/register', data),
   login: (data) => api.post('/api/auth/login', data),
   logout: () => api.post('/api/auth/logout'),
   me: () => api.get('/api/auth/me'),
   updateProfile: (data) => api.put('/api/auth/me', data),
+  uploadProfileImage: (file) => {
+    const form = new FormData();
+    form.append('profile_image', file);
+    return api.post('/api/auth/me/profile-image', form, multipartConfig());
+  },
   changePassword: (data) => api.put('/api/auth/me/password', data),
 
   // Staff management

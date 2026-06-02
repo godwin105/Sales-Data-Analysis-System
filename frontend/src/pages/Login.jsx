@@ -43,7 +43,7 @@ export default function Login() {
     { replace: true }
   );
 } catch (err) {
-      setPageError(extractError(err, t('auth.login.errorFailed')));
+      setPageError(loginErrorMessage(err, t));
     } finally {
       setSubmitting(false);
     }
@@ -127,4 +127,19 @@ export default function Login() {
       </form>
     </AuthLayout>
   );
+}
+
+function loginErrorMessage(err, t) {
+  const data = err?.response?.data || {};
+  if (data.code === 'account_locked') {
+    const minutes = data.unlock_in_minutes || 1;
+    const key = data.error?.includes('Try again')
+      ? 'auth.login.errorAccountLockedRetry'
+      : 'auth.login.errorAccountLocked';
+    return t(key, { minutes });
+  }
+  if (data.code === 'invalid_credentials' && data.attempts_remaining != null) {
+    return t('auth.login.errorInvalidCredentials', { attempts: data.attempts_remaining });
+  }
+  return extractError(err, t('auth.login.errorFailed'));
 }

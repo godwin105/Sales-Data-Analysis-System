@@ -20,6 +20,7 @@ const CATEGORY_COLORS = {
 export default function Expenses() {
   const toast = useToast();
   const { t, i18n } = useTranslation();
+  const categoryLabel = (category) => t(`categories.expenses.${category}`, category);
   const [list, setList] = useState([]);
   const [categoryTotals, setCategoryTotals] = useState({});
   const [categories, setCategories] = useState([]);
@@ -108,7 +109,7 @@ export default function Expenses() {
               className={`form-input ${errors.category ? 'error' : ''}`}
             >
               <option value="">{t('expenses.selectCategory')}</option>
-              {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+              {categories.map((c) => <option key={c} value={c}>{categoryLabel(c)}</option>)}
             </select>
             {errors.category && <p className="form-error">{errors.category}</p>}
           </div>
@@ -164,7 +165,7 @@ export default function Expenses() {
             <div className="flex flex-wrap gap-2">
               {Object.entries(categoryTotals).map(([cat, total]) => (
                 <span key={cat} className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${CATEGORY_COLORS[cat] || CATEGORY_COLORS.Miscellaneous}`}>
-                  {cat}: <span className="font-bold">{formatTZS(total)}</span>
+                  {categoryLabel(cat)}: <span className="font-bold">{formatTZS(total)}</span>
                 </span>
               ))}
             </div>
@@ -200,7 +201,7 @@ export default function Expenses() {
                       <td className="whitespace-nowrap">{formatDate(e.expense_date, i18n.language)}</td>
                       <td>
                         <span className={`badge ${CATEGORY_COLORS[e.category] || CATEGORY_COLORS.Miscellaneous}`}>
-                          {e.category}
+                          {categoryLabel(e.category)}
                         </span>
                       </td>
                       <td className="text-slate-500 dark:text-slate-400">

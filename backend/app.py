@@ -10,6 +10,8 @@ Run with:
 """
 from flask import Flask, jsonify
 from flask_jwt_extended import JWTManager
+from sqlalchemy import inspect, text
+from sqlalchemy.exc import SQLAlchemyError
 
 from config import Config
 from extensions import db, bcrypt, jwt, cors
@@ -76,6 +78,10 @@ def create_app(config_class=Config):
     app.register_blueprint(analytics_bp)
     app.register_blueprint(reports_bp)
 
+    # ---- Lightweight compatibility migration ----
+    with app.app_context():
+        _ensure_profile_image_column()
+
     # ---- Health check ----
     @app.route("/api/health")
     def health():
@@ -99,6 +105,19 @@ def create_app(config_class=Config):
             print("✅ Database tables created.")
 
     return app
+
+
+def _ensure_profile_image_column():
+    try:
+        inspector = inspect(db.engine)
+        if not inspector.has_table("users"):
+            return
+        columns = {col["name"] for col in inspector.get_columns("users")}
+        if "profile_image_url" not in columns:
+            db.session.execute(text("ALTER TABLE users ADD COLUMN profile_image_url VARCHAR(255) NULL"))
+            db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
 
 
 app = create_app()

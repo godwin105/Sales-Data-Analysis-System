@@ -1,11 +1,14 @@
 from datetime import datetime, timedelta
+import os
 import re
 import secrets
 import hashlib
+from uuid import uuid4
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import (
     create_access_token, jwt_required, current_user, get_jwt_identity,
 )
+from werkzeug.utils import secure_filename
 
 from extensions import db, bcrypt
 from models import User, PasswordReset, Sale
@@ -18,6 +21,7 @@ auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 # VALIDATION HELPERS
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+ALLOWED_PROFILE_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
 
 
 def _err(message, status=400, **extra):
@@ -57,6 +61,14 @@ def _validate_required_str(value, field_name, min_len=2, max_len=100):
     if len(v) > max_len:
         return f"{field_name} must be at most {max_len} characters."
     return None
+
+
+def _allowed_profile_image(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_PROFILE_IMAGE_EXTENSIONS
+
+
+def _profile_image_dir():
+    return os.path.join(current_app.config["UPLOAD_FOLDER"], "profile_images")
 
 
 #registration: this section of code enable user to perform registration
@@ -174,6 +186,7 @@ def login():
             return _err(
                 f"Invalid email or password. {remaining} attempt(s) remaining.",
                 401,
+                code="invalid_credentials",
                 attempts_remaining=remaining,
             )
 
@@ -240,6 +253,48 @@ def update_profile():
     db.session.commit()
     return jsonify({
         "message": "Profile updated successfully.",
+        "user": current_user.to_dict(),
+    }), 200
+
+
+@auth_bp.route("/me/profile-image", methods=["POST"])
+@jwt_required()
+def upload_profile_image():
+    """Upload or replace the current user's profile picture."""
+    file = request.files.get("profile_image")
+    if file is None or not file.filename:
+        return _err("Please choose an image to upload.", 400, code="missing_profile_image")
+
+    if not _allowed_profile_image(file.filename):
+        return _err(
+            "Profile picture must be a JPG, PNG, or WebP image.",
+            400,
+            code="invalid_profile_image_type",
+        )
+
+    upload_dir = _profile_image_dir()
+    os.makedirs(upload_dir, exist_ok=True)
+
+    original = secure_filename(file.filename)
+    ext = original.rsplit(".", 1)[1].lower()
+    filename = f"user_{current_user.user_id}_{uuid4().hex}.{ext}"
+    path = os.path.join(upload_dir, filename)
+    file.save(path)
+
+    old_url = current_user.profile_image_url
+    current_user.profile_image_url = f"/static/uploads/profile_images/{filename}"
+    db.session.commit()
+
+    if old_url and old_url.startswith("/static/uploads/profile_images/"):
+        old_path = os.path.join(current_app.root_path, old_url.lstrip("/").replace("/", os.sep))
+        try:
+            if os.path.isfile(old_path):
+                os.remove(old_path)
+        except OSError:
+            pass
+
+    return jsonify({
+        "message": "Profile picture updated successfully.",
         "user": current_user.to_dict(),
     }), 200
 

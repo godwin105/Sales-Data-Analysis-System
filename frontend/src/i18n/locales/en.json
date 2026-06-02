@@ -95,6 +95,9 @@
       "createAccount": "Create an account",
       "errorRequired": "Email and password are required.",
       "errorFailed": "Login failed.",
+      "errorInvalidCredentials": "Invalid email or password. {{attempts}} attempt(s) remaining.",
+      "errorAccountLocked": "Account locked for {{minutes}} minute(s) due to too many failed login attempts.",
+      "errorAccountLockedRetry": "Account locked due to too many failed attempts. Try again in {{minutes}} minute(s).",
       "welcomeToast": "Welcome back"
     },
     "register": {
@@ -377,6 +380,10 @@
   "profile": {
     "personalInfo": "Personal Information",
     "changePassword": "Change Password",
+    "profilePicture": "Profile Picture",
+    "uploadPicture": "Upload Picture",
+    "uploadingPicture": "Uploading...",
+    "pictureHelp": "JPG, PNG, or WebP up to 5 MB.",
     "emailAddress": "Email Address",
     "emailHelp": "Email cannot be changed.",
     "fullName": "Full Name",
@@ -391,6 +398,8 @@
     "submitPassword": "Change Password",
     "updating": "Updating...",
     "errorUpdate": "Could not update profile.",
+    "errorPicture": "Could not upload profile picture.",
+    "pictureUpdated": "Profile picture updated successfully.",
     "errorPassword": "Could not change password.",
     "errorMatch": "Passwords must match."
   },
@@ -433,5 +442,20 @@
   "errors": {
     "generic": "Something went wrong.",
     "networkError": "Cannot reach the server. Please check your internet connection."
+  },
+  "categories": {
+    "stock": {
+      "Food": "Food",
+      "Cleaning": "Cleaning",
+      "Beverages": "Beverages",
+      "Other": "Other"
+    },
+    "expenses": {
+      "Rent": "Rent",
+      "Utilities": "Utilities",
+      "Salaries": "Salaries",
+      "Purchase Costs": "Purchase Costs",
+      "Miscellaneous": "Miscellaneous"
+    }
   }
 }

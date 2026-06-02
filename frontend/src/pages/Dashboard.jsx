@@ -62,6 +62,7 @@ export default function Dashboard() {
   const { kpi, recent_sales, charts } = data;
   const tickColor = isDark ? '#94A3B8' : '#64748B';
   const gridColor = isDark ? '#334155' : '#E2E8F0';
+  const expenseLabels = charts.expenses.labels.map((label) => t(`categories.expenses.${label}`, label));
 
   return (
     <div className="space-y-6">
@@ -137,7 +138,7 @@ export default function Dashboard() {
             <div className="h-64 flex items-center justify-center">
               <Doughnut
                 data={{
-                  labels: charts.expenses.labels,
+                  labels: expenseLabels,
                   datasets: [{
                     data: charts.expenses.values,
                     backgroundColor: CHART_COLORS,

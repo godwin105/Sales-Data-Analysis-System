@@ -51,6 +51,10 @@ def _validate_int(value, field_name, *, min_value=0, required=True, default=None
     return i, None
 
 
+def _format_decimal(value):
+    return f"{Decimal(value or 0):,}"
+
+
 def _validate_product_payload(data, *, editing_id=None):
     #Validate the body of an add/edit product request. Returns (clean, errors)
     errors = {}
@@ -245,8 +249,8 @@ def restock_product(product_id):
 
     return jsonify({
         "message": (
-            f"Restocked {qty} unit(s) of '{product.name}'. "
-            f"New quantity: {product.quantity}."
+            f"Restocked {_format_decimal(qty)} unit(s) of '{product.name}'. "
+            f"New quantity: {_format_decimal(product.quantity)}."
         ),
         "product": product.to_dict(),
     }), 200

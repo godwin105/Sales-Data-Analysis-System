@@ -20,11 +20,7 @@ export default function BrandMark({ size = 'md', tagline = true }) {
         <div className={`${s.title} font-bold text-slate-800 dark:text-slate-100`}>
           {t('brand.title')}
         </div>
-        {tagline && (
-          <div className={`${s.subtitle} text-slate-500 dark:text-slate-400 mt-0.5`}>
-            {t('brand.tagline')}
-          </div>
-        )}
+       
       </div>
     </div>
   );

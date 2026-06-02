@@ -63,10 +63,8 @@
   },
   "brand": {
     "title": "Mfumo wa Uchambuzi wa Mauzo",
-    "tagline": "Kwa biashara ndogo Tanzania",
     "shortName": "BIASHARA APP",
-    "subtitle": "Mfumo wa Uchambuzi wa Mauzo",
-    "footer": "Imeundwa kwa biashara ndogo na za kati · Dar es Salaam, Tanzania"
+    "subtitle": "Mfumo wa Uchambuzi wa Mauzo"
   },
   "pageTitle": {
     "dashboard": "Dashibodi",
@@ -103,11 +101,11 @@
       "title": "Fungua akaunti yako",
       "subtitle": "Sajili biashara yako kwa chini ya dakika moja",
       "businessNameLabel": "Jina la Biashara",
-      "businessNamePlaceholder": "Duka la Amina",
+      "businessNamePlaceholder": "Duka la godwin",
       "fullNameLabel": "Jina Kamili",
-      "fullNamePlaceholder": "Amina Juma",
+      "fullNamePlaceholder": "Godwin Tairo",
       "emailLabel": "Barua pepe",
-      "emailPlaceholder": "amina@duka.co.tz",
+      "emailPlaceholder": "godwin@gmail.com",
       "passwordLabel": "Nenosiri",
       "passwordPlaceholder": "Angalau herufi 8",
       "confirmPasswordLabel": "Thibitisha Nenosiri",
@@ -118,13 +116,13 @@
       "logIn": "Ingia",
       "passwordMismatch": "Manenosiri lazima yafanane.",
       "errorFailed": "Usajili umeshindwa.",
-      "successToast": "Akaunti imefunguliwa — tafadhali ingia."
+      "successToast": "Akaunti imefunguliwa tafadhali ingia."
     },
     "forgot": {
       "title": "Umesahau nenosiri lako?",
-      "subtitle": "Andika barua pepe yako na tutakutumia kiungo cha kuweka upya.",
+      "subtitle": "Andika barua pepe yako na tutakutumia link ya kubadili password yako.",
       "emailLabel": "Anwani ya Barua pepe",
-      "emailPlaceholder": "amina@biashara.co.tz",
+      "emailPlaceholder": "godwin@gmail.com",
       "submit": "Tuma Kiungo",
       "submitting": "Inatuma...",
       "backToLogin": "Rudi kuingia",
@@ -158,7 +156,7 @@
     "monthlyProfit": "Faida ya Mwezi",
     "totalProducts": "Jumla ya Bidhaa",
     "lowStockAlerts": "Tahadhari za Bidhaa Pungufu",
-    "salesTrend": "Mwenendo wa Mauzo — Siku 30 zilizopita",
+    "salesTrend": "Mwenendo wa Mauzo Siku 30 zilizopita",
     "topProducts": "Bidhaa 5 Bora kwa Mapato",
     "expenseBreakdown": "Mchanganuo wa Matumizi",
     "recentSales": "Mauzo ya Hivi Karibuni",
@@ -216,7 +214,7 @@
     },
     "restockForm": {
       "currentStock": "Bidhaa zilizopo",
-      "unitsLabel": "Vitengo {{count}}",
+      "unitsLabel": "Vitengo {{formattedCount}}",
       "additionalQuantity": "Idadi ya Kuongeza *",
       "qtyPlaceholder": "k.m. 50",
       "newPurchasePrice": "Bei Mpya ya Ununuzi (si lazima)",
@@ -259,8 +257,8 @@
     "from": "Kuanzia",
     "to": "Hadi",
     "showing": "Inaonyesha",
-    "salesCount_one": "muuzo {{count}}",
-    "salesCount_other": "mauzo {{count}}",
+    "salesCount_one": "muuzo {{formattedCount}}",
+    "salesCount_other": "mauzo {{formattedCount}}",
     "limitReached": "(kikomo kimefikiwa — pungumza vichujio kupata zaidi)",
     "noMatching": "Hakuna mauzo yanayolingana na vichujio",
     "noMatchingMessage": "Jaribu kupanua utafutaji wako.",
@@ -268,8 +266,8 @@
     "noSalesMessage": "Mauzo yataonekana hapa baada ya kurekodi.",
     "loading": "Inapakia mauzo...",
     "recordedBy": "Imerekodiwa na",
-    "items_one": "bidhaa {{count}}",
-    "items_other": "bidhaa {{count}}",
+    "items_one": "bidhaa {{formattedCount}}",
+    "items_other": "bidhaa {{formattedCount}}",
     "tableProduct": "Bidhaa",
     "tableQty": "Idadi",
     "tableUnit": "Bei ya Kitengo",
@@ -365,7 +363,7 @@
     "highExpenseRatio": "Uwiano wa Juu wa Matumizi",
     "highExpenseRatioMessage": "Matumizi yako ni {{ratio}}% ya mapato mwezi huu. Hii iko juu ya kiwango salama (60%) — fikiria kupitia upya aina za matumizi.",
     "revenueGrowing": "Mapato yanaongezeka",
-    "revenueGrowingMessage": "Mapato yako yameongezeka kwa {{change}}% ikilinganishwa na mwezi uliopita — TZS {{gain}} zaidi. Endelea hivyo hivyo!",
+    "revenueGrowingMessage": "Mapato yako yameongezeka kwa {{change}}% ikilinganishwa na mwezi uliopita TZS {{gain}} zaidi. Endelea hivyo hivyo",
     "businessSteady": "Biashara iko thabiti",
     "businessSteadyMessage": "Hakuna tahadhari za haraka kwa sasa. Endelea kurekodi mauzo na matumizi mara kwa mara ili kuona mwenendo na utabiri hapa.",
     "performanceTrends": "Mwenendo wa Utendaji",
@@ -429,7 +427,7 @@
       "successFor": "Nenosiri jipya kwa {{name}}:",
       "successHelp": "Tafadhali mpe karani kwa usalama (ana kwa ana au kupitia njia ya faragha).",
       "done": "Imekamilika",
-      "error": "Imeshindwa kuweka upya nenosiri."
+      "error": "Imeshindikana kubadili neno la siri."
     }
   },
   "errors": {

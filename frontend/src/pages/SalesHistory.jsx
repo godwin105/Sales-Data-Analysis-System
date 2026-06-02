@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { salesApi } from '../api/sales';
 import { useToast } from '../context/ToastContext';
 import { extractError } from '../api/client';
-import { formatTZS, formatDateTime, formatQuantity } from '../utils/format';
+import { formatNumber, formatTZS, formatDateTime, formatQuantity } from '../utils/format';
 import PageSpinner from '../components/PageSpinner';
 import EmptyState from '../components/EmptyState';
 
@@ -114,7 +114,7 @@ export default function SalesHistory() {
       ) : (
         <div className="card !p-0">
           <div className="px-5 py-3 border-b border-slate-200 dark:border-slate-700 text-sm text-slate-500 dark:text-slate-400">
-            {t('history.showing')} <span className="font-bold text-slate-700 dark:text-slate-200">{t('history.salesCount', { count: sales.length })}</span>
+            {t('history.showing')} <span className="font-bold text-slate-700 dark:text-slate-200">{t('history.salesCount', { count: sales.length, formattedCount: formatNumber(sales.length) })}</span>
             {sales.length === 200 && ` ${t('history.limitReached')}`}
           </div>
           <div className="divide-y divide-slate-200 dark:divide-slate-700">
@@ -129,7 +129,7 @@ export default function SalesHistory() {
                     <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                       {t('history.recordedBy')} <span className="font-medium">{s.recorder_name || '—'}</span>
                       {' · '}
-                      {t('history.items', { count: s.items?.length || 0 })}
+                      {t('history.items', { count: s.items?.length || 0, formattedCount: formatNumber(s.items?.length || 0) })}
                     </div>
                   </div>
                   <div className="flex items-center gap-3 flex-shrink-0">

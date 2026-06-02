@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react';
-import { Languages } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { SUPPORTED_LANGUAGES } from '../i18n';
 
@@ -27,8 +26,8 @@ export default function LanguageSwitcher({ variant = 'default' }) {
 
   // Style variants
   const buttonClass = variant === 'auth'
-    ? 'flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-white/70 dark:bg-slate-800/70 backdrop-blur text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 shadow-sm transition-colors text-sm font-semibold'
-    : 'flex items-center gap-1.5 px-2 py-2 rounded-md text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm font-semibold';
+    ? 'flex items-center px-2.5 py-2 rounded-lg bg-white/70 dark:bg-slate-800/70 backdrop-blur text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 shadow-sm transition-colors text-sm font-semibold'
+    : 'flex items-center px-2 py-2 rounded-md text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-sm font-semibold';
 
   return (
     <div className="relative" ref={ref}>
@@ -39,7 +38,6 @@ export default function LanguageSwitcher({ variant = 'default' }) {
         aria-label="Change language"
         title="Change language"
       >
-        <Languages size={18} />
         <span className="uppercase text-xs">{current}</span>
       </button>
 

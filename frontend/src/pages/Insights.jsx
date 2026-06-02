@@ -9,6 +9,7 @@ import { insightsApi } from '../api/misc';
 import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
 import { extractError } from '../api/client';
+import { formatNumber, formatQuantity, formatTZS } from '../utils/format';
 import PageSpinner from '../components/PageSpinner';
 import EmptyState from '../components/EmptyState';
 
@@ -86,7 +87,7 @@ export default function Insights() {
         />
         <KpiBox
           label={t('insights.criticalAlerts')}
-          value={kpis.critical_alerts}
+          value={formatNumber(kpis.critical_alerts)}
           deltaSuffix={kpis.critical_alerts > 0 ? t('insights.needsAttention') : t('insights.allGood')}
           variant={kpis.critical_alerts > 0 ? 'danger' : 'success'}
         />
@@ -114,11 +115,14 @@ export default function Insights() {
                       <div>
                         <p className="font-semibold text-slate-800 dark:text-slate-100 text-sm">{s.name}</p>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                          {t('insights.sellingPerDay', { rate: s.daily_rate, left: s.units_left })}
+                          {t('insights.sellingPerDay', {
+                            rate: formatQuantity(s.daily_rate),
+                            left: formatQuantity(s.units_left),
+                          })}
                         </p>
                       </div>
                       <span className="text-sm font-bold text-danger whitespace-nowrap">
-                        {t('insights.daysLeft', { days: s.days_left })}
+                        {t('insights.daysLeft', { days: formatQuantity(s.days_left) })}
                       </span>
                     </div>
                   ))}
@@ -137,7 +141,7 @@ export default function Insights() {
                   {t('insights.highExpenseRatio')}
                 </h3>
                 <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
-                  {t('insights.highExpenseRatioMessage', { ratio: priority_alerts.expense_ratio })}
+                  {t('insights.highExpenseRatioMessage', { ratio: formatPercent(priority_alerts.expense_ratio) })}
                 </p>
               </div>
             </div>
@@ -153,7 +157,7 @@ export default function Insights() {
                   {t('insights.revenueGrowing')}
                 </h3>
                 <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
-                  {t('insights.revenueGrowingMessage', { change: kpis.revenue_change, gain: kpis.revenue_gain_display })}
+                  {t('insights.revenueGrowingMessage', { change: formatPercent(kpis.revenue_change), gain: kpis.revenue_gain_display })}
                 </p>
               </div>
             </div>
@@ -238,7 +242,7 @@ export default function Insights() {
                   borderRadius: 6,
                 }],
               }}
-              options={{ ...moneyOpts(tickColor, gridColor), indexAxis: 'y' }}
+              options={{ ...numberOpts(tickColor, gridColor), indexAxis: 'y' }}
             />
           ) : (
             <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-12">
@@ -251,7 +255,7 @@ export default function Insights() {
   );
 }
 
-function KpiBox({ label, value, delta, deltaSuffix, positive, variant, isPercent }) {
+function KpiBox({ label, value, delta, deltaSuffix, positive, variant }) {
   let deltaIcon = null;
   let deltaClass = 'text-slate-500';
   if (typeof delta === 'number') {
@@ -271,7 +275,7 @@ function KpiBox({ label, value, delta, deltaSuffix, positive, variant, isPercent
         {deltaIcon && (
           <span className={`flex items-center gap-0.5 font-semibold ${deltaClass}`}>
             {deltaIcon}
-            {Math.abs(delta).toFixed(1)}{isPercent ? '%' : '%'}
+            {formatPercent(Math.abs(delta))}%
           </span>
         )}
         <span className="text-slate-500 dark:text-slate-400">{deltaSuffix}</span>
@@ -295,7 +299,7 @@ function legendOpts(tickColor, gridColor) {
     plugins: { legend: { labels: { color: tickColor, font: { size: 11 }, boxWidth: 14 } } },
     scales: {
       x: { ticks: { color: tickColor, font: { size: 10 } }, grid: { display: false } },
-      y: { ticks: { color: tickColor, font: { size: 10 }, callback: (v) => v >= 1000 ? `${v/1000}k` : v }, grid: { color: gridColor }, beginAtZero: true },
+      y: { ticks: { color: tickColor, font: { size: 10 }, callback: (v) => formatNumber(v) }, grid: { color: gridColor }, beginAtZero: true },
     },
   };
 }
@@ -305,7 +309,7 @@ function percentOpts(tickColor, gridColor) {
     plugins: { legend: { display: false } },
     scales: {
       x: { ticks: { color: tickColor, font: { size: 10 } }, grid: { display: false } },
-      y: { ticks: { color: tickColor, font: { size: 10 }, callback: (v) => `${v}%` }, grid: { color: gridColor } },
+      y: { ticks: { color: tickColor, font: { size: 10 }, callback: (v) => `${formatPercent(v)}%` }, grid: { color: gridColor } },
     },
   };
 }
@@ -315,7 +319,25 @@ function moneyOpts(tickColor, gridColor) {
     plugins: { legend: { display: false } },
     scales: {
       x: { ticks: { color: tickColor, font: { size: 10 } }, grid: { display: false } },
-      y: { ticks: { color: tickColor, font: { size: 10 }, callback: (v) => v >= 1000 ? `${v/1000}k` : v }, grid: { color: gridColor }, beginAtZero: true },
+      y: { ticks: { color: tickColor, font: { size: 10 }, callback: (v) => formatTZS(v) }, grid: { color: gridColor }, beginAtZero: true },
     },
   };
+}
+
+function numberOpts(tickColor, gridColor) {
+  return {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: tickColor, font: { size: 10 } }, grid: { display: false } },
+      y: { ticks: { color: tickColor, font: { size: 10 }, callback: (v) => formatNumber(v) }, grid: { color: gridColor }, beginAtZero: true },
+    },
+  };
+}
+
+function formatPercent(value) {
+  return Number(value || 0).toLocaleString('en-US', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
 }

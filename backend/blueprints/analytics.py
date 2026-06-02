@@ -244,12 +244,6 @@ def _build_insights_charts(owner_id, today):
 
 
 def _short_money(value):
-    """Format a Decimal as '3.08M' / '1.16M' / '450k' / '0'."""
+    """Format a Decimal with thousands separators for display."""
     v = float(value or 0)
-    sign = "-" if v < 0 else ""
-    v = abs(v)
-    if v >= 1_000_000:
-        return f"{sign}{v/1_000_000:.2f}M"
-    if v >= 1_000:
-        return f"{sign}{v/1_000:.0f}k"
-    return f"{sign}{int(v)}"
+    return f"{v:,.0f}"

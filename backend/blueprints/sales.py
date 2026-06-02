@@ -12,6 +12,10 @@ from utils.decorators import cashier_or_admin_required
 sales_bp = Blueprint("sales", __name__, url_prefix="/api/sales")
 
 
+def _format_decimal(value):
+    return f"{Decimal(value or 0):,}"
+
+
 @sales_bp.route("/products", methods=["GET"])
 @cashier_or_admin_required
 def in_stock_products():
@@ -89,7 +93,7 @@ def record_sale():
             if product.quantity < qty:
                 raise ValueError(
                     f"Insufficient stock for '{product.name}' — "
-                    f"only {product.quantity} available, you tried to sell {qty}."
+                    f"only {_format_decimal(product.quantity)} available, you tried to sell {_format_decimal(qty)}."
                 )
 
             unit_price = product.selling_price

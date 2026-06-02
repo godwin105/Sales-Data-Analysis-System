@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { salesApi } from '../api/sales';
 import { useToast } from '../context/ToastContext';
 import { extractError } from '../api/client';
-import { formatTZS } from '../utils/format';
+import { formatQuantity, formatTZS } from '../utils/format';
 import PageSpinner from '../components/PageSpinner';
 import EmptyState from '../components/EmptyState';
 
@@ -75,7 +75,7 @@ export default function RecordSale() {
 
     const stockProblem = computed.lines.find((l) => l.product && l.exceedsStock);
     if (stockProblem) {
-      toast.error(t('sales.onlyAvailableMsg', { count: stockProblem.product.quantity, name: stockProblem.product.name }));
+      toast.error(t('sales.onlyAvailableMsg', { count: formatQuantity(stockProblem.product.quantity), name: stockProblem.product.name }));
       return;
     }
 
@@ -146,7 +146,7 @@ export default function RecordSale() {
                   <option value="">{t('sales.chooseProduct')}</option>
                   {products.map((p) => (
                     <option key={p.product_id} value={p.product_id}>
-                      {p.name} — {formatTZS(p.selling_price)} ({t('sales.stockIndicator', { count: p.quantity })})
+                      {p.name} — {formatTZS(p.selling_price)} ({t('sales.stockIndicator', { count: formatQuantity(p.quantity) })})
                     </option>
                   ))}
                 </select>
@@ -160,7 +160,7 @@ export default function RecordSale() {
                   className={`form-input ${line.exceedsStock ? 'error' : ''}`}
                 />
                 {line.exceedsStock && (
-                  <p className="form-error">{t('sales.onlyAvailableShort', { count: line.product.quantity })}</p>
+                  <p className="form-error">{t('sales.onlyAvailableShort', { count: formatQuantity(line.product.quantity) })}</p>
                 )}
               </div>
 

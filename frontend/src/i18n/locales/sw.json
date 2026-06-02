@@ -95,6 +95,9 @@
       "createAccount": "Fungua akaunti",
       "errorRequired": "Barua pepe na nenosiri vinahitajika.",
       "errorFailed": "Kuingia kumeshindwa.",
+      "errorInvalidCredentials": "Barua pepe au nenosiri si sahihi. Zimebaki jaribio {{attempts}}.",
+      "errorAccountLocked": "Akaunti imefungwa kwa dakika {{minutes}} kwa sababu ya majaribio mengi ya kuingia yaliyoshindikana.",
+      "errorAccountLockedRetry": "Akaunti imefungwa kwa sababu ya majaribio mengi yaliyoshindikana. Jaribu tena baada ya dakika {{minutes}}.",
       "welcomeToast": "Karibu tena!"
     },
     "register": {
@@ -377,6 +380,10 @@
   "profile": {
     "personalInfo": "Maelezo Binafsi",
     "changePassword": "Badilisha Nenosiri",
+    "profilePicture": "Picha ya Wasifu",
+    "uploadPicture": "Pakia Picha",
+    "uploadingPicture": "Inapakia...",
+    "pictureHelp": "JPG, PNG, au WebP hadi MB 5.",
     "emailAddress": "Anwani ya Barua pepe",
     "emailHelp": "Barua pepe haiwezi kubadilishwa.",
     "fullName": "Jina Kamili",
@@ -391,6 +398,8 @@
     "submitPassword": "Badilisha Nenosiri",
     "updating": "Inasasisha...",
     "errorUpdate": "Imeshindwa kusasisha wasifu.",
+    "errorPicture": "Imeshindwa kupakia picha ya wasifu.",
+    "pictureUpdated": "Picha ya wasifu imesasishwa.",
     "errorPassword": "Imeshindwa kubadilisha nenosiri.",
     "errorMatch": "Manenosiri lazima yafanane."
   },
@@ -433,5 +442,20 @@
   "errors": {
     "generic": "Hitilafu imetokea.",
     "networkError": "Imeshindwa kufikia seva. Tafadhali angalia muunganisho wako wa intaneti."
+  },
+  "categories": {
+    "stock": {
+      "Food": "Vyakula",
+      "Cleaning": "Usafi",
+      "Beverages": "Vinywaji",
+      "Other": "Nyingine"
+    },
+    "expenses": {
+      "Rent": "Kodi",
+      "Utilities": "Huduma",
+      "Salaries": "Mishahara",
+      "Purchase Costs": "Gharama za Ununuzi",
+      "Miscellaneous": "Mengineyo"
+    }
   }
 }

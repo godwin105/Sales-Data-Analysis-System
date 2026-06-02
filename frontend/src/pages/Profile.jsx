@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { User, Lock } from 'lucide-react';
+import { Camera, User, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { authApi } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { extractError, extractFieldErrors } from '../api/client';
+import { initials } from '../utils/format';
+import { assetUrl } from '../utils/media';
 import PasswordInput from '../components/PasswordInput';
 
 export default function Profile() {
@@ -18,6 +20,7 @@ export default function Profile() {
   });
   const [profileErrors, setProfileErrors] = useState({});
   const [savingProfile, setSavingProfile] = useState(false);
+  const [uploadingPicture, setUploadingPicture] = useState(false);
 
   const [pwd, setPwd] = useState({
     current_password: '',
@@ -44,6 +47,23 @@ export default function Profile() {
       }
     } finally {
       setSavingProfile(false);
+    }
+  }
+
+  async function handlePictureChange(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    setUploadingPicture(true);
+    try {
+      await authApi.uploadProfileImage(file);
+      toast.success(t('profile.pictureUpdated'));
+      await refreshUser();
+    } catch (err) {
+      toast.error(extractError(err, t('profile.errorPicture')));
+    } finally {
+      setUploadingPicture(false);
     }
   }
 
@@ -83,6 +103,35 @@ export default function Profile() {
         </h3>
 
         <div className="space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="w-20 h-20 rounded-full overflow-hidden bg-gradient-to-br from-brand-500 to-brand-700 text-white font-bold text-xl flex items-center justify-center shadow-sm flex-shrink-0">
+              {user?.profile_image_url ? (
+                <img
+                  src={assetUrl(user.profile_image_url)}
+                  alt={t('profile.profilePicture')}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                initials(user?.full_name)
+              )}
+            </div>
+            <div>
+              <label className="form-label">{t('profile.profilePicture')}</label>
+              <label className="btn-secondary inline-flex cursor-pointer">
+                <Camera size={16} />
+                {uploadingPicture ? t('profile.uploadingPicture') : t('profile.uploadPicture')}
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={handlePictureChange}
+                  className="hidden"
+                  disabled={uploadingPicture}
+                />
+              </label>
+              <p className="form-help mt-1">{t('profile.pictureHelp')}</p>
+            </div>
+          </div>
+
           <div>
             <label className="form-label">{t('profile.emailAddress')}</label>
             <input

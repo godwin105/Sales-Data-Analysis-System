@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+UPLOAD_FOLDER = os.path.join(BASE_DIR, "static", "uploads")
 
 
 class Config:
@@ -79,3 +80,7 @@ class Config:
     # If MAIL_USERNAME is blank, the app writes reset links to the console
     # instead of actually sending (useful for testing without SMTP setup)
     MAIL_DRY_RUN = not MAIL_USERNAME
+
+    # ---- Uploads ----
+    UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", UPLOAD_FOLDER)
+    MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH", 5 * 1024 * 1024))

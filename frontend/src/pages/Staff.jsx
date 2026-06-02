@@ -5,6 +5,7 @@ import { authApi } from '../api/auth';
 import { useToast } from '../context/ToastContext';
 import { extractError, extractFieldErrors } from '../api/client';
 import { formatDate, initials } from '../utils/format';
+import { assetUrl } from '../utils/media';
 import PageSpinner from '../components/PageSpinner';
 import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
@@ -82,8 +83,16 @@ export default function Staff() {
           {cashiers.map((c) => (
             <div key={c.user_id} className="card">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-white font-bold flex items-center justify-center">
-                  {initials(c.full_name)}
+                <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-brand-500 to-brand-700 text-white font-bold flex items-center justify-center">
+                  {c.profile_image_url ? (
+                    <img
+                      src={assetUrl(c.profile_image_url)}
+                      alt={c.full_name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    initials(c.full_name)
+                  )}
                 </div>
                 <div className="min-w-0">
                   <p className="font-bold text-slate-800 dark:text-slate-100 truncate">{c.full_name}</p>

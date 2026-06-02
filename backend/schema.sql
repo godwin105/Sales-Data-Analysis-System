@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS users (
   full_name             VARCHAR(100)    NOT NULL,
   email                 VARCHAR(100)    NOT NULL UNIQUE,
   password_hash         VARCHAR(255)    NOT NULL,
+  profile_image_url     VARCHAR(255)    NULL,
   role                  ENUM('admin','cashier') NOT NULL DEFAULT 'admin',
   parent_user_id        INT             NULL,
   failed_login_attempts INT             NOT NULL DEFAULT 0,

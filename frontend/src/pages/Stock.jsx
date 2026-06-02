@@ -13,6 +13,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 export default function Stock() {
   const toast = useToast();
   const { t } = useTranslation();
+  const categoryLabel = (category) => t(`categories.stock.${category}`, category);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,9 +45,10 @@ export default function Stock() {
     const q = search.trim().toLowerCase();
     return products.filter((p) =>
       p.name.toLowerCase().includes(q) ||
-      (p.category && p.category.toLowerCase().includes(q))
+      (p.category && p.category.toLowerCase().includes(q)) ||
+      (p.category && categoryLabel(p.category).toLowerCase().includes(q))
     );
-  }, [products, search]);
+  }, [products, search, t]);
 
   async function handleDelete() {
     if (!deleteCandidate) return;
@@ -117,7 +119,7 @@ export default function Stock() {
                 {filtered.map((p) => (
                   <tr key={p.product_id} className={p.is_low_stock ? 'bg-amber-50/60 dark:bg-amber-900/20' : ''}>
                     <td className="font-medium">{p.name}</td>
-                    <td className="text-slate-500 dark:text-slate-400">{p.category || '—'}</td>
+                    <td className="text-slate-500 dark:text-slate-400">{p.category ? categoryLabel(p.category) : '—'}</td>
                     <td>{formatTZS(p.purchase_price)}</td>
                     <td>{formatTZS(p.selling_price)}</td>
                     <td>{formatQuantity(p.quantity)}</td>
@@ -201,6 +203,7 @@ export default function Stock() {
 function ProductForm({ initial, categories, onCancel, onSuccess }) {
   const toast = useToast();
   const { t } = useTranslation();
+  const categoryLabel = (category) => t(`categories.stock.${category}`, category);
   const isEdit = !!initial;
   const [form, setForm] = useState({
     name: initial?.name || '',
@@ -266,7 +269,7 @@ function ProductForm({ initial, categories, onCancel, onSuccess }) {
           className={`form-input ${errors.category ? 'error' : ''}`}
         >
           <option value="">{t('stock.form.categoryNone')}</option>
-          {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+          {categories.map((c) => <option key={c} value={c}>{categoryLabel(c)}</option>)}
         </select>
         {errors.category && <p className="form-error">{errors.category}</p>}
       </div>

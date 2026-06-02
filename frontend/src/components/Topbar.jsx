@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import { initials, todayLong } from '../utils/format';
+import { assetUrl } from '../utils/media';
 import LanguageSwitcher from './LanguageSwitcher';
 
 //Top bar: page title, date, language switcher, theme toggle, avatar dropdown.
@@ -71,8 +72,16 @@ export default function Topbar({ title, onOpenMenu }) {
             onClick={() => setMenuOpen((v) => !v)}
             className="flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-700 px-2 py-1.5 rounded-md transition-colors"
           >
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-white font-bold text-sm flex items-center justify-center shadow-sm">
-              {initials(user?.full_name)}
+            <div className="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-br from-brand-500 to-brand-700 text-white font-bold text-sm flex items-center justify-center shadow-sm">
+              {user?.profile_image_url ? (
+                <img
+                  src={assetUrl(user.profile_image_url)}
+                  alt={user?.full_name || t('nav.profile')}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                initials(user?.full_name)
+              )}
             </div>
             <div className="hidden md:block text-left">
               <div className="text-sm font-semibold text-slate-800 dark:text-slate-100 leading-tight">

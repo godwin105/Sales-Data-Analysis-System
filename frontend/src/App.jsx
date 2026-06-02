@@ -44,7 +44,7 @@ export default function App() {
       <Route path="/login"           element={<PublicOnly><Login /></PublicOnly>} />
       <Route path="/register"        element={<PublicOnly><Register /></PublicOnly>} />
       <Route path="/forgot-password" element={<PublicOnly><ForgotPassword /></PublicOnly>} />
-      <Route path="/reset-password/:token" element={<PublicOnly><ResetPassword /></PublicOnly>} />
+      <Route path="/reset-password/:token" element={<ResetPassword />} />
 
       {/* Authenticated app */}
       <Route element={

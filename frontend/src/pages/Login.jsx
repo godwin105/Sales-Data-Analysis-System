@@ -32,10 +32,17 @@ export default function Login() {
 
     setSubmitting(true);
     try {
-      const data = await login(email.trim(), password);
-      toast.success(data.message || t('auth.login.welcomeToast'));
-      navigate(from, { replace: true });
-    } catch (err) {
+  const data = await login(email.trim(), password);
+
+  toast.success(data.message || t('auth.login.welcomeToast'));
+
+  navigate(
+    data.user.role === 'cashier'
+      ? '/sales/new'
+      : '/dashboard',
+    { replace: true }
+  );
+} catch (err) {
       setPageError(extractError(err, t('auth.login.errorFailed')));
     } finally {
       setSubmitting(false);
@@ -70,7 +77,7 @@ export default function Login() {
                 id="email"
                 type="email"
                 autoComplete="email"
-                placeholder="amina@biashara.co.tz"
+                placeholder="teddie@biashara.co.tz"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="form-input pl-10"

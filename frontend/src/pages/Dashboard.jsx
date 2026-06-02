@@ -239,7 +239,7 @@ function lineOpts(tickColor, gridColor) {
     scales: {
       x: { ticks: { color: tickColor, font: { size: 10 } }, grid: { display: false } },
       y: {
-        ticks: { color: tickColor, font: { size: 10 }, callback: (v) => 'TZS ' + (v >= 1000 ? `${v / 1000}k` : v) },
+        ticks: { color: tickColor, font: { size: 10 }, callback: (v) => formatTZS(v) },
         grid: { color: gridColor, drawBorder: false }, beginAtZero: true,
       },
     },
@@ -252,7 +252,7 @@ function barOpts(tickColor, gridColor, horizontal = false) {
     indexAxis: horizontal ? 'y' : 'x',
     plugins: { legend: { display: false } },
     scales: {
-      x: { ticks: { color: tickColor, font: { size: 10 } }, grid: { color: gridColor } },
+      x: { ticks: { color: tickColor, font: { size: 10 }, callback: (v) => horizontal ? formatTZS(v) : formatNumber(v) }, grid: { color: gridColor } },
       y: { ticks: { color: tickColor, font: { size: 10 } }, grid: { color: gridColor } },
     },
   };

@@ -365,7 +365,7 @@ function RestockForm({ product, onCancel, onSuccess }) {
       <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 text-sm">
         <div className="text-slate-500 dark:text-slate-400">{t('stock.restockForm.currentStock')}</div>
         <div className="font-bold text-slate-800 dark:text-slate-100">
-          {t('stock.restockForm.unitsLabel', { count: formatQuantity(product.quantity) })}
+          {t('stock.restockForm.unitsLabel', { count: Number(product.quantity) || 0, formattedCount: formatQuantity(product.quantity) })}
         </div>
       </div>
 

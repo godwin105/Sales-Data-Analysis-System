@@ -1,5 +1,5 @@
 # Web-Based Sales Data Analysis System
-A web-based system that helps small and micro businesses in Tanzania record stock, sales, and expenses, and visualise their performance through interactive analytics — replacing manual book-keeping with simple, accessible digital workflows.
+A web-based system that helps small and micro businesses in Tanzania record stock, sales and expenses, and visualise their performance through interactive analytics replacing manual book keeping with simple, accessible digital workflows.
 
 ##  Architecture
 

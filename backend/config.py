@@ -41,11 +41,18 @@ class Config:
     JWT_HEADER_TYPE = "Bearer"
 
     # ---- CORS ----
-    # Allow the React dev server (default: localhost:5173) to call the API.
+    # Allow the React dev server to call the API from localhost and same-WiFi
+    # devices that open Vite through the machine's LAN IP address.
     # In production this should be the deployed frontend URL.
     cors_origins_raw = os.environ.get(
         "CORS_ORIGINS",
-        "http://localhost:5173,http://127.0.0.1:5173"
+        ",".join([
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            r"http://192\.168\.\d{1,3}\.\d{1,3}:5173",
+            r"http://10\.\d{1,3}\.\d{1,3}\.\d{1,3}:5173",
+            r"http://172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}:5173",
+        ])
     )
     CORS_ORIGINS = [o.strip() for o in cors_origins_raw.split(",") if o.strip()]
 

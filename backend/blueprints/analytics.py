@@ -4,7 +4,7 @@ from collections import defaultdict
 
 from flask import Blueprint, jsonify
 from flask_jwt_extended import current_user
-from sqlalchemy import func
+from sqlalchemy import case, func
 
 from extensions import db
 from models import Sale, SaleItem, Product
@@ -104,16 +104,30 @@ def insights():
 def _stockout_projections(owner_id, today):
     lookback_days = 14
     start_dt = datetime.combine(today - timedelta(days=lookback_days), datetime.min.time())
+    lookback = Decimal(lookback_days)
 
     velocity_rows = (
         db.session.query(
             Product.product_id,
             Product.name,
             Product.quantity,
-            func.coalesce(func.sum(SaleItem.quantity), 0).label("sold"),
+            func.coalesce(
+                func.sum(
+                    case(
+                        (Sale.sale_id.isnot(None), SaleItem.quantity),
+                        else_=Decimal("0"),
+                    )
+                ),
+                0,
+            ).label("sold"),
         )
         .outerjoin(SaleItem, SaleItem.product_id == Product.product_id)
-        .outerjoin(Sale, (SaleItem.sale_id == Sale.sale_id) & (Sale.sale_date >= start_dt))
+        .outerjoin(
+            Sale,
+            (SaleItem.sale_id == Sale.sale_id)
+            & (Sale.user_id == owner_id)
+            & (Sale.sale_date >= start_dt),
+        )
         .filter(
             Product.user_id == owner_id,
             Product.is_deleted.is_(False),
@@ -124,19 +138,20 @@ def _stockout_projections(owner_id, today):
 
     results = []
     for r in velocity_rows:
-        sold = int(r.sold or 0)
-        if sold == 0 or r.quantity == 0:
+        sold = Decimal(r.sold or 0)
+        quantity = Decimal(r.quantity or 0)
+        if sold <= 0 or quantity <= 0:
             continue
-        daily_rate = sold / lookback_days
+        daily_rate = sold / lookback
         if daily_rate <= 0:
             continue
-        days_left = r.quantity / daily_rate
+        days_left = quantity / daily_rate
         if days_left <= 10:
             results.append({
                 "name": r.name,
-                "units_left": r.quantity,
-                "daily_rate": round(daily_rate, 1),
-                "days_left": round(days_left, 1),
+                "units_left": float(quantity),
+                "daily_rate": round(float(daily_rate), 1),
+                "days_left": round(float(days_left), 1),
             })
 
     results.sort(key=lambda x: x["days_left"])

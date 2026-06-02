@@ -10,10 +10,27 @@ import axios from 'axios';
 export const TOKEN_KEY = 'sales_app_token';
 export const USER_KEY = 'sales_app_user';
 
-const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+function getApiBaseURL() {
+  const configured = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+  try {
+    const apiUrl = new URL(configured);
+    const isLocalApiHost = ['localhost', '127.0.0.1', '::1'].includes(apiUrl.hostname);
+
+    if (import.meta.env.DEV && isLocalApiHost) {
+      return '';
+    }
+  } catch {
+    // Fall through to the configured value if it is not an absolute URL.
+  }
+
+  return configured.replace(/\/$/, '');
+}
+
+export const API_BASE_URL = getApiBaseURL();
 
 export const api = axios.create({
-  baseURL,
+  baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
   timeout: 20000,
 });

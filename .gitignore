@@ -29,6 +29,7 @@ backend/venv/
 
 # Flask runtime
 instance/
+backend/static/uploads/
 *.sqlite
 *.db
 

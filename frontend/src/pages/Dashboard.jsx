@@ -9,6 +9,8 @@ import {
 } from 'chart.js';
 import {
   DollarSign, TrendingUp, Package, AlertTriangle, ShoppingCart,
+  BarChart3,
+  BarChart2,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -67,7 +69,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard label={t('dashboard.todayRevenue')} value={formatTZS(kpi.today_revenue)} icon={DollarSign} color="brand" />
+        <KpiCard label={t('dashboard.todayRevenue')} value={formatTZS(kpi.today_revenue)} icon={BarChart2} color="brand" />
         <KpiCard label={t('dashboard.monthlyProfit')} value={formatTZS(kpi.monthly_profit)} icon={TrendingUp} color={kpi.monthly_profit >= 0 ? 'success' : 'danger'} />
         <KpiCard label={t('dashboard.totalProducts')} value={formatNumber(kpi.total_products)} icon={Package} color="warning" />
         <KpiCard label={t('dashboard.lowStockAlerts')} value={formatNumber(kpi.low_stock_count)} icon={AlertTriangle} color={kpi.low_stock_count > 0 ? 'danger' : 'slate'} />

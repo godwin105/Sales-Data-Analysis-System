@@ -33,8 +33,7 @@ export default function Staff() {
       setLoading(false);
     }
   }
-  useEffect(() => { load(); }, []);  // eslint-disable-line react-hooks/exhaustive-deps
-
+  useEffect(() => { load(); }, []);  
   async function handleRemove() {
     if (!removeCandidate) return;
     setBusyRemove(true);

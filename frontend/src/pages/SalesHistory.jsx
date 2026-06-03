@@ -29,7 +29,7 @@ export default function SalesHistory() {
     }
   }
 
-  useEffect(() => { load(); }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, []);
 
   function applyFilters(e) {
     e.preventDefault();

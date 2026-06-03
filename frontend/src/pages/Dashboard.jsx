@@ -48,7 +48,7 @@ export default function Dashboard() {
       .catch((err) => active && toast.error(extractError(err, t('dashboard.errorLoad'))))
       .finally(() => active && setLoading(false));
     return () => { active = false; };
-  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);  
 
   if (loading) return <PageSpinner label={t('dashboard.loading')} />;
   if (!data) {

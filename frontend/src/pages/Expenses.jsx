@@ -54,8 +54,7 @@ export default function Expenses() {
     }
   }
 
-  useEffect(() => { load(); }, []);  // eslint-disable-line react-hooks/exhaustive-deps
-
+  useEffect(() => { load(); }, []);  
   async function handleSubmit(e) {
     e.preventDefault();
     setSubmitting(true);

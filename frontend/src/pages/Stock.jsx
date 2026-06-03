@@ -38,7 +38,7 @@ export default function Stock() {
     }
   }
 
-  useEffect(() => { load(); }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, []);  
 
   const filtered = useMemo(() => {
     if (!search.trim()) return products;

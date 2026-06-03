@@ -331,6 +331,8 @@
     "downloadFailed": "Upakuaji umeshindwa.",
     "downloadedToast": "Ripoti imepakuliwa.",
     "noRecordsToast": "Hakuna kumbukumbu zilizopatikana kwa kipindi kilichochaguliwa.",
+    "comingSoonTitle": "Ripoti zinakuja hivi karibuni",
+    "comingSoonMessage": "Ukurasa huu bado unaendelea kutengenezwa na utapatikana kwenye wasilisho lijalo.",
     "types": {
       "summary": "Muhtasari wa Mauzo na Matumizi",
       "sales": "Ripoti ya Mauzo",
@@ -375,7 +377,9 @@
     "avgRevenueByDay": "Wastani wa Mapato kwa Siku ya Wiki",
     "topSelling": "Bidhaa Zinazouzwa Zaidi (mwezi huu)",
     "noSalesMonth": "Hakuna mauzo mwezi huu bado.",
-    "errorLoad": "Imeshindwa kupakia uchambuzi."
+    "errorLoad": "Imeshindwa kupakia uchambuzi.",
+    "comingSoonTitle": "Uchambuzi wa biashara unakuja hivi karibuni",
+    "comingSoonMessage": "Ukurasa huu bado unaendelea kutengenezwa na utapatikana kwenye wasilisho lijalo."
   },
   "profile": {
     "personalInfo": "Maelezo Binafsi",

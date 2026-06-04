@@ -331,8 +331,6 @@
     "downloadFailed": "Download failed.",
     "downloadedToast": "Report downloaded.",
     "noRecordsToast": "No records found for the selected period.",
-    "comingSoonTitle": "Reports coming soon",
-    "comingSoonMessage": "This page is currently under development and will be available in the next presentation.",
     "types": {
       "summary": "Sales & Expenses Summary",
       "sales": "Sales Report",
@@ -377,9 +375,7 @@
     "avgRevenueByDay": "Average Revenue by Day of Week",
     "topSelling": "Top Selling Products (this month)",
     "noSalesMonth": "No sales this month yet.",
-    "errorLoad": "Could not load insights.",
-    "comingSoonTitle": "Business insights coming soon",
-    "comingSoonMessage": "This page is currently under development and will be available in the next presentation."
+    "errorLoad": "Could not load insights."
   },
   "profile": {
     "personalInfo": "Personal Information",

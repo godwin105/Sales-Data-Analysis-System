@@ -77,6 +77,9 @@ class Config:
     # Password reset tokens expire after 1 hour
     PASSWORD_RESET_TOKEN_MINUTES = 60
 
+    # Email verification tokens expire after 24 hours
+    EMAIL_VERIFICATION_TOKEN_MINUTES = 1440
+
     # If MAIL_USERNAME is blank, the app writes reset links to the console
     # instead of actually sending (useful for testing without SMTP setup)
     MAIL_DRY_RUN = not MAIL_USERNAME

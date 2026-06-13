@@ -6,6 +6,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 import Login from './pages/Login';
 import Register from './pages/Register';
+import CheckEmail from './pages/CheckEmail';
+import VerifyEmail from './pages/VerifyEmail';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 
@@ -41,10 +43,12 @@ export default function App() {
   return (
     <Routes>
       {/* Public routes */}
-      <Route path="/login"           element={<PublicOnly><Login /></PublicOnly>} />
-      <Route path="/register"        element={<PublicOnly><Register /></PublicOnly>} />
-      <Route path="/forgot-password" element={<PublicOnly><ForgotPassword /></PublicOnly>} />
-      <Route path="/reset-password/:token" element={<ResetPassword />} />
+      <Route path="/login"                  element={<PublicOnly><Login /></PublicOnly>} />
+      <Route path="/register"               element={<PublicOnly><Register /></PublicOnly>} />
+      <Route path="/check-email"            element={<PublicOnly><CheckEmail /></PublicOnly>} />
+      <Route path="/verify-email/:token"    element={<VerifyEmail />} />
+      <Route path="/forgot-password"        element={<PublicOnly><ForgotPassword /></PublicOnly>} />
+      <Route path="/reset-password/:token"  element={<ResetPassword />} />
 
       {/* Authenticated app */}
       <Route element={

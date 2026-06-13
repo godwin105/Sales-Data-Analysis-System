@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Menu, Sun, Moon, User, LogOut, Users } from 'lucide-react';
+import { Menu, Sun, Moon, User, LogOut, Users, Store } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
@@ -38,7 +38,7 @@ export default function Topbar({ title, onOpenMenu }) {
   }
 
   return (
-    <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 sm:px-6 py-3.5 flex items-center justify-between">
+    <header className="relative bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 sm:px-6 py-3.5 flex items-center justify-between">
       {/* Left: hamburger (mobile) + page title */}
       <div className="flex items-center gap-3 min-w-0">
         <button
@@ -53,6 +53,18 @@ export default function Topbar({ title, onOpenMenu }) {
           <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">{todayLong(i18n.language)}</p>
         </div>
       </div>
+
+      {/* Center: business name badge */}
+      {user?.business_name && (
+        <div className="absolute left-1/2 -translate-x-1/2 hidden sm:flex items-center pointer-events-none">
+          <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-brand-600 to-violet-600 shadow-md shadow-brand-500/30">
+            <Store size={13} className="flex-shrink-0 text-white/80" />
+            <span className="text-sm font-extrabold text-white tracking-wide truncate max-w-[160px] lg:max-w-[240px]">
+              {user.business_name}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Right: language + theme + avatar */}
       <div className="flex items-center gap-2 sm:gap-3">

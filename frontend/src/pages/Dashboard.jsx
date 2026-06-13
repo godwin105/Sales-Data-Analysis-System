@@ -48,7 +48,68 @@ export default function Dashboard() {
       .catch((err) => active && toast.error(extractError(err, t('dashboard.errorLoad'))))
       .finally(() => active && setLoading(false));
     return () => { active = false; };
-  }, []);  
+  }, []);
+
+  // Month selectors — declared before early returns so hook order is stable
+  const todayDate = new Date();
+  const curYear = todayDate.getFullYear();
+  const curMonth = todayDate.getMonth() + 1;
+
+  const [topMonth, setTopMonth] = useState({ year: curYear, month: curMonth });
+  const [topData, setTopData] = useState(null);
+  const [topLoading, setTopLoading] = useState(false);
+
+  const [trendMonth, setTrendMonth] = useState({ year: curYear, month: curMonth });
+  const [trendData, setTrendData] = useState(null);
+  const [trendLoading, setTrendLoading] = useState(false);
+
+  const [expenseMonth, setExpenseMonth] = useState({ year: curYear, month: curMonth });
+  const [expenseData, setExpenseData] = useState(null);
+  const [expenseLoading, setExpenseLoading] = useState(false);
+
+  // monthOptions uses t() so labels update automatically when language changes
+  const monthOptions = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(curYear, todayDate.getMonth() - i, 1);
+    const m = d.getMonth() + 1;
+    const y = d.getFullYear();
+    return { year: y, month: m, label: `${t(`months.${m}`)} ${y}` };
+  });
+
+  function handleTopMonthChange(e) {
+    const [year, month] = e.target.value.split('-').map(Number);
+    setTopMonth({ year, month });
+    if (year === curYear && month === curMonth) { setTopData(null); return; }
+    setTopLoading(true);
+    dashboardApi
+      .topProductsByMonth(year, month)
+      .then(({ data: d }) => setTopData(d))
+      .catch(() => toast.error(t('dashboard.errorLoad')))
+      .finally(() => setTopLoading(false));
+  }
+
+  function handleTrendMonthChange(e) {
+    const [year, month] = e.target.value.split('-').map(Number);
+    setTrendMonth({ year, month });
+    if (year === curYear && month === curMonth) { setTrendData(null); return; }
+    setTrendLoading(true);
+    dashboardApi
+      .salesTrendByMonth(year, month)
+      .then(({ data: d }) => setTrendData(d))
+      .catch(() => toast.error(t('dashboard.errorLoad')))
+      .finally(() => setTrendLoading(false));
+  }
+
+  function handleExpenseMonthChange(e) {
+    const [year, month] = e.target.value.split('-').map(Number);
+    setExpenseMonth({ year, month });
+    if (year === curYear && month === curMonth) { setExpenseData(null); return; }
+    setExpenseLoading(true);
+    dashboardApi
+      .expensesByMonth(year, month)
+      .then(({ data: d }) => setExpenseData(d))
+      .catch(() => toast.error(t('dashboard.errorLoad')))
+      .finally(() => setExpenseLoading(false));
+  }
 
   if (loading) return <PageSpinner label={t('dashboard.loading')} />;
   if (!data) {
@@ -62,9 +123,12 @@ export default function Dashboard() {
   }
 
   const { kpi, recent_sales, charts } = data;
+  const displayTopData = topData || charts.top_products;
+  const displayTrendData = trendData || charts.trend;
+  const displayExpenseData = expenseData || charts.expenses;
   const tickColor = isDark ? '#94A3B8' : '#64748B';
   const gridColor = isDark ? '#334155' : '#E2E8F0';
-  const expenseLabels = charts.expenses.labels.map((label) => t(`categories.expenses.${label}`, label));
+  const expenseLabels = displayExpenseData.labels.map((label) => t(`categories.expenses.${label}`, label));
 
   return (
     <div className="space-y-6">
@@ -72,29 +136,57 @@ export default function Dashboard() {
         <KpiCard label={t('dashboard.todayRevenue')} value={formatTZS(kpi.today_revenue)} icon={BarChart2} color="brand" />
         <KpiCard label={t('dashboard.monthlyProfit')} value={formatTZS(kpi.monthly_profit)} icon={TrendingUp} color={kpi.monthly_profit >= 0 ? 'success' : 'danger'} />
         <KpiCard label={t('dashboard.totalProducts')} value={formatNumber(kpi.total_products)} icon={Package} color="warning" />
-        <KpiCard label={t('dashboard.lowStockAlerts')} value={formatNumber(kpi.low_stock_count)} icon={AlertTriangle} color={kpi.low_stock_count > 0 ? 'danger' : 'slate'} />
+        <KpiCard
+          label={t('dashboard.lowStockAlerts')}
+          value={formatNumber(kpi.low_stock_count)}
+          icon={AlertTriangle}
+          color={kpi.low_stock_count > 0 ? 'danger' : 'slate'}
+          href="/stock"
+          lowStockItems={kpi.low_stock_items || []}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="card">
-          <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-4">
-            {t('dashboard.salesTrend')}
-          </h3>
-          {charts.trend.values.some((v) => v > 0) ? (
-            <div className="h-64">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200">
+              {t('dashboard.salesTrend')}
+            </h3>
+            <select
+              value={`${trendMonth.year}-${trendMonth.month}`}
+              onChange={handleTrendMonthChange}
+              className="text-xs border border-slate-200 dark:border-slate-600 rounded-md px-2 py-1 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            >
+              {monthOptions.map((o) => (
+                <option key={`${o.year}-${o.month}`} value={`${o.year}-${o.month}`}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          {trendLoading ? (
+            <div className="h-72 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-6 w-6 border-2 border-brand-600 border-t-transparent" />
+            </div>
+          ) : displayTrendData.datasets?.length > 0 ? (
+            <div className="h-72">
               <Line
                 data={{
-                  labels: charts.trend.labels,
-                  datasets: [{
-                    label: t('dashboard.todayRevenue'),
-                    data: charts.trend.values,
-                    borderColor: '#2563EB',
-                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                    fill: true, tension: 0.3,
-                    pointRadius: 0, pointHoverRadius: 4, borderWidth: 2,
-                  }],
+                  labels: displayTrendData.labels,
+                  datasets: displayTrendData.datasets.map((ds, i) => ({
+                    label: ds.name,
+                    data: ds.values,
+                    borderColor: CHART_COLORS[i],
+                    backgroundColor: CHART_COLORS[i],
+                    fill: false,
+                    tension: 0.3,
+                    pointRadius: 0,
+                    pointHoverRadius: 5,
+                    pointStyle: 'circle',
+                    borderWidth: 2,
+                  })),
                 }}
-                options={lineOpts(tickColor, gridColor)}
+                options={multiLineOpts(tickColor, gridColor)}
               />
             </div>
           ) : (
@@ -105,22 +197,39 @@ export default function Dashboard() {
         </div>
 
         <div className="card">
-          <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-4">
-            {t('dashboard.topProducts')}
-          </h3>
-          {charts.top_products.values.length > 0 ? (
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200">
+              {t('dashboard.topProducts')}
+            </h3>
+            <select
+              value={`${topMonth.year}-${topMonth.month}`}
+              onChange={handleTopMonthChange}
+              className="text-xs border border-slate-200 dark:border-slate-600 rounded-md px-2 py-1 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            >
+              {monthOptions.map((o) => (
+                <option key={`${o.year}-${o.month}`} value={`${o.year}-${o.month}`}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          {topLoading ? (
+            <div className="h-64 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-6 w-6 border-2 border-brand-600 border-t-transparent" />
+            </div>
+          ) : displayTopData.values.length > 0 ? (
             <div className="h-64">
               <Bar
                 data={{
-                  labels: charts.top_products.labels,
+                  labels: displayTopData.labels,
                   datasets: [{
-                    label: 'TZS',
-                    data: charts.top_products.values,
+                    label: 'Units',
+                    data: displayTopData.values,
                     backgroundColor: CHART_COLORS,
                     borderRadius: 6,
                   }],
                 }}
-                options={barOpts(tickColor, gridColor, true)}
+                options={verticalBarOpts(tickColor, gridColor)}
               />
             </div>
           ) : (
@@ -133,16 +242,33 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="card">
-          <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-4">
-            {t('dashboard.expenseBreakdown')}
-          </h3>
-          {charts.expenses.values.length > 0 ? (
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200">
+              {t('dashboard.expenseBreakdown')}
+            </h3>
+            <select
+              value={`${expenseMonth.year}-${expenseMonth.month}`}
+              onChange={handleExpenseMonthChange}
+              className="text-xs border border-slate-200 dark:border-slate-600 rounded-md px-2 py-1 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            >
+              {monthOptions.map((o) => (
+                <option key={`${o.year}-${o.month}`} value={`${o.year}-${o.month}`}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          {expenseLoading ? (
+            <div className="h-64 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-6 w-6 border-2 border-brand-600 border-t-transparent" />
+            </div>
+          ) : displayExpenseData.values.length > 0 ? (
             <div className="h-64 flex items-center justify-center">
               <Doughnut
                 data={{
                   labels: expenseLabels,
                   datasets: [{
-                    data: charts.expenses.values,
+                    data: displayExpenseData.values,
                     backgroundColor: CHART_COLORS,
                     borderColor: isDark ? '#1E293B' : '#FFFFFF',
                     borderWidth: 2,
@@ -209,7 +335,9 @@ export default function Dashboard() {
   );
 }
 
-function KpiCard({ label, value, icon: Icon, color }) {
+function KpiCard({ label, value, icon: Icon, color, href, lowStockItems }) {
+  const [tooltipVisible, setTooltipVisible] = useState(false);
+
   const palette = {
     brand:   'bg-brand-50 text-brand-600 dark:bg-brand-600/20 dark:text-brand-500',
     success: 'bg-green-50 text-success dark:bg-green-900/30 dark:text-green-400',
@@ -218,8 +346,8 @@ function KpiCard({ label, value, icon: Icon, color }) {
     slate:   'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
   }[color] || 'bg-slate-100 text-slate-600';
 
-  return (
-    <div className="card flex items-start justify-between">
+  const inner = (
+    <>
       <div className="min-w-0">
         <p className="text-xs uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400">
           {label}
@@ -231,32 +359,123 @@ function KpiCard({ label, value, icon: Icon, color }) {
       <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${palette}`}>
         <Icon size={20} />
       </div>
+    </>
+  );
+
+  if (href) {
+    return (
+      <div
+        className="relative"
+        onMouseEnter={() => lowStockItems?.length > 0 && setTooltipVisible(true)}
+        onMouseLeave={() => setTooltipVisible(false)}
+      >
+        <Link
+          to={href}
+          className="card flex items-start justify-between hover:ring-2 hover:ring-brand-300 dark:hover:ring-brand-700 transition-all"
+        >
+          {inner}
+        </Link>
+
+        {tooltipVisible && lowStockItems.length > 0 && (
+          <div className="absolute right-0 top-full mt-1 z-30 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl p-3">
+            <p className="text-xs font-bold text-slate-600 dark:text-slate-300 mb-2 uppercase tracking-wide">
+              Low Stock Products
+            </p>
+            <ul className="space-y-1.5 max-h-48 overflow-y-auto">
+              {lowStockItems.map((item) => (
+                <li key={item.name} className="flex items-center justify-between gap-2 text-xs">
+                  <span className="text-slate-600 dark:text-slate-300 truncate">{item.name}</span>
+                  <span className="flex-shrink-0 font-bold text-danger">
+                    {item.quantity} left
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="card flex items-start justify-between">
+      {inner}
     </div>
   );
 }
 
-function lineOpts(tickColor, gridColor) {
+function multiLineOpts(tickColor, gridColor) {
   return {
     responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
+    interaction: { mode: 'nearest', intersect: false, axis: 'xy' },
+    plugins: {
+      legend: {
+        display: true,
+        position: 'top',
+        labels: {
+          color: tickColor,
+          font: { size: 10 },
+          boxWidth: 10,
+          padding: 8,
+          usePointStyle: true,
+          pointStyleWidth: 10,
+        },
+      },
+      tooltip: {
+        mode: 'nearest',
+        intersect: false,
+        callbacks: {
+          label: (ctx) => ` ${ctx.dataset.label}: ${formatNumber(ctx.parsed.y)} units`,
+        },
+      },
+    },
     scales: {
       x: { ticks: { color: tickColor, font: { size: 10 } }, grid: { display: false } },
       y: {
-        ticks: { color: tickColor, font: { size: 10 }, callback: (v) => formatTZS(v) },
-        grid: { color: gridColor, drawBorder: false }, beginAtZero: true,
+        ticks: { color: tickColor, font: { size: 10 }, callback: (v) => formatNumber(v) },
+        grid: { color: gridColor, drawBorder: false },
+        beginAtZero: true,
       },
     },
   };
 }
 
-function barOpts(tickColor, gridColor, horizontal = false) {
+// Vertical bar: products on X-axis, units sold on Y-axis
+function verticalBarOpts(tickColor, gridColor) {
   return {
     responsive: true, maintainAspectRatio: false,
-    indexAxis: horizontal ? 'y' : 'x',
-    plugins: { legend: { display: false } },
+    indexAxis: 'x',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => ` ${formatNumber(ctx.parsed.y)} units sold`,
+        },
+      },
+    },
     scales: {
-      x: { ticks: { color: tickColor, font: { size: 10 }, callback: (v) => horizontal ? formatTZS(v) : formatNumber(v) }, grid: { color: gridColor } },
-      y: { ticks: { color: tickColor, font: { size: 10 } }, grid: { color: gridColor } },
+      x: {
+        ticks: {
+          color: tickColor,
+          font: { size: 10 },
+          maxRotation: 30,
+          minRotation: 0,
+          callback: function (value) {
+            const label = this.getLabelForValue(value);
+            return label.length > 14 ? label.slice(0, 13) + '…' : label;
+          },
+        },
+        grid: { display: false },
+      },
+      y: {
+        ticks: {
+          color: tickColor,
+          font: { size: 10 },
+          callback: (v) => formatNumber(v),
+        },
+        grid: { color: gridColor, drawBorder: false },
+        beginAtZero: true,
+      },
     },
   };
 }

@@ -4,6 +4,7 @@ import { Mail, Building2, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import AuthLayout from '../components/AuthLayout';
 import PasswordInput from '../components/PasswordInput';
+import PasswordStrengthHint from '../components/PasswordStrengthHint';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { extractError, extractFieldErrors } from '../api/client';
@@ -16,7 +17,8 @@ export default function Register() {
 
   const [form, setForm] = useState({
     business_name: '',
-    full_name: '',
+    first_name: '',
+    last_name: '',
     email: '',
     password: '',
     confirm_password: '',
@@ -43,8 +45,7 @@ export default function Register() {
     setSubmitting(true);
     try {
       await register(form);
-      toast.success(t('auth.register.successToast'));
-      navigate('/login', { replace: true });
+      navigate('/check-email', { replace: true, state: { email: form.email } });
     } catch (err) {
       const fields = extractFieldErrors(err);
       if (Object.keys(fields).length > 0) {
@@ -90,20 +91,35 @@ export default function Register() {
             {errors.business_name && <p className="form-error">{errors.business_name}</p>}
           </div>
 
-          <div>
-            <label className="form-label">{t('auth.register.fullNameLabel')}</label>
-            <div className="relative">
-              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="form-label">{t('auth.register.firstNameLabel')}</label>
+              <div className="relative">
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <input
+                  type="text"
+                  placeholder={t('auth.register.firstNamePlaceholder')}
+                  value={form.first_name}
+                  onChange={(e) => update('first_name', e.target.value)}
+                  className={`form-input pl-10 ${errors.first_name ? 'error' : ''}`}
+                  required
+                />
+              </div>
+              {errors.first_name && <p className="form-error">{errors.first_name}</p>}
+            </div>
+
+            <div>
+              <label className="form-label">{t('auth.register.lastNameLabel')}</label>
               <input
                 type="text"
-                placeholder={t('auth.register.fullNamePlaceholder')}
-                value={form.full_name}
-                onChange={(e) => update('full_name', e.target.value)}
-                className={`form-input pl-10 ${errors.full_name ? 'error' : ''}`}
+                placeholder={t('auth.register.lastNamePlaceholder')}
+                value={form.last_name}
+                onChange={(e) => update('last_name', e.target.value)}
+                className={`form-input ${errors.last_name ? 'error' : ''}`}
                 required
               />
+              {errors.last_name && <p className="form-error">{errors.last_name}</p>}
             </div>
-            {errors.full_name && <p className="form-error">{errors.full_name}</p>}
           </div>
 
           <div>
@@ -133,6 +149,7 @@ export default function Register() {
               error={!!errors.password}
               required
             />
+            <PasswordStrengthHint value={form.password} />
             {errors.password && <p className="form-error">{errors.password}</p>}
           </div>
 

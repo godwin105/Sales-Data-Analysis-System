@@ -10,8 +10,10 @@ from flask_jwt_extended import (
 )
 from werkzeug.utils import secure_filename
 
+from sqlalchemy import func
+
 from extensions import db, bcrypt
-from models import User, PasswordReset, Sale
+from models import User, PasswordReset, Sale, EmailVerification
 from utils.decorators import admin_required
 from utils.email_utils import send_email
 
@@ -49,6 +51,14 @@ def _validate_password(password, field_name="Password"):
         return f"{field_name} must be at least 8 characters."
     if len(password) > 128:
         return f"{field_name} must be at most 128 characters."
+    if not re.search(r"[A-Z]", password):
+        return f"{field_name} must contain at least one uppercase letter (A–Z)."
+    if not re.search(r"[a-z]", password):
+        return f"{field_name} must contain at least one lowercase letter (a–z)."
+    if not re.search(r"[0-9]", password):
+        return f"{field_name} must contain at least one number (0–9)."
+    if not re.search(r"[^A-Za-z0-9]", password):
+        return f"{field_name} must contain at least one special character (e.g. !@#$%^&*)."
     return None
 
 
@@ -75,13 +85,12 @@ def _profile_image_dir():
 
 @auth_bp.route("/register", methods=["POST"])
 def register():
-    # Business owner self-registration. Creates an admin account
+    # Business owner self-registration. Creates an admin account.
     data = request.get_json(silent=True) or {}
 
     business_name = (data.get("business_name") or "").strip()
-
-    #user full name
-    full_name = (data.get("full_name") or "").strip()
+    first_name = (data.get("first_name") or "").strip()
+    last_name = (data.get("last_name") or "").strip()
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
     confirm_password = data.get("confirm_password") or ""
@@ -90,8 +99,10 @@ def register():
     errors = {}
     if msg := _validate_required_str(business_name, "Business name"):
         errors["business_name"] = msg
-    if msg := _validate_required_str(full_name, "Full name"):
-        errors["full_name"] = msg
+    if msg := _validate_required_str(first_name, "First name", min_len=1):
+        errors["first_name"] = msg
+    if msg := _validate_required_str(last_name, "Last name", min_len=1):
+        errors["last_name"] = msg
     if msg := _validate_email(email):
         errors["email"] = msg
     if msg := _validate_password(password):
@@ -102,7 +113,17 @@ def register():
     if errors:
         return jsonify({"error": "Validation failed", "fields": errors}), 400
 
-    # Uniqueness(email excistance check)
+    # Business name uniqueness (case-insensitive, among admin accounts only)
+    if User.query.filter(
+        func.lower(User.business_name) == func.lower(business_name),
+        User.role == "admin",
+    ).first():
+        return jsonify({
+            "error": "Validation failed",
+            "fields": {"business_name": "A business with this name already exists. Please choose a different name."},
+        }), 400
+
+    # Email uniqueness
     if User.query.filter_by(email=email).first():
         return jsonify({
             "error": "Validation failed",
@@ -115,16 +136,20 @@ def register():
 
     user = User(
         business_name=business_name,
-        full_name=full_name,
+        first_name=first_name,
+        last_name=last_name,
         email=email,
         password_hash=hashed,
         role="admin",
+        is_email_verified=False,
     )
     db.session.add(user)
     db.session.commit()
 
+    _send_verification_email(user)
+
     return jsonify({
-        "message": "Account created successfully.",
+        "message": "Account created. Please check your email to verify your account before logging in.",
         "user": user.to_dict(),
     }), 201
 
@@ -190,6 +215,14 @@ def login():
                 attempts_remaining=remaining,
             )
 
+    # Email verification check (admin accounts only — cashiers are added directly by admin)
+    if user.role == "admin" and not user.is_email_verified:
+        return _err(
+            "Your email address has not been verified. Please check your inbox for the verification link.",
+            403,
+            code="email_not_verified",
+        )
+
     # SUCCESS — reset counters, issue token
     user.failed_login_attempts = 0
     user.locked_until = None
@@ -231,14 +264,17 @@ def me():
 @auth_bp.route("/me", methods=["PUT"])
 @jwt_required()
 def update_profile():
-    """Update full_name and (admin only) business_name."""
+    """Update first_name, last_name and (admin only) business_name."""
     data = request.get_json(silent=True) or {}
-    new_full_name = (data.get("full_name") or "").strip()
+    new_first_name = (data.get("first_name") or "").strip()
+    new_last_name = (data.get("last_name") or "").strip()
     new_business_name = (data.get("business_name") or "").strip()
 
     errors = {}
-    if msg := _validate_required_str(new_full_name, "Full name"):
-        errors["full_name"] = msg
+    if msg := _validate_required_str(new_first_name, "First name", min_len=1):
+        errors["first_name"] = msg
+    if msg := _validate_required_str(new_last_name, "Last name", min_len=1):
+        errors["last_name"] = msg
     if current_user.is_admin and new_business_name:
         if msg := _validate_required_str(new_business_name, "Business name"):
             errors["business_name"] = msg
@@ -246,7 +282,8 @@ def update_profile():
     if errors:
         return jsonify({"error": "Validation failed", "fields": errors}), 400
 
-    current_user.full_name = new_full_name
+    current_user.first_name = new_first_name
+    current_user.last_name = new_last_name
     if current_user.is_admin and new_business_name:
         current_user.business_name = new_business_name
 
@@ -354,13 +391,16 @@ def list_staff():
 def add_cashier():
     """Create a new cashier under this business owner."""
     data = request.get_json(silent=True) or {}
-    full_name = (data.get("full_name") or "").strip()
+    first_name = (data.get("first_name") or "").strip()
+    last_name = (data.get("last_name") or "").strip()
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
 
     errors = {}
-    if msg := _validate_required_str(full_name, "Full name"):
-        errors["full_name"] = msg
+    if msg := _validate_required_str(first_name, "First name", min_len=1):
+        errors["first_name"] = msg
+    if msg := _validate_required_str(last_name, "Last name", min_len=1):
+        errors["last_name"] = msg
     if msg := _validate_email(email):
         errors["email"] = msg
     if msg := _validate_password(password, "Temporary password"):
@@ -379,13 +419,16 @@ def add_cashier():
         password, rounds=current_app.config["BCRYPT_LOG_ROUNDS"],
     ).decode("utf-8")
 
+    # Cashiers are added by admin directly — no email verification required
     cashier = User(
         business_name=current_user.business_name,
-        full_name=full_name,
+        first_name=first_name,
+        last_name=last_name,
         email=email,
         password_hash=hashed,
         role="cashier",
         parent_user_id=current_user.user_id,
+        is_email_verified=True,
     )
     db.session.add(cashier)
     db.session.commit()
@@ -476,16 +519,119 @@ def reset_cashier_password(cashier_id):
 
 
 # =========================================================================
-# UAT ADDITION — Email-based password reset
+# EMAIL VERIFICATION (signup flow)
 # =========================================================================
 def _hash_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
 def _frontend_reset_url(token: str) -> str:
-    """Build the React-side reset URL the user clicks in the email."""
     base = current_app.config["FRONTEND_URL"].rstrip("/")
     return f"{base}/reset-password/{token}"
+
+
+def _send_verification_email(user):
+    """Generate a verification token and email it to the user."""
+    token = secrets.token_urlsafe(32)
+    token_hash = _hash_token(token)
+    expires_at = datetime.utcnow() + timedelta(
+        minutes=current_app.config["EMAIL_VERIFICATION_TOKEN_MINUTES"]
+    )
+
+    # Invalidate any existing unused tokens for this user
+    EmailVerification.query.filter_by(user_id=user.user_id, verified_at=None).delete()
+    db.session.flush()
+
+    ev = EmailVerification(
+        user_id=user.user_id,
+        token_hash=token_hash,
+        expires_at=expires_at,
+    )
+    db.session.add(ev)
+    db.session.commit()
+
+    base = current_app.config["FRONTEND_URL"].rstrip("/")
+    verify_url = f"{base}/verify-email/{token}"
+    expires_in_hours = current_app.config["EMAIL_VERIFICATION_TOKEN_MINUTES"] // 60
+
+    subject = "Verify your email — Sales Data Analysis System"
+    text_body = (
+        f"Hi {user.first_name},\n\n"
+        f"Thank you for registering with the Sales Data Analysis System.\n\n"
+        f"Please verify your email address by clicking the link below "
+        f"within {expires_in_hours} hour(s):\n\n"
+        f"{verify_url}\n\n"
+        f"If you did not create this account, you can safely ignore this email.\n\n"
+        f"— Sales Data Analysis System\n"
+    )
+    html_body = f"""
+        <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1E293B;">
+          <h2 style="color:#2563EB;margin-bottom:10px;">Verify your email address</h2>
+          <p>Hi <strong>{user.first_name}</strong>,</p>
+          <p>Thank you for registering with the <strong>Sales Data Analysis System</strong>.
+          Click the button below to verify your email address and activate your account.</p>
+          <p style="margin:28px 0;">
+            <a href="{verify_url}"
+               style="background:#2563EB;color:#fff;padding:12px 24px;border-radius:8px;
+                      text-decoration:none;font-weight:700;display:inline-block;">
+               Verify my email
+            </a>
+          </p>
+          <p style="color:#64748B;font-size:13px;">
+            This link expires in <strong>{expires_in_hours} hour(s)</strong>.
+            If the button doesn't work, copy and paste this URL:
+          </p>
+          <p style="color:#64748B;font-size:12px;word-break:break-all;">{verify_url}</p>
+          <hr style="border:none;border-top:1px solid #E2E8F0;margin:24px 0;">
+          <p style="color:#94A3B8;font-size:12px;">
+            If you did not create an account, you can safely ignore this email.
+          </p>
+        </div>
+    """
+    send_email(to=user.email, subject=subject, html_body=html_body, text_body=text_body)
+
+
+@auth_bp.route("/verify-email/<token>", methods=["GET"])
+def verify_email(token):
+    """Validate an email verification token and activate the account."""
+    ev = EmailVerification.query.filter_by(token_hash=_hash_token(token)).first()
+    if ev is None or not ev.is_valid:
+        return jsonify({"valid": False, "error": "Invalid or expired verification link."}), 400
+
+    ev.user.is_email_verified = True
+    ev.verified_at = datetime.utcnow()
+    db.session.commit()
+
+    return jsonify({
+        "valid": True,
+        "message": "Email verified successfully. You can now log in.",
+    }), 200
+
+
+@auth_bp.route("/resend-verification", methods=["POST"])
+def resend_verification():
+    """Resend a verification email. Always returns the same message to prevent enumeration."""
+    data = request.get_json(silent=True) or {}
+    email = (data.get("email") or "").strip().lower()
+
+    if not email:
+        return jsonify({
+            "error": "Validation failed",
+            "fields": {"email": "Email is required."},
+        }), 400
+
+    user = User.query.filter_by(email=email).first()
+    if user and not user.is_email_verified:
+        _send_verification_email(user)
+
+    return jsonify({
+        "message": "If that email is registered and unverified, we've sent a new verification link. Check your inbox.",
+    }), 200
+
+
+# =========================================================================
+# Email-based password reset
+# =========================================================================
 
 
 @auth_bp.route("/forgot-password", methods=["POST"])

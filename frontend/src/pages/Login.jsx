@@ -7,6 +7,7 @@ import PasswordInput from '../components/PasswordInput';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { extractError } from '../api/client';
+import { authApi } from '../api/auth';
 
 export default function Login() {
   const { login } = useAuth();
@@ -20,6 +21,8 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [pageError, setPageError] = useState(null);
+  const [unverifiedEmail, setUnverifiedEmail] = useState(null);
+  const [resending, setResending] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -30,22 +33,40 @@ export default function Login() {
       return;
     }
 
+    setUnverifiedEmail(null);
     setSubmitting(true);
     try {
-  const data = await login(email.trim(), password);
-
-  toast.success(data.message || t('auth.login.welcomeToast'));
-
-  navigate(
-    data.user.role === 'cashier'
-      ? '/sales/new'
-      : '/dashboard',
-    { replace: true }
-  );
-} catch (err) {
-      setPageError(loginErrorMessage(err, t));
+      const data = await login(email.trim(), password);
+      toast.success(data.message || t('auth.login.welcomeToast'));
+      navigate(
+        data.user.role === 'cashier' ? '/sales/new' : '/dashboard',
+        { replace: true }
+      );
+    } catch (err) {
+      const data = err?.response?.data || {};
+      if (data.code === 'email_not_verified') {
+        setUnverifiedEmail(email.trim());
+        setPageError(t('auth.login.errorEmailNotVerified'));
+      } else {
+        setPageError(loginErrorMessage(err, t));
+      }
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleResend() {
+    if (!unverifiedEmail) return;
+    setResending(true);
+    try {
+      await authApi.resendVerification({ email: unverifiedEmail });
+      toast.success(t('auth.login.resendSuccess'));
+      setUnverifiedEmail(null);
+      setPageError(null);
+    } catch {
+      toast.error(t('auth.login.resendFailed'));
+    } finally {
+      setResending(false);
     }
   }
 
@@ -62,6 +83,16 @@ export default function Login() {
         {pageError && (
           <div className="mb-5 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm dark:bg-red-900/30 dark:border-red-800 dark:text-red-200">
             {pageError}
+            {unverifiedEmail && (
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={resending}
+                className="mt-2 block font-semibold underline underline-offset-2 hover:no-underline"
+              >
+                {resending ? t('auth.login.resending') : t('auth.login.resendLink')}
+              </button>
+            )}
           </div>
         )}
 

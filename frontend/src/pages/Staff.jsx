@@ -165,7 +165,7 @@ export default function Staff() {
 function AddCashierForm({ onCancel, onSuccess }) {
   const toast = useToast();
   const { t } = useTranslation();
-  const [form, setForm] = useState({ full_name: '', email: '', password: '' });
+  const [form, setForm] = useState({ first_name: '', last_name: '', email: '', password: '' });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -191,15 +191,27 @@ function AddCashierForm({ onCancel, onSuccess }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="form-label">{t('staff.addForm.fullName')}</label>
-        <input
-          type="text" required
-          value={form.full_name}
-          onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-          className={`form-input ${errors.full_name ? 'error' : ''}`}
-        />
-        {errors.full_name && <p className="form-error">{errors.full_name}</p>}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="form-label">{t('staff.addForm.firstName')}</label>
+          <input
+            type="text" required
+            value={form.first_name}
+            onChange={(e) => setForm({ ...form, first_name: e.target.value })}
+            className={`form-input ${errors.first_name ? 'error' : ''}`}
+          />
+          {errors.first_name && <p className="form-error">{errors.first_name}</p>}
+        </div>
+        <div>
+          <label className="form-label">{t('staff.addForm.lastName')}</label>
+          <input
+            type="text" required
+            value={form.last_name}
+            onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+            className={`form-input ${errors.last_name ? 'error' : ''}`}
+          />
+          {errors.last_name && <p className="form-error">{errors.last_name}</p>}
+        </div>
       </div>
       <div>
         <label className="form-label">{t('staff.addForm.email')}</label>

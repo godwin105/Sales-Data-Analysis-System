@@ -15,7 +15,8 @@ export default function Profile() {
   const { t } = useTranslation();
 
   const [profile, setProfile] = useState({
-    full_name: user?.full_name || '',
+    first_name: user?.first_name || '',
+    last_name: user?.last_name || '',
     business_name: user?.business_name || '',
   });
   const [profileErrors, setProfileErrors] = useState({});
@@ -143,15 +144,27 @@ export default function Profile() {
             <p className="form-help">{t('profile.emailHelp')}</p>
           </div>
 
-          <div>
-            <label className="form-label">{t('profile.fullName')}</label>
-            <input
-              type="text" required
-              value={profile.full_name}
-              onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-              className={`form-input ${profileErrors.full_name ? 'error' : ''}`}
-            />
-            {profileErrors.full_name && <p className="form-error">{profileErrors.full_name}</p>}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="form-label">{t('profile.firstName')}</label>
+              <input
+                type="text" required
+                value={profile.first_name}
+                onChange={(e) => setProfile({ ...profile, first_name: e.target.value })}
+                className={`form-input ${profileErrors.first_name ? 'error' : ''}`}
+              />
+              {profileErrors.first_name && <p className="form-error">{profileErrors.first_name}</p>}
+            </div>
+            <div>
+              <label className="form-label">{t('profile.lastName')}</label>
+              <input
+                type="text" required
+                value={profile.last_name}
+                onChange={(e) => setProfile({ ...profile, last_name: e.target.value })}
+                className={`form-input ${profileErrors.last_name ? 'error' : ''}`}
+              />
+              {profileErrors.last_name && <p className="form-error">{profileErrors.last_name}</p>}
+            </div>
           </div>
 
           {user?.role === 'admin' && (

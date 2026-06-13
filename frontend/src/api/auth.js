@@ -29,4 +29,8 @@ export const authApi = {
   verifyResetToken: (token) => api.get(`/api/auth/reset-password/${token}`),
   submitResetPassword: (token, data) =>
     api.post(`/api/auth/reset-password/${token}`, data),
+
+  // Email verification
+  verifyEmail: (token) => api.get(`/api/auth/verify-email/${token}`),
+  resendVerification: (data) => api.post('/api/auth/resend-verification', data),
 };

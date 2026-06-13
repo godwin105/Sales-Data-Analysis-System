@@ -98,6 +98,11 @@
       "errorInvalidCredentials": "Barua pepe au nenosiri si sahihi. Zimebaki jaribio {{attempts}}.",
       "errorAccountLocked": "Akaunti imefungwa kwa dakika {{minutes}} kwa sababu ya majaribio mengi ya kuingia yaliyoshindikana.",
       "errorAccountLockedRetry": "Akaunti imefungwa kwa sababu ya majaribio mengi yaliyoshindikana. Jaribu tena baada ya dakika {{minutes}}.",
+      "errorEmailNotVerified": "Barua pepe yako haijathibitishwa. Tafadhali angalia kikasha chako kwa kiungo cha uthibitisho.",
+      "resendLink": "Tuma tena barua pepe ya uthibitisho",
+      "resending": "Inatuma...",
+      "resendSuccess": "Barua pepe ya uthibitisho imetumwa. Angalia kikasha chako.",
+      "resendFailed": "Imeshindwa kutuma barua pepe ya uthibitisho.",
       "welcomeToast": "Karibu tena!"
     },
     "register": {
@@ -105,8 +110,10 @@
       "subtitle": "Sajili biashara yako kwa chini ya dakika moja",
       "businessNameLabel": "Jina la Biashara",
       "businessNamePlaceholder": "Duka la godwin",
-      "fullNameLabel": "Jina Kamili",
-      "fullNamePlaceholder": "Godwin Tairo",
+      "firstNameLabel": "Jina la Kwanza",
+      "firstNamePlaceholder": "Godwin",
+      "lastNameLabel": "Jina la Familia",
+      "lastNamePlaceholder": "Tairo",
       "emailLabel": "Barua pepe",
       "emailPlaceholder": "godwin@gmail.com",
       "passwordLabel": "Nenosiri",
@@ -119,7 +126,7 @@
       "logIn": "Ingia",
       "passwordMismatch": "Manenosiri lazima yafanane.",
       "errorFailed": "Usajili umeshindwa.",
-      "successToast": "Akaunti imefunguliwa tafadhali ingia."
+      "successToast": "Akaunti imefunguliwa. Thibitisha barua pepe yako."
     },
     "forgot": {
       "title": "Umesahau nenosiri lako?",
@@ -152,6 +159,25 @@
       "errorMatch": "Manenosiri lazima yafanane.",
       "errorFailed": "Kuweka upya kumeshindwa."
     },
+    "checkEmail": {
+      "title": "Angalia barua pepe yako",
+      "subtitle": "Tumetuma kiungo cha uthibitisho kwa",
+      "instruction": "Bonyeza kiungo katika barua pepe ili kuwezesha akaunti yako. Kama hukipata, angalia folda ya barua taka.",
+      "resendButton": "Tuma tena barua pepe ya uthibitisho",
+      "resending": "Inatuma...",
+      "resendSuccess": "Barua pepe ya uthibitisho imetumwa. Angalia kikasha chako.",
+      "resendFailed": "Imeshindwa kutuma barua pepe ya uthibitisho.",
+      "backToLogin": "Rudi kuingia"
+    },
+    "verifyEmail": {
+      "verifying": "Inathibitisha barua pepe yako...",
+      "successTitle": "Barua pepe imethibitishwa!",
+      "successMessage": "Barua pepe yako imethibitishwa. Sasa unaweza kuingia.",
+      "errorTitle": "Uthibitisho umeshindwa",
+      "errorMessage": "Kiungo hiki cha uthibitisho si halali au kimekwisha muda wake.",
+      "goToLogin": "Nenda kuingia",
+      "backToLogin": "Rudi kuingia"
+    },
     "logoutToast": "Umetoka."
   },
   "dashboard": {
@@ -159,8 +185,8 @@
     "monthlyProfit": "Faida ya Mwezi",
     "totalProducts": "Jumla ya Bidhaa",
     "lowStockAlerts": "Tahadhari za Bidhaa Pungufu",
-    "salesTrend": "Mwenendo wa Mauzo Siku 30 zilizopita",
-    "topProducts": "Bidhaa 5 Bora kwa Mapato",
+    "salesTrend": "Mwenendo wa Mauzo — Vitengo kwa Siku",
+    "topProducts": "Bidhaa 5 Zinazouzwa Zaidi (Mwezi Huu)",
     "expenseBreakdown": "Mchanganuo wa Matumizi",
     "recentSales": "Mauzo ya Hivi Karibuni",
     "noSalesData": "Hakuna data ya mauzo kwa siku 30 zilizopita bado.",
@@ -342,6 +368,32 @@
       "weekly": "Kila wiki (siku 7)",
       "monthly": "Kila mwezi (mwezi huu)",
       "custom": "Kipindi maalum"
+    },
+    "doc": {
+      "subtitle":       "Mfumo wa Uchambuzi wa Mauzo",
+      "statementDate":  "Tarehe ya Taarifa",
+      "businessName":   "Jina la Biashara",
+      "accountOwner":   "Mmiliki wa Akaunti",
+      "salesSection":   "Miamala ya Mauzo",
+      "expenseSection": "Miamala ya Matumizi",
+      "financialSummary":"Muhtasari wa Fedha",
+      "colSn":          "Na.",
+      "colDate":        "TAREHE",
+      "colDetails":     "MAELEZO",
+      "colQty":         "IDADI",
+      "colRecordedBy":  "ILIREKODIWA NA",
+      "colAmount":      "KIASI (TZS)",
+      "colBalance":     "SALIO LA AKAUNTI",
+      "colCategory":    "KATEGORIA",
+      "colDescription": "MAELEZO",
+      "colCumulative":  "JUMLA INAYOKUSANYIKA",
+      "total":          "JUMLA",
+      "totalSalesLabel":"Jumla ya Miamala ya Mauzo",
+      "grossRevenue":   "Mapato Ghafi",
+      "totalExpenses":  "Jumla ya Matumizi",
+      "noSales":        "Hakuna mauzo yaliyorekodiwa katika kipindi hiki.",
+      "noExpenses":     "Hakuna matumizi yaliyorekodiwa katika kipindi hiki.",
+      "disclaimer":     "Tafadhali kagua taarifa hii kwa makini. Tofauti yoyote inapaswa kuripotiwa haraka. Hati hii ilitengenezwa kiotomatiki na Mfumo wa Uchambuzi wa Mauzo na haihitaji saini."
     }
   },
   "insights": {
@@ -386,7 +438,8 @@
     "pictureHelp": "JPG, PNG, au WebP hadi MB 5.",
     "emailAddress": "Anwani ya Barua pepe",
     "emailHelp": "Barua pepe haiwezi kubadilishwa.",
-    "fullName": "Jina Kamili",
+    "firstName": "Jina la Kwanza",
+    "lastName": "Jina la Familia",
     "businessName": "Jina la Biashara",
     "role": "Wadhifa",
     "updateProfile": "Sasisha Wasifu",
@@ -417,7 +470,8 @@
     "errorRemove": "Imeshindwa kumwondoa karani.",
     "addForm": {
       "title": "Ongeza Karani",
-      "fullName": "Jina Kamili *",
+      "firstName": "Jina la Kwanza *",
+      "lastName": "Jina la Familia *",
       "email": "Barua pepe *",
       "tempPassword": "Nenosiri la Muda *",
       "tempHelp": "Mpe karani kwa usalama. Anaweza kubadilisha baada ya kuingia mara ya kwanza.",
@@ -439,9 +493,21 @@
       "error": "Imeshindikana kubadili neno la siri."
     }
   },
+  "passwordStrength": {
+    "minLength": "Angalau herufi 8",
+    "uppercase": "Angalau herufi moja kubwa (A–Z)",
+    "lowercase": "Angalau herufi moja ndogo (a–z)",
+    "number": "Angalau nambari moja (0–9)",
+    "special": "Angalau ishara moja maalum (!@#$%^&*…)"
+  },
   "errors": {
     "generic": "Hitilafu imetokea.",
     "networkError": "Imeshindwa kufikia seva. Tafadhali angalia muunganisho wako wa intaneti."
+  },
+  "months": {
+    "1": "Januari", "2": "Februari", "3": "Machi", "4": "Aprili",
+    "5": "Mei", "6": "Juni", "7": "Julai", "8": "Agosti",
+    "9": "Septemba", "10": "Oktoba", "11": "Novemba", "12": "Desemba"
   },
   "categories": {
     "stock": {

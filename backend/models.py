@@ -10,7 +10,8 @@ class User(db.Model):
 
     user_id = db.Column(db.Integer, primary_key=True)
     business_name = db.Column(db.String(100), nullable=False)
-    full_name = db.Column(db.String(100), nullable=False)
+    first_name = db.Column(db.String(50), nullable=False)
+    last_name = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
     profile_image_url = db.Column(db.String(255), nullable=True)
@@ -23,6 +24,7 @@ class User(db.Model):
     failed_login_attempts = db.Column(db.Integer, nullable=False, default=0)
     locked_until = db.Column(db.DateTime, nullable=True)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
+    is_email_verified = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     # Relationships
@@ -44,6 +46,10 @@ class User(db.Model):
         foreign_keys="Expense.user_id",
     )
 
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
+
     #Convenience helpers
     @property
     def is_admin(self):
@@ -63,11 +69,14 @@ class User(db.Model):
         return {
             "user_id": self.user_id,
             "business_name": self.business_name,
+            "first_name": self.first_name,
+            "last_name": self.last_name,
             "full_name": self.full_name,
             "email": self.email,
             "profile_image_url": self.profile_image_url,
             "role": self.role,
             "is_active": self.is_active,
+            "is_email_verified": self.is_email_verified,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
@@ -230,6 +239,36 @@ class PasswordReset(db.Model):
     @property
     def is_used(self):
         return self.used_at is not None
+
+    @property
+    def is_valid(self):
+        return not self.is_expired and not self.is_used
+
+
+# EMAIL VERIFICATION (signup flow)
+
+class EmailVerification(db.Model):
+    __tablename__ = "email_verifications"
+
+    verification_id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.user_id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+    token_hash = db.Column(db.String(255), nullable=False, index=True)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    verified_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    user = db.relationship("User")
+
+    @property
+    def is_expired(self):
+        return datetime.utcnow() >= self.expires_at
+
+    @property
+    def is_used(self):
+        return self.verified_at is not None
 
     @property
     def is_valid(self):

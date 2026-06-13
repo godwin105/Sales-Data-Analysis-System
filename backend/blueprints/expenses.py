@@ -7,7 +7,7 @@ from flask_jwt_extended import current_user
 from sqlalchemy import func
 
 from extensions import db
-from models import Expense, Sale, SaleItem, Product
+from models import Expense, Sale
 from utils.decorators import cashier_or_admin_required
 
 expenses_bp = Blueprint("expenses", __name__, url_prefix="/api/expenses")
@@ -20,8 +20,10 @@ EXPENSE_CATEGORIES = ["Rent", "Utilities", "Salaries", "Purchase Costs", "Miscel
 
 def profit_loss_for_period(owner_id, start_dt, end_dt):
     """
-    Computes revenue, COGS, expenses, and net profit for a window
-    [start_dt, end_dt) for one business.
+    Computes revenue, expenses (including Purchase Costs), and net profit for
+    the window [start_dt, end_dt).  Purchase costs are tracked as Expense records
+    created automatically when stock is added or restocked, so no separate COGS
+    deduction is needed here.
     """
     revenue_row = (
         db.session.query(
@@ -38,25 +40,6 @@ def profit_loss_for_period(owner_id, start_dt, end_dt):
     revenue = Decimal(revenue_row[0] or 0)
     total_sales = int(revenue_row[1] or 0)
 
-    cogs_val = (
-        db.session.query(
-            func.coalesce(
-                func.sum(SaleItem.quantity * Product.purchase_price), 0
-            )
-        )
-        .join(Sale, SaleItem.sale_id == Sale.sale_id)
-        .join(Product, SaleItem.product_id == Product.product_id)
-        .filter(
-            Sale.user_id == owner_id,
-            Sale.sale_date >= start_dt,
-            Sale.sale_date < end_dt,
-        )
-        .scalar()
-    )
-    cogs = Decimal(cogs_val or 0)
-
-    gross_profit = revenue - cogs
-
     exp_rows = (
         db.session.query(Expense.category, func.sum(Expense.amount))
         .filter(
@@ -70,18 +53,16 @@ def profit_loss_for_period(owner_id, start_dt, end_dt):
     expenses_by_cat = {cat: Decimal(total or 0) for cat, total in exp_rows}
     expenses_total = sum(expenses_by_cat.values(), Decimal("0"))
 
-    net_profit = gross_profit - expenses_total
+    net_profit = revenue - expenses_total
     avg_sale = (revenue / total_sales) if total_sales else Decimal("0")
 
     return {
-        "revenue":        revenue,
-        "cogs":           cogs,
-        "gross_profit":   gross_profit,
-        "expenses_total": expenses_total,
+        "revenue":         revenue,
+        "expenses_total":  expenses_total,
         "expenses_by_cat": expenses_by_cat,
-        "net_profit":     net_profit,
-        "total_sales":    total_sales,
-        "avg_sale":       avg_sale,
+        "net_profit":      net_profit,
+        "total_sales":     total_sales,
+        "avg_sale":        avg_sale,
     }
 
 

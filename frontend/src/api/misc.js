@@ -13,13 +13,13 @@ export const insightsApi = {
 
 export const reportsApi = {
   preview: (params) => api.get('/api/reports/preview', { params }),
-  // download returns a binary blob - we use fetch separately to handle the file download
+ 
   downloadUrl: (params) => {
     const qs = new URLSearchParams(params).toString();
     return `${API_BASE_URL}/api/reports/download?${qs}`;
   },
   
-  // For programmatic download with auth header
+  // For programmatic download with auth header to save it in the app
   download: (params) =>
     api.get('/api/reports/download', { params, responseType: 'blob' }),
 };

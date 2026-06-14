@@ -1,6 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="background:#2563EB;color:#fff;border-radius:5px;padding:3px;">
-  <path d="M3 3v18h18"/>
-  <path d="M18 17V9"/>
-  <path d="M13 17V5"/>
-  <path d="M8 17v-3"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Biashara App">
+  <!-- navy rounded square -->
+  <rect x="0" y="0" width="64" height="64" rx="15" fill="#0F2744"/>
+  <!-- subtle inner ring -->
+  <rect x="3.5" y="3.5" width="57" height="57" rx="12" fill="none" stroke="#2563EB" stroke-width="1" stroke-opacity="0.45"/>
+  <!-- bars -->
+  <rect x="14" y="35" width="9" height="15" rx="2" fill="#38BDF8"/>
+  <rect x="26" y="25" width="9" height="25" rx="2" fill="#FFFFFF"/>
+  <rect x="38" y="30" width="9" height="20" rx="2" fill="#F59E0B"/>
+  <!-- baseline -->
+  <line x1="11" y1="52" x2="53" y2="52" stroke="#2563EB" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- rising line chart overlaid -->
+  <polyline points="18,35 30,25 42,30 52,17" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- line node dots -->
+  <circle cx="18" cy="35" r="2.2" fill="#FFFFFF"/>
+  <circle cx="30" cy="25" r="2.2" fill="#FFFFFF"/>
+  <circle cx="42" cy="30" r="2.2" fill="#FFFFFF"/>
+  <!-- amber end dot -->
+  <circle cx="52" cy="17" r="3.5" fill="#F59E0B"/>
+  <circle cx="52" cy="17" r="3.5" fill="none" stroke="#0F2744" stroke-width="1"/>
 </svg>

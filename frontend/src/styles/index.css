@@ -130,6 +130,9 @@ input[type='number'] {
   .data-table tbody tr:hover {
     @apply bg-slate-50 dark:bg-slate-700/50;
   }
+  .data-table.no-row-hover tbody tr:hover {
+    background: transparent !important;
+  }
 }
 
 /* UTILITIES */

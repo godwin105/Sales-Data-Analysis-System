@@ -9,13 +9,6 @@ import PageSpinner from '../components/PageSpinner';
 import EmptyState from '../components/EmptyState';
 import ConfirmDialog from '../components/ConfirmDialog';
 
-const CATEGORY_COLORS = {
-  Rent: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-  Utilities: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-  Salaries: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
-  'Purchase Costs': 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
-  Miscellaneous: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
-};
 
 export default function Expenses() {
   const toast = useToast();
@@ -163,7 +156,7 @@ export default function Expenses() {
             </h3>
             <div className="flex flex-wrap gap-2">
               {Object.entries(categoryTotals).map(([cat, total]) => (
-                <span key={cat} className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${CATEGORY_COLORS[cat] || CATEGORY_COLORS.Miscellaneous}`}>
+                <span key={cat} className="px-3 py-1.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
                   {categoryLabel(cat)}: <span className="font-bold">{formatTZS(total)}</span>
                 </span>
               ))}
@@ -184,7 +177,7 @@ export default function Expenses() {
         ) : (
           <div className="card !p-0">
             <div className="table-wrapper border-0">
-              <table className="data-table">
+              <table className="data-table no-row-hover">
                 <thead>
                   <tr>
                     <th>{t('expenses.tableDate')}</th>
@@ -198,10 +191,8 @@ export default function Expenses() {
                   {list.map((e) => (
                     <tr key={e.expense_id}>
                       <td className="whitespace-nowrap">{formatDate(e.expense_date, i18n.language)}</td>
-                      <td>
-                        <span className={`badge ${CATEGORY_COLORS[e.category] || CATEGORY_COLORS.Miscellaneous}`}>
-                          {categoryLabel(e.category)}
-                        </span>
+                      <td className="text-slate-700 dark:text-slate-200">
+                        {categoryLabel(e.category)}
                       </td>
                       <td className="text-slate-500 dark:text-slate-400">
                         {e.description || '—'}

@@ -256,7 +256,7 @@ def build_report(owner_id, report_type, start_dt, end_dt, label):
 
     show_revenue  = report_type in ("summary", "sales", "profit")
     show_expenses = report_type in ("summary", "expenses", "profit")
-    show_profit   = report_type in ("summary", "profit")
+    show_profit   = report_type == "profit"
 
     sales_rows   = _fetch_sales(owner_id, start_dt, end_dt) if show_revenue else []
     expense_rows = _fetch_expenses(owner_id, start_dt, end_dt) if show_expenses else []
@@ -442,31 +442,53 @@ def _render_pdf(report, business_name, owner_name, lang="en"):
     story.append(Spacer(1, 4 * mm))
 
     # ── 2. STATEMENT INFO BOX ─────────────────────────────────────────────────
+    type_key   = report.get("type_key", "summary")
     profit     = float(report["net_profit"])
     is_profit  = profit >= 0
     pl_key     = "net_profit" if is_profit else "net_loss"
     P_val_pl   = _ps("ValPL", fontSize=9, fontName="Helvetica-Bold", leading=13,
                      textColor=_GREEN if is_profit else _RED)
+    P_val_blue = _ps("ValBL", fontSize=9, fontName="Helvetica-Bold", leading=13,
+                     textColor=_NAVY)
 
+    N_STATIC = 4
     info_rows = [
         [Paragraph(tr["business_name"], P_lbl), Paragraph(_html.escape(business_name), P_val)],
         [Paragraph(tr["account_owner"], P_lbl), Paragraph(_html.escape(owner_name), P_val)],
         [Paragraph(tr["report_type"],   P_lbl), Paragraph(type_label, P_val)],
         [Paragraph(tr["period"],        P_lbl), Paragraph(_html.escape(report["period_label"]), P_val)],
-        [Paragraph(tr[pl_key],          P_lbl), Paragraph(f"TZS {abs(profit):,.0f}", P_val_pl)],
     ]
+
+    if type_key == "profit":
+        hl_data = [(tr[pl_key],          f"TZS {abs(profit):,.0f}",                          P_val_pl,   _GREEN_BG if is_profit else _RED_BG)]
+    elif type_key == "sales":
+        hl_data = [(tr["gross_revenue"], f"TZS {float(report['gross_revenue']):,.0f}",        P_val_blue, _MID)]
+    elif type_key == "expenses":
+        hl_data = [(tr["total_expenses"],f"TZS {float(report['total_expenses']):,.0f}",       P_val_blue, _MID)]
+    else:  # summary
+        hl_data = [
+            (tr["gross_revenue"],  f"TZS {float(report['gross_revenue']):,.0f}",  P_val_blue, _MID),
+            (tr["total_expenses"], f"TZS {float(report['total_expenses']):,.0f}", P_val_blue, _LIGHT),
+        ]
+
+    for label, val_str, val_style, _ in hl_data:
+        info_rows.append([Paragraph(label, P_lbl), Paragraph(val_str, val_style)])
+
+    info_style_cmds = [
+        ("BACKGROUND",    (0, 0), (0, -1),           _ROW_ALT),
+        ("TOPPADDING",    (0, 0), (-1, -1),           5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1),           5),
+        ("LEFTPADDING",   (0, 0), (-1, -1),           8),
+        ("RIGHTPADDING",  (0, 0), (-1, -1),           8),
+        ("LINEBELOW",     (0, 0), (-1, N_STATIC - 1), 0.3, _BORDER),
+        ("LINEAFTER",     (0, 0), (0, -1),            0.5, _BORDER),
+        ("BOX",           (0, 0), (-1, -1),           0.8, _BORDER),
+    ]
+    for i, (_, _, _, bg) in enumerate(hl_data):
+        info_style_cmds.append(("BACKGROUND", (0, N_STATIC + i), (-1, N_STATIC + i), bg))
+
     info_tbl = Table(info_rows, colWidths=[pw * 0.38, pw * 0.62])
-    info_tbl.setStyle(TableStyle([
-        ("BACKGROUND",    (0, 0), (0, -1), _ROW_ALT),
-        ("TOPPADDING",    (0, 0), (-1, -1), 5),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-        ("LEFTPADDING",   (0, 0), (-1, -1), 8),
-        ("RIGHTPADDING",  (0, 0), (-1, -1), 8),
-        ("LINEBELOW",     (0, 0), (-1, -2), 0.3, _BORDER),
-        ("LINEAFTER",     (0, 0), (0, -1),  0.5, _BORDER),
-        ("BOX",           (0, 0), (-1, -1), 0.8, _BORDER),
-        ("BACKGROUND",    (0, -1), (-1, -1), _GREEN_BG if is_profit else _RED_BG),
-    ]))
+    info_tbl.setStyle(TableStyle(info_style_cmds))
     story.append(info_tbl)
     story.append(Spacer(1, 5 * mm))
 
@@ -616,7 +638,7 @@ def _render_pdf(report, business_name, owner_name, lang="en"):
 
 
 def _base_table_style(n_rows):
-    """Common TableStyle for transaction tables: navy header, alternating rows, bold totals."""
+    """Common TableStyle for transaction tables: light-blue header, alternating rows, bold totals."""
     ts = [
         ("BACKGROUND",    (0, 0), (-1, 0),  _NAVY),
         ("TEXTCOLOR",     (0, 0), (-1, 0),  _WHITE),

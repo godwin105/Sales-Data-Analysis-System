@@ -134,6 +134,10 @@ def register():
         password, rounds=current_app.config["BCRYPT_LOG_ROUNDS"],
     ).decode("utf-8")
 
+    # Auto-verify when SMTP is not configured (e.g. Render free tier blocks SMTP ports).
+    # When MAIL_USERNAME is set, verification email is sent and the gate is enforced.
+    mail_dry_run = current_app.config.get("MAIL_DRY_RUN", True)
+
     user = User(
         business_name=business_name,
         first_name=first_name,
@@ -141,17 +145,20 @@ def register():
         email=email,
         password_hash=hashed,
         role="admin",
-        is_email_verified=False,
+        is_email_verified=mail_dry_run,
     )
     db.session.add(user)
     db.session.commit()
 
-    _send_verification_email(user)
+    if not mail_dry_run:
+        _send_verification_email(user)
 
-    return jsonify({
-        "message": "Account created. Please check your email to verify your account before logging in.",
-        "user": user.to_dict(),
-    }), 201
+    message = (
+        "Account created. You can log in now."
+        if mail_dry_run
+        else "Account created. Please check your email to verify your account before logging in."
+    )
+    return jsonify({"message": message, "user": user.to_dict()}), 201
 
 
 #login session
@@ -215,8 +222,10 @@ def login():
                 attempts_remaining=remaining,
             )
 
-    # Email verification check (admin accounts only — cashiers are added directly by admin)
-    if user.role == "admin" and not user.is_email_verified:
+    # Email verification check — skipped when SMTP is not configured (MAIL_DRY_RUN=True)
+    # so users aren't permanently locked out when the email service is unavailable.
+    mail_dry_run = current_app.config.get("MAIL_DRY_RUN", True)
+    if user.role == "admin" and not user.is_email_verified and not mail_dry_run:
         return _err(
             "Your email address has not been verified. Please check your inbox for the verification link.",
             403,

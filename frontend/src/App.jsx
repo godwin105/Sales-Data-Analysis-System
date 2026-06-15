@@ -3,6 +3,7 @@ import { useAuth } from './context/AuthContext';
 
 import AppShell from './components/AppShell';
 import ProtectedRoute from './components/ProtectedRoute';
+import InstallPrompt from './components/InstallPrompt';
 
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -41,6 +42,8 @@ function PublicOnly({ children }) {
 
 export default function App() {
   return (
+    <>
+    <InstallPrompt />
     <Routes>
       {/* Public routes */}
       <Route path="/login"                  element={<PublicOnly><Login /></PublicOnly>} />
@@ -71,5 +74,6 @@ export default function App() {
       <Route path="/" element={<HomeRedirect />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   );
 }

@@ -134,9 +134,11 @@ class Sale(db.Model):
         db.Integer, db.ForeignKey("users.user_id", ondelete="RESTRICT"),
         nullable=False,
     )
-    total_amount = db.Column(db.Numeric(10, 2), nullable=False)
-    sale_date = db.Column(db.DateTime, nullable=False, default=datetime.now, index=True)
-    notes = db.Column(db.Text, nullable=True)
+    total_amount    = db.Column(db.Numeric(10, 2), nullable=False)
+    sale_date       = db.Column(db.DateTime, nullable=False, default=datetime.now, index=True)
+    notes           = db.Column(db.Text, nullable=True)
+    payment_method  = db.Column(db.String(20), nullable=True)   # cash | mobile_money
+    payment_status  = db.Column(db.String(20), nullable=True)   # paid | pending | confirmed | failed
 
     items = db.relationship(
         "SaleItem", backref="sale", cascade="all, delete-orphan",
@@ -152,6 +154,8 @@ class Sale(db.Model):
             "recorder_name": self.recorder.full_name if self.recorder else None,
             "notes": self.notes,
         }
+        data["payment_method"] = self.payment_method
+        data["payment_status"] = self.payment_status
         if include_items:
             data["items"] = [item.to_dict() for item in self.items]
         return data
@@ -213,6 +217,42 @@ class Expense(db.Model):
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
+
+
+# PAYMENT (AzamPay mobile-money)
+
+class Payment(db.Model):
+    __tablename__ = "payments"
+
+    payment_id     = db.Column(db.Integer, primary_key=True)
+    sale_id        = db.Column(
+        db.Integer, db.ForeignKey("sales.sale_id", ondelete="CASCADE"),
+        nullable=False, unique=True, index=True,
+    )
+    provider       = db.Column(db.String(20), nullable=False)   # Mpesa | Tigopesa | Airtel | Halopesa
+    phone_number   = db.Column(db.String(20), nullable=False)
+    amount         = db.Column(db.Numeric(10, 2), nullable=False)
+    external_id    = db.Column(db.String(100), nullable=False, unique=True, index=True)
+    transaction_id = db.Column(db.String(100), nullable=True)   # AzamPay's reference
+    status         = db.Column(db.String(20), nullable=False, default="pending")
+    initiated_at   = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    confirmed_at   = db.Column(db.DateTime, nullable=True)
+
+    sale = db.relationship("Sale", backref=db.backref("payment", uselist=False))
+
+    def to_dict(self):
+        return {
+            "payment_id":     self.payment_id,
+            "sale_id":        self.sale_id,
+            "provider":       self.provider,
+            "phone_number":   self.phone_number,
+            "amount":         float(self.amount),
+            "external_id":    self.external_id,
+            "transaction_id": self.transaction_id,
+            "status":         self.status,
+            "initiated_at":   self.initiated_at.isoformat() if self.initiated_at else None,
+            "confirmed_at":   self.confirmed_at.isoformat() if self.confirmed_at else None,
+        }
 
 
 # PASSWORD RESET (UAT addition)

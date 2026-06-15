@@ -24,6 +24,7 @@ from blueprints.sales import sales_bp
 from blueprints.expenses import expenses_bp
 from blueprints.analytics import analytics_bp
 from blueprints.reports import reports_bp
+from blueprints.payments import payments_bp
 
 # Models must be imported so SQLAlchemy registers them
 import models  # noqa: F401
@@ -77,10 +78,12 @@ def create_app(config_class=Config):
     app.register_blueprint(expenses_bp)
     app.register_blueprint(analytics_bp)
     app.register_blueprint(reports_bp)
+    app.register_blueprint(payments_bp)
 
-    # ---- Lightweight compatibility migration ----
+    # ---- Lightweight compatibility migrations ----
     with app.app_context():
         _ensure_profile_image_column()
+        _ensure_payment_columns()
 
     # ---- Health check ----
     @app.route("/api/health")
@@ -105,6 +108,27 @@ def create_app(config_class=Config):
             print("✅ Database tables created.")
 
     return app
+
+
+def _ensure_payment_columns():
+    """Add payment columns to sales table and create payments table if needed."""
+    try:
+        inspector = inspect(db.engine)
+        if inspector.has_table("sales"):
+            cols = {c["name"] for c in inspector.get_columns("sales")}
+            if "payment_method" not in cols:
+                db.session.execute(text(
+                    "ALTER TABLE sales ADD COLUMN payment_method VARCHAR(20) NULL"
+                ))
+            if "payment_status" not in cols:
+                db.session.execute(text(
+                    "ALTER TABLE sales ADD COLUMN payment_status VARCHAR(20) NULL"
+                ))
+            db.session.commit()
+        # Create the payments table (and any other new tables) from models
+        db.create_all()
+    except SQLAlchemyError:
+        db.session.rollback()
 
 
 def _ensure_profile_image_column():

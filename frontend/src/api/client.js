@@ -25,7 +25,8 @@ export const API_BASE_URL = getApiBaseURL();
 export const api = axios.create({
   baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 20000,
+  // 60s timeout — Render free tier can take ~30-50s to wake from sleep
+  timeout: 60000,
 });
 
 
@@ -65,8 +66,8 @@ api.interceptors.response.use(
 export function extractError(err, fallback = 'Something went wrong.') {
   if (!err) return fallback;
   if (err.response?.data?.error) return err.response.data.error;
-  if (err.message === 'Network Error') {
-    return 'Cannot reach the server. Please check your internet connection.';
+  if (err.message === 'Network Error' || err.code === 'ECONNABORTED') {
+    return 'Server is starting up — please wait a moment and try again.';
   }
   return err.message || fallback;
 }

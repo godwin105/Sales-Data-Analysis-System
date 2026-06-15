@@ -17,16 +17,27 @@ class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-change-me")
 
     # ---- MySQL via SQLAlchemy (PyMySQL driver) ----
-    MYSQL_HOST = os.environ.get("MYSQL_HOST", "localhost")
-    MYSQL_PORT = os.environ.get("MYSQL_PORT", "3306")
-    MYSQL_USER = os.environ.get("MYSQL_USER", "root")
-    MYSQL_PASSWORD = os.environ.get("MYSQL_PASSWORD", "")
-    MYSQL_DB = os.environ.get("MYSQL_DB", "sales_analysis_db")
+    # Production: set DATABASE_URL to the full Clever Cloud connection URI
+    # e.g. mysql://user:pass@host:3306/dbname
+    # Development: falls back to individual MYSQL_* variables (XAMPP defaults)
+    _db_url = os.environ.get("DATABASE_URL", "")
 
-    SQLALCHEMY_DATABASE_URI = (
-        f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}"
-        f"@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DB}?charset=utf8mb4"
-    )
+    if _db_url:
+        # Clever Cloud gives mysql:// — SQLAlchemy needs mysql+pymysql://
+        _db_url = _db_url.replace("mysql://", "mysql+pymysql://", 1)
+        if "charset=" not in _db_url:
+            _db_url += ("&" if "?" in _db_url else "?") + "charset=utf8mb4"
+        SQLALCHEMY_DATABASE_URI = _db_url
+    else:
+        MYSQL_HOST     = os.environ.get("MYSQL_HOST", "localhost")
+        MYSQL_PORT     = os.environ.get("MYSQL_PORT", "3306")
+        MYSQL_USER     = os.environ.get("MYSQL_USER", "root")
+        MYSQL_PASSWORD = os.environ.get("MYSQL_PASSWORD", "")
+        MYSQL_DB       = os.environ.get("MYSQL_DB", "sales_analysis_db")
+        SQLALCHEMY_DATABASE_URI = (
+            f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}"
+            f"@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DB}?charset=utf8mb4"
+        )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,

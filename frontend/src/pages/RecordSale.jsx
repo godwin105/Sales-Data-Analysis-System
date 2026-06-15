@@ -1,35 +1,100 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Trash2, ShoppingCart, AlertTriangle } from 'lucide-react';
+import {
+  Plus, Trash2, ShoppingCart, AlertTriangle,
+  Smartphone, Banknote, CheckCircle, XCircle,
+  Loader, Clock, RefreshCw,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { salesApi } from '../api/sales';
+import { paymentsApi } from '../api/payments';
 import { useToast } from '../context/ToastContext';
 import { extractError } from '../api/client';
 import { formatQuantity, formatTZS } from '../utils/format';
 import PageSpinner from '../components/PageSpinner';
 import EmptyState from '../components/EmptyState';
 
-export default function RecordSale() {
-  const toast = useToast();
-  const navigate = useNavigate();
-  const { t } = useTranslation();
+const POLL_MS      = 4000;   // poll every 4 seconds
+const TIMEOUT_SECS = 90;     // give up after 90 seconds
 
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [items, setItems] = useState([{ rowId: 1, product_id: '', quantity: '1' }]);
-  const [notes, setNotes] = useState('');
+export default function RecordSale() {
+  const toast    = useToast();
+  const navigate = useNavigate();
+  const { t }    = useTranslation();
+
+  // ── Sale items ──────────────────────────────────────────────────────────────
+  const [products,   setProducts]   = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [items,      setItems]      = useState([{ rowId: 1, product_id: '', quantity: '1' }]);
+  const [notes,      setNotes]      = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const nextRowId = useMemo(() => () => Math.max(0, ...items.map((i) => i.rowId)) + 1, [items]);
+
+  // ── Payment ─────────────────────────────────────────────────────────────────
+  const [payMethod, setPayMethod] = useState('cash');
+  const [phone,     setPhone]     = useState('');
+
+  // payState: null | { externalId, amount, phone, channel, status, secondsLeft }
+  const [payState,  setPayState]  = useState(null);
+
+  const pollRef    = useRef(null);
+  const countdownRef = useRef(null);
+
+  const nextRowId = useMemo(
+    () => () => Math.max(0, ...items.map((i) => i.rowId)) + 1,
+    [items],
+  );
 
   useEffect(() => {
     let active = true;
     salesApi
       .inStockProducts()
       .then(({ data }) => active && setProducts(data.products))
-      .catch((err) => active && toast.error(extractError(err, t('sales.errorLoad'))))
-      .finally(() => active && setLoading(false));
+      .catch((err)  => active && toast.error(extractError(err, t('sales.errorLoad'))))
+      .finally(()   => active && setLoading(false));
     return () => { active = false; };
-  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Clear all timers ────────────────────────────────────────────────────────
+  function clearTimers() {
+    clearInterval(pollRef.current);
+    clearInterval(countdownRef.current);
+  }
+
+  // ── Start polling + countdown when a payment is pending ─────────────────────
+  useEffect(() => {
+    if (!payState || payState.status !== 'pending') return;
+
+    // Countdown display
+    countdownRef.current = setInterval(() => {
+      setPayState((prev) => {
+        if (!prev) return prev;
+        const next = (prev.secondsLeft ?? TIMEOUT_SECS) - 1;
+        if (next <= 0) {
+          clearTimers();
+          return { ...prev, status: 'timeout', secondsLeft: 0 };
+        }
+        return { ...prev, secondsLeft: next };
+      });
+    }, 1000);
+
+    // Status poll
+    pollRef.current = setInterval(async () => {
+      try {
+        const { data } = await paymentsApi.status(payState.externalId);
+        if (data.status !== 'pending') {
+          clearTimers();
+          setPayState((prev) => ({ ...prev, status: data.status }));
+          if (data.status === 'confirmed') {
+            toast.success(`Payment confirmed! ${formatTZS(payState.amount)} received.`);
+          } else {
+            toast.error('Payment was declined or cancelled.');
+          }
+        }
+      } catch { /* network hiccup — retry next tick */ }
+    }, POLL_MS);
+
+    return () => clearTimers();
+  }, [payState?.externalId, payState?.status]); // eslint-disable-line
 
   const productById = useMemo(() => {
     const map = {};
@@ -39,60 +104,112 @@ export default function RecordSale() {
 
   const computed = useMemo(() => {
     const lines = items.map((item) => {
-      const product = productById[item.product_id];
-      const qty = Number(item.quantity) || 0;
-      const unit = product ? Number(product.selling_price) : 0;
-      const subtotal = qty * unit;
+      const product      = productById[item.product_id];
+      const qty          = Number(item.quantity) || 0;
+      const unit         = product ? Number(product.selling_price) : 0;
+      const subtotal     = qty * unit;
       const exceedsStock = product && qty > product.quantity;
       return { ...item, product, qty, unit, subtotal, exceedsStock };
     });
-    const total = lines.reduce((s, l) => s + l.subtotal, 0);
-    return { lines, total };
+    return { lines, total: lines.reduce((s, l) => s + l.subtotal, 0) };
   }, [items, productById]);
 
   function addRow() {
     setItems((arr) => [...arr, { rowId: nextRowId(), product_id: '', quantity: '1' }]);
   }
-
   function removeRow(rowId) {
     setItems((arr) => arr.length > 1 ? arr.filter((i) => i.rowId !== rowId) : arr);
   }
-
   function updateRow(rowId, field, value) {
     setItems((arr) => arr.map((i) => i.rowId === rowId ? { ...i, [field]: value } : i));
   }
 
+  function resetAll() {
+    clearTimers();
+    setItems([{ rowId: 1, product_id: '', quantity: '1' }]);
+    setNotes('');
+    setPhone('');
+    setPayState(null);
+  }
+
+  async function refreshProducts() {
+    try {
+      const { data } = await salesApi.inStockProducts();
+      setProducts(data.products);
+    } catch { /* non-critical */ }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
+
     const validItems = items
       .filter((i) => i.product_id && Number(i.quantity) > 0)
-      .map((i) => ({ product_id: Number(i.product_id), quantity: Number(i.quantity) }));
+      .map((i)    => ({ product_id: Number(i.product_id), quantity: Number(i.quantity) }));
 
-    if (validItems.length === 0) {
-      toast.error(t('sales.noItemsError'));
-      return;
-    }
-
-    const stockProblem = computed.lines.find((l) => l.product && l.exceedsStock);
-    if (stockProblem) {
-      toast.error(t('sales.onlyAvailableMsg', { count: formatQuantity(stockProblem.product.quantity), name: stockProblem.product.name }));
+    if (!validItems.length)                          { toast.error(t('sales.noItemsError')); return; }
+    if (computed.lines.find((l) => l.exceedsStock))  {
+      const bad = computed.lines.find((l) => l.exceedsStock);
+      toast.error(t('sales.onlyAvailableMsg', { count: formatQuantity(bad.product.quantity), name: bad.product.name }));
       return;
     }
 
     setSubmitting(true);
+
+    // ── Cash ──────────────────────────────────────────────────────────────────
+    if (payMethod === 'cash') {
+      try {
+        const { data } = await salesApi.record({ items: validItems, notes: notes.trim() || undefined });
+        toast.success(data.message);
+        if (data.low_stock_warnings?.length)
+          toast.warning(t('sales.lowStockToast', { names: data.low_stock_warnings.join(', ') }));
+        resetAll();
+        await refreshProducts();
+      } catch (err) {
+        toast.error(extractError(err, t('sales.errorRecord')));
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+
+    // ── Mobile money ──────────────────────────────────────────────────────────
+    if (!phone.trim()) { toast.error('Enter the customer\'s phone number.'); setSubmitting(false); return; }
+
     try {
-      const { data } = await salesApi.record({
+      const { data } = await paymentsApi.initiate({
         items: validItems,
         notes: notes.trim() || undefined,
+        phone: phone.trim(),
       });
-      toast.success(data.message);
-      if (data.low_stock_warnings && data.low_stock_warnings.length > 0) {
+
+      if (data.low_stock_warnings?.length)
         toast.warning(t('sales.lowStockToast', { names: data.low_stock_warnings.join(', ') }));
+
+      await refreshProducts();
+
+      if (data.push_failed) {
+        // Push didn't go through — show error state, don't start polling
+        setPayState({
+          externalId:  data.external_id,
+          amount:      data.amount,
+          status:      'push_failed',
+          phone:       phone.trim(),
+          channel:     null,
+          errorMsg:    data.error || 'Payment push failed.',
+          secondsLeft: 0,
+        });
+        return;
       }
-      setItems([{ rowId: 1, product_id: '', quantity: '1' }]);
-      setNotes('');
-      const refreshed = await salesApi.inStockProducts();
-      setProducts(refreshed.data.products);
+
+      setPayState({
+        externalId:      data.external_id,
+        amount:          data.amount,
+        customerAmount:  data.customer_amount ?? data.amount,
+        status:          'pending',
+        phone:           phone.trim(),
+        channel:         data.channel || null,
+        secondsLeft:     TIMEOUT_SECS,
+      });
     } catch (err) {
       toast.error(extractError(err, t('sales.errorRecord')));
     } finally {
@@ -102,29 +219,208 @@ export default function RecordSale() {
 
   if (loading) return <PageSpinner label={t('sales.loading')} />;
 
-  if (products.length === 0) {
+  if (!products.length) {
     return (
       <div className="card">
         <EmptyState
           icon={ShoppingCart}
           title={t('sales.noStockTitle')}
           message={t('sales.noStockMessage')}
-          action={
-            <button onClick={() => navigate('/stock')} className="btn-primary">
-              {t('sales.goToStock')}
-            </button>
-          }
+          action={<button onClick={() => navigate('/stock')} className="btn-primary">{t('sales.goToStock')}</button>}
         />
       </div>
     );
   }
 
+  // ── Payment status overlay ───────────────────────────────────────────────────
+  if (payState) {
+    const isPending    = payState.status === 'pending';
+    const isConfirmed  = payState.status === 'confirmed';
+    const isFailed     = payState.status === 'failed';
+    const isTimeout    = payState.status === 'timeout';
+    const isPushFailed = payState.status === 'push_failed';
+
+    const borderColor = isConfirmed  ? 'border-green-400 dark:border-green-600'
+                      : (isFailed || isTimeout || isPushFailed) ? 'border-red-400 dark:border-red-600'
+                      : 'border-brand-400 dark:border-brand-600';
+
+    return (
+      <div className="max-w-lg mx-auto space-y-4 px-1">
+        <div className={`card border-2 ${borderColor}`}>
+
+          {/* ── Pending ── */}
+          {isPending && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <Loader className="text-brand-600 animate-spin flex-shrink-0" size={22} />
+                <p className="font-bold text-slate-800 dark:text-slate-100 text-base">
+                  Waiting for customer to confirm…
+                </p>
+              </div>
+
+              <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 text-sm space-y-1.5">
+                <p className="text-slate-600 dark:text-slate-300">
+                  Prompt sent to <span className="font-bold">{payState.phone}</span>
+                </p>
+                {payState.channel && (
+                  <p className="text-slate-600 dark:text-slate-300">
+                    Network: <span className="font-bold">{payState.channel}</span>
+                  </p>
+                )}
+                <div className="pt-1 border-t border-slate-200 dark:border-slate-700">
+                  <p className="text-slate-600 dark:text-slate-300">
+                    Sale amount: <span className="font-semibold">{formatTZS(payState.amount)}</span>
+                  </p>
+                  {payState.customerAmount > payState.amount && (
+                    <>
+                      <p className="text-amber-600 dark:text-amber-400 text-xs">
+                        Network fee: +{formatTZS(payState.customerAmount - payState.amount)}
+                      </p>
+                      <p className="text-slate-800 dark:text-slate-100 font-bold">
+                        Customer pays: {formatTZS(payState.customerAmount)}
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Countdown bar */}
+              <div>
+                <div className="flex justify-between text-xs text-slate-400 mb-1">
+                  <span>Checking every 4 s</span>
+                  <span className="font-mono">{payState.secondsLeft}s left</span>
+                </div>
+                <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5">
+                  <div
+                    className="bg-brand-500 h-1.5 rounded-full transition-all duration-1000"
+                    style={{ width: `${((payState.secondsLeft ?? TIMEOUT_SECS) / TIMEOUT_SECS) * 100}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-xs text-amber-700 dark:text-amber-300">
+                To cancel: ask the customer to press <strong>Cancel</strong> on their phone's USSD menu. The prompt expires automatically after ~2 minutes.
+              </div>
+
+              <button
+                onClick={resetAll}
+                className="btn-secondary w-full text-sm"
+              >
+                Cancel &amp; Start New Sale
+              </button>
+            </div>
+          )}
+
+          {/* ── Confirmed ── */}
+          {isConfirmed && (
+            <div className="space-y-4 text-center">
+              <CheckCircle className="text-green-500 mx-auto" size={48} />
+              <div>
+                <p className="font-bold text-green-700 dark:text-green-300 text-lg">Payment Confirmed!</p>
+                <p className="text-slate-600 dark:text-slate-300 text-sm mt-1">
+                  {formatTZS(payState.customerAmount ?? payState.amount)} received from {payState.phone}{payState.channel ? ` via ${payState.channel}` : ''}
+                </p>
+              </div>
+              <button onClick={resetAll} className="btn-primary w-full">
+                Record Another Sale
+              </button>
+            </div>
+          )}
+
+          {/* ── Failed ── */}
+          {isFailed && (
+            <div className="space-y-4 text-center">
+              <XCircle className="text-red-500 mx-auto" size={48} />
+              <div>
+                <p className="font-bold text-red-700 dark:text-red-300 text-lg">Payment Declined</p>
+                <p className="text-slate-600 dark:text-slate-300 text-sm mt-1">
+                  The customer cancelled or the transaction was rejected.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button onClick={resetAll} className="btn-secondary flex-1 text-sm">
+                  <RefreshCw size={14} /> New Sale
+                </button>
+                <button
+                  onClick={() => { clearTimers(); setPayState(null); setPayMethod('cash'); }}
+                  className="btn-primary flex-1 text-sm"
+                >
+                  <Banknote size={14} /> Collect Cash Instead
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Push Failed ── */}
+          {isPushFailed && (
+            <div className="space-y-4 text-center">
+              <XCircle className="text-red-500 mx-auto" size={48} />
+              <div>
+                <p className="font-bold text-red-700 dark:text-red-300 text-lg">Payment Push Failed</p>
+                <p className="text-slate-600 dark:text-slate-300 text-sm mt-1">
+                  The sale was saved but the push to {payState.phone} could not be sent.
+                </p>
+                {payState.errorMsg && (
+                  <p className="mt-2 text-xs bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded p-2 text-red-700 dark:text-red-300 font-mono break-all text-left">
+                    {payState.errorMsg}
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button onClick={resetAll} className="btn-secondary flex-1 text-sm">
+                  <RefreshCw size={14} /> New Sale
+                </button>
+                <button
+                  onClick={() => { clearTimers(); setPayState(null); setPayMethod('cash'); }}
+                  className="btn-primary flex-1 text-sm"
+                >
+                  <Banknote size={14} /> Collect Cash Instead
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Timeout ── */}
+          {isTimeout && (
+            <div className="space-y-4 text-center">
+              <Clock className="text-amber-500 mx-auto" size={48} />
+              <div>
+                <p className="font-bold text-amber-700 dark:text-amber-300 text-lg">Request Timed Out</p>
+                <p className="text-slate-600 dark:text-slate-300 text-sm mt-1">
+                  No response from {payState.phone} after {TIMEOUT_SECS} seconds.
+                  The sale was saved — collect payment manually or retry.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button onClick={resetAll} className="btn-secondary flex-1 text-sm">
+                  <RefreshCw size={14} /> New Sale
+                </button>
+                <button
+                  onClick={() => { clearTimers(); setPayState(null); setPayMethod('cash'); }}
+                  className="btn-primary flex-1 text-sm"
+                >
+                  <Banknote size={14} /> Collect Cash Instead
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Sale form ────────────────────────────────────────────────────────────────
   return (
-    <form onSubmit={handleSubmit} className="space-y-5 max-w-4xl">
+    <form onSubmit={handleSubmit} className="space-y-4 w-full max-w-4xl">
+
+      {/* Items */}
       <div className="card">
-        <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-4">{t('sales.saleItems')}</h3>
+        <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-4">
+          {t('sales.saleItems')}
+        </h3>
 
         <div className="space-y-3">
+          {/* Column labels — hidden on mobile */}
           <div className="hidden sm:grid grid-cols-12 gap-3 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-1">
             <div className="col-span-6">{t('sales.product')}</div>
             <div className="col-span-2">{t('sales.quantity')}</div>
@@ -133,51 +429,105 @@ export default function RecordSale() {
           </div>
 
           {computed.lines.map((line) => (
-            <div
-              key={line.rowId}
-              className="grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-3 items-start sm:items-center"
-            >
-              <div className="sm:col-span-6">
-                <select
-                  value={line.product_id}
-                  onChange={(e) => updateRow(line.rowId, 'product_id', e.target.value)}
-                  className="form-input"
-                >
-                  <option value="">{t('sales.chooseProduct')}</option>
-                  {products.map((p) => (
-                    <option key={p.product_id} value={p.product_id}>
-                      {p.name} — {formatTZS(p.selling_price)} ({t('sales.stockIndicator', { count: formatQuantity(p.quantity) })})
-                    </option>
-                  ))}
-                </select>
+            <div key={line.rowId}>
+
+              {/* ── Mobile layout ── */}
+              <div className="sm:hidden space-y-2">
+                {/* Product + trash on same flex row */}
+                <div className="flex items-center gap-2">
+                  <select
+                    value={line.product_id}
+                    onChange={(e) => updateRow(line.rowId, 'product_id', e.target.value)}
+                    className="form-input text-sm flex-1"
+                  >
+                    <option value="">{t('sales.chooseProduct')}</option>
+                    {products.map((p) => (
+                      <option key={p.product_id} value={p.product_id}>
+                        {p.name} — {formatTZS(p.selling_price)} ({formatQuantity(p.quantity)} {t('sales.inStock', 'in stock')})
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => removeRow(line.rowId)}
+                    disabled={items.length === 1}
+                    className="flex-shrink-0 p-2 text-slate-400 hover:text-red-500 disabled:opacity-30"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+
+                {/* Qty + Subtotal row */}
+                <div className="flex items-start gap-3">
+                  <div className="w-28">
+                    <label className="text-xs font-semibold text-slate-500 mb-1 block">
+                      {t('sales.quantity')}
+                    </label>
+                    <input
+                      type="number" min="0.25" step="0.25"
+                      value={line.quantity}
+                      onChange={(e) => updateRow(line.rowId, 'quantity', e.target.value)}
+                      className={`form-input text-sm ${line.exceedsStock ? 'error' : ''}`}
+                    />
+                    {line.exceedsStock && (
+                      <p className="form-error text-xs">
+                        {t('sales.onlyAvailableShort', { count: formatQuantity(line.product.quantity) })}
+                      </p>
+                    )}
+                  </div>
+                  <div className="pt-5">
+                    <span className="text-xs text-slate-500 font-semibold">{t('sales.subtotal')}: </span>
+                    <span className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                      {line.subtotal > 0 ? formatTZS(line.subtotal) : '—'}
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              <div className="sm:col-span-2">
-                <input
-                  type="number" min="0.25" step="0.25"
-                  value={line.quantity}
-                  onChange={(e) => updateRow(line.rowId, 'quantity', e.target.value)}
-                  className={`form-input ${line.exceedsStock ? 'error' : ''}`}
-                />
-                {line.exceedsStock && (
-                  <p className="form-error">{t('sales.onlyAvailableShort', { count: formatQuantity(line.product.quantity) })}</p>
-                )}
-              </div>
-
-              <div className="sm:col-span-3 text-sm font-bold text-slate-800 dark:text-slate-100 sm:px-2">
-                {line.subtotal > 0 ? formatTZS(line.subtotal) : '—'}
-              </div>
-
-              <div className="sm:col-span-1 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => removeRow(line.rowId)}
-                  disabled={items.length === 1}
-                  className="p-2 text-slate-400 hover:text-danger disabled:opacity-30 disabled:cursor-not-allowed"
-                  title={t('sales.removeItem')}
-                >
-                  <Trash2 size={16} />
-                </button>
+              {/* ── Desktop layout ── */}
+              <div className="hidden sm:grid grid-cols-12 gap-3 items-center">
+                <div className="col-span-6">
+                  <select
+                    value={line.product_id}
+                    onChange={(e) => updateRow(line.rowId, 'product_id', e.target.value)}
+                    className="form-input text-sm"
+                  >
+                    <option value="">{t('sales.chooseProduct')}</option>
+                    {products.map((p) => (
+                      <option key={p.product_id} value={p.product_id}>
+                        {p.name} — {formatTZS(p.selling_price)} ({formatQuantity(p.quantity)} {t('sales.inStock', 'in stock')})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-span-2">
+                  <input
+                    type="number" min="0.25" step="0.25"
+                    value={line.quantity}
+                    onChange={(e) => updateRow(line.rowId, 'quantity', e.target.value)}
+                    className={`form-input text-sm ${line.exceedsStock ? 'error' : ''}`}
+                  />
+                  {line.exceedsStock && (
+                    <p className="form-error text-xs">
+                      {t('sales.onlyAvailableShort', { count: formatQuantity(line.product.quantity) })}
+                    </p>
+                  )}
+                </div>
+                <div className="col-span-3 px-2">
+                  <span className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                    {line.subtotal > 0 ? formatTZS(line.subtotal) : '—'}
+                  </span>
+                </div>
+                <div className="col-span-1 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => removeRow(line.rowId)}
+                    disabled={items.length === 1}
+                    className="p-2 text-slate-400 hover:text-red-500 disabled:opacity-30"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -193,6 +543,7 @@ export default function RecordSale() {
         </button>
       </div>
 
+      {/* Notes */}
       <div className="card">
         <label className="form-label">{t('sales.notes')}</label>
         <textarea
@@ -200,35 +551,86 @@ export default function RecordSale() {
           onChange={(e) => setNotes(e.target.value)}
           rows={2}
           maxLength={500}
-          className="form-input"
+          className="form-input text-sm"
           placeholder={t('sales.notesPlaceholder')}
         />
       </div>
 
-      <div className="card flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-gradient-to-r from-brand-50 to-white border-brand-200 dark:bg-slate-800 dark:bg-none dark:border-slate-700">
-        <div>
-          <div className="text-xs uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400">
-            {t('sales.totalAmount')}
-          </div>
-          <div className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-slate-100">
-            {formatTZS(computed.total)}
-          </div>
+      {/* Payment method */}
+      <div className="card">
+        <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">
+          Payment Method
+        </h3>
+
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          {[
+            { id: 'cash',         label: 'Cash',         Icon: Banknote },
+            { id: 'mobile_money', label: 'Mobile Money', Icon: Smartphone },
+          ].map(({ id, label, Icon }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setPayMethod(id)}
+              className={`flex items-center justify-center gap-2 py-3 px-3 rounded-lg border-2 font-semibold text-sm transition-colors ${
+                payMethod === id
+                  ? 'border-brand-600 bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300 dark:border-brand-500'
+                  : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
+              }`}
+            >
+              <Icon size={17} />
+              <span>{label}</span>
+            </button>
+          ))}
         </div>
-        <button
-          type="submit"
-          className="btn-success text-base px-7 py-3"
-          disabled={submitting || computed.total <= 0}
-        >
-          {submitting ? t('sales.recording') : t('sales.confirmSale')}
-        </button>
+
+        {payMethod === 'mobile_money' && (
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-700">
+            <label className="form-label">Customer Phone Number</label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="e.g. 0712 345 678"
+              className="form-input"
+            />
+            <p className="mt-1 text-xs text-slate-400">
+              Network detected automatically from the number (M-Pesa, Tigo, Airtel, Halopesa)
+            </p>
+          </div>
+        )}
       </div>
 
+      {/* Total + submit */}
+      <div className="card bg-gradient-to-r from-brand-50 to-white border-brand-200 dark:bg-slate-800 dark:bg-none dark:border-slate-700">
+        <div className="flex flex-col gap-3">
+          <div>
+            <div className="text-xs uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400">
+              {t('sales.totalAmount')}
+            </div>
+            <div className="text-3xl font-bold text-slate-800 dark:text-slate-100">
+              {formatTZS(computed.total)}
+            </div>
+          </div>
+          <button
+            type="submit"
+            className="btn-success w-full py-3 text-base"
+            disabled={submitting || computed.total <= 0}
+          >
+            {submitting
+              ? (payMethod === 'mobile_money' ? 'Sending request…' : t('sales.recording'))
+              : payMethod === 'mobile_money'
+                ? `Send ${formatTZS(computed.total)} Request`
+                : t('sales.confirmSale')
+            }
+          </button>
+        </div>
+      </div>
+
+      {/* Stock warning */}
       {computed.lines.some((l) => l.exceedsStock) && (
         <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg px-4 py-3 flex items-start gap-3">
           <AlertTriangle className="text-warning flex-shrink-0 mt-0.5" size={18} />
-          <p className="text-sm text-amber-800 dark:text-amber-200">
-            {t('sales.exceedsStockWarning')}
-          </p>
+          <p className="text-sm text-amber-800 dark:text-amber-200">{t('sales.exceedsStockWarning')}</p>
         </div>
       )}
     </form>

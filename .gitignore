@@ -68,3 +68,4 @@ yarn-debug.log*
 *.dump
 
 create_tables.py
+.claude

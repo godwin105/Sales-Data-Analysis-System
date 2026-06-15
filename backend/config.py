@@ -87,3 +87,8 @@ class Config:
     # ---- Uploads ----
     UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", UPLOAD_FOLDER)
     MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH", 5 * 1024 * 1024))
+
+    # ---- ClickPesa (mobile money payments) ----
+    # Get these from: ClickPesa Dashboard → Applications → your app → API Keys
+    CLICKPESA_CLIENT_ID = os.environ.get("CLICKPESA_CLIENT_ID", "")
+    CLICKPESA_API_KEY   = os.environ.get("CLICKPESA_API_KEY", "")

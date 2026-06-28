@@ -95,6 +95,7 @@ class Product(db.Model):
     )
     name = db.Column(db.String(100), nullable=False)
     category = db.Column(db.String(50), nullable=True, index=True)
+    unit = db.Column(db.String(20), nullable=False, default="pcs")
     purchase_price = db.Column(db.Numeric(10, 2), nullable=False)
     selling_price = db.Column(db.Numeric(10, 2), nullable=False)
     quantity =  db.Column(Numeric(10, 2), nullable=False, default=0)
@@ -111,6 +112,7 @@ class Product(db.Model):
             "product_id": self.product_id,
             "name": self.name,
             "category": self.category,
+            "unit": self.unit or "pcs",
             "purchase_price": float(self.purchase_price),
             "selling_price": float(self.selling_price),
             "quantity": float(self.quantity),

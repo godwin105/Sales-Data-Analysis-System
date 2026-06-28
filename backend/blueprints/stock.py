@@ -14,6 +14,8 @@ stock_bp = Blueprint("stock", __name__, url_prefix="/api/stock")
 # Same categories as the original Jinja2 form
 PRODUCT_CATEGORIES = ["Food", "Cleaning", "Beverages", "Other"]
 
+PRODUCT_UNITS = ["pcs", "kg", "g", "L", "mL", "m", "box", "pkt", "doz", "ctn", "btl", "bag", "tin", "sack"]
+
 
 def _validate_decimal(value, field_name, *, min_value=Decimal("0"), required=True):
     if value is None or value == "":
@@ -70,6 +72,10 @@ def _validate_product_payload(data, *, editing_id=None):
     if category and category not in PRODUCT_CATEGORIES:
         errors["category"] = f"Category must be one of: {', '.join(PRODUCT_CATEGORIES)}."
 
+    unit = (data.get("unit") or "pcs").strip()
+    if unit not in PRODUCT_UNITS:
+        errors["unit"] = f"Unit must be one of: {', '.join(PRODUCT_UNITS)}."
+
     purchase_price, err = _validate_decimal(data.get("purchase_price"), "Purchase price")
     if err:
         errors["purchase_price"] = err
@@ -112,6 +118,7 @@ def _validate_product_payload(data, *, editing_id=None):
     return {
         "name": name,
         "category": category or None,
+        "unit": unit,
         "purchase_price": purchase_price,
         "selling_price": selling_price,
         "quantity": quantity if quantity is not None else Decimal("0"),
@@ -147,6 +154,7 @@ def list_products():
     return jsonify({
         "products": [p.to_dict() for p in products],
         "categories": PRODUCT_CATEGORIES,
+        "units": PRODUCT_UNITS,
     }), 200
 
 
@@ -174,6 +182,7 @@ def add_product():
         user_id=current_user.owner_id,
         name=clean["name"],
         category=clean["category"],
+        unit=clean["unit"],
         purchase_price=clean["purchase_price"],
         selling_price=clean["selling_price"],
         quantity=clean["quantity"],
@@ -185,7 +194,7 @@ def add_product():
         db.session.add(Expense(
             user_id=current_user.owner_id,
             category="Purchase Costs",
-            description=f"Initial stock: {clean['name']}, {_format_decimal(clean['quantity'])} units @ TZS {clean['purchase_price']:,.0f}",
+            description=f"Initial stock: {clean['name']}, {_format_decimal(clean['quantity'])} {clean['unit']} @ TZS {clean['purchase_price']:,.0f}",
             amount=clean["quantity"] * clean["purchase_price"],
             expense_date=date.today(),
         ))
@@ -214,6 +223,7 @@ def edit_product(product_id):
 
     product.name = clean["name"]
     product.category = clean["category"]
+    product.unit = clean["unit"]
     product.purchase_price = clean["purchase_price"]
     product.selling_price = clean["selling_price"]
     product.quantity = clean["quantity"]
@@ -262,7 +272,7 @@ def restock_product(product_id):
         db.session.add(Expense(
             user_id=current_user.owner_id,
             category="Purchase Costs",
-            description=f"Restock: {product.name}, {_format_decimal(qty)} units @ TZS {price_paid:,.0f}",
+            description=f"Restock: {product.name}, {_format_decimal(qty)} {product.unit or 'pcs'} @ TZS {price_paid:,.0f}",
             amount=qty * price_paid,
             expense_date=date.today(),
         ))

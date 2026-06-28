@@ -84,6 +84,7 @@ def create_app(config_class=Config):
     with app.app_context():
         _ensure_profile_image_column()
         _ensure_payment_columns()
+        _ensure_unit_column()
 
     # ---- Health check ----
     @app.route("/api/health")
@@ -127,6 +128,21 @@ def _ensure_payment_columns():
             db.session.commit()
         # Create the payments table (and any other new tables) from models
         db.create_all()
+    except SQLAlchemyError:
+        db.session.rollback()
+
+
+def _ensure_unit_column():
+    try:
+        inspector = inspect(db.engine)
+        if not inspector.has_table("products"):
+            return
+        cols = {c["name"] for c in inspector.get_columns("products")}
+        if "unit" not in cols:
+            db.session.execute(text(
+                "ALTER TABLE products ADD COLUMN unit VARCHAR(20) NOT NULL DEFAULT 'pcs'"
+            ))
+            db.session.commit()
     except SQLAlchemyError:
         db.session.rollback()
 

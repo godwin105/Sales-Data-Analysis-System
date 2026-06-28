@@ -8,7 +8,9 @@ export const dashboardApi = {
 };
 
 export const insightsApi = {
-  load: () => api.get('/api/insights'),
+  load:     (year, month)        => api.get('/api/insights',         { params: { year, month } }),
+  compare:  (months, year, month) => api.get('/api/insights/compare', { params: { months, year, month } }),
+  velocity: (months, year, month) => api.get('/api/insights/velocity',{ params: { months, year, month } }),
 };
 
 export const reportsApi = {

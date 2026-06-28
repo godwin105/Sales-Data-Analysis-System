@@ -32,9 +32,9 @@ export default function AppShell() {
     <div className="min-h-screen bg-slate-100 dark:bg-slate-900">
       <Sidebar isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
 
-      <div className="lg:pl-[230px] flex flex-col min-h-screen">
+      <div className="lg:pl-[230px] flex flex-col min-h-screen min-w-0">
         <Topbar title={title} onOpenMenu={() => setMenuOpen(true)} />
-        <main className="flex-1 px-4 sm:px-6 py-5 sm:py-6">
+        <main className="flex-1 px-4 sm:px-6 py-5 sm:py-6 overflow-x-hidden min-w-0">
           <Outlet />
         </main>
       </div>

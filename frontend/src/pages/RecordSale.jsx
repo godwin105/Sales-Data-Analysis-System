@@ -422,8 +422,8 @@ export default function RecordSale() {
         <div className="space-y-3">
           {/* Column labels — hidden on mobile */}
           <div className="hidden sm:grid grid-cols-12 gap-3 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-1">
-            <div className="col-span-6">{t('sales.product')}</div>
-            <div className="col-span-2">{t('sales.quantity')}</div>
+            <div className="col-span-5">{t('sales.product')}</div>
+            <div className="col-span-3">{t('sales.quantity')}</div>
             <div className="col-span-3">{t('sales.subtotal')}</div>
             <div className="col-span-1"></div>
           </div>
@@ -443,7 +443,7 @@ export default function RecordSale() {
                     <option value="">{t('sales.chooseProduct')}</option>
                     {products.map((p) => (
                       <option key={p.product_id} value={p.product_id}>
-                        {p.name} — {formatTZS(p.selling_price)} ({formatQuantity(p.quantity)} {t('sales.inStock', 'in stock')})
+                        {p.name} — {formatTZS(p.selling_price)}/{p.unit || 'pcs'} ({formatQuantity(p.quantity)} {p.unit || 'pcs'} {t('sales.inStock', 'in stock')})
                       </option>
                     ))}
                   </select>
@@ -486,7 +486,7 @@ export default function RecordSale() {
 
               {/* ── Desktop layout ── */}
               <div className="hidden sm:grid grid-cols-12 gap-3 items-center">
-                <div className="col-span-6">
+                <div className="col-span-5">
                   <select
                     value={line.product_id}
                     onChange={(e) => updateRow(line.rowId, 'product_id', e.target.value)}
@@ -495,18 +495,25 @@ export default function RecordSale() {
                     <option value="">{t('sales.chooseProduct')}</option>
                     {products.map((p) => (
                       <option key={p.product_id} value={p.product_id}>
-                        {p.name} — {formatTZS(p.selling_price)} ({formatQuantity(p.quantity)} {t('sales.inStock', 'in stock')})
+                        {p.name} — {formatTZS(p.selling_price)}/{p.unit || 'pcs'} ({formatQuantity(p.quantity)} {p.unit || 'pcs'} {t('sales.inStock', 'in stock')})
                       </option>
                     ))}
                   </select>
                 </div>
-                <div className="col-span-2">
-                  <input
-                    type="number" min="0.25" step="0.25"
-                    value={line.quantity}
-                    onChange={(e) => updateRow(line.rowId, 'quantity', e.target.value)}
-                    className={`form-input text-sm ${line.exceedsStock ? 'error' : ''}`}
-                  />
+                <div className="col-span-3">
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="number" min="0.25" step="0.25"
+                      value={line.quantity}
+                      onChange={(e) => updateRow(line.rowId, 'quantity', e.target.value)}
+                      className={`form-input text-sm flex-1 ${line.exceedsStock ? 'error' : ''}`}
+                    />
+                    {line.product && (
+                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex-shrink-0">
+                        {line.product.unit || 'pcs'}
+                      </span>
+                    )}
+                  </div>
                   {line.exceedsStock && (
                     <p className="form-error text-xs">
                       {t('sales.onlyAvailableShort', { count: formatQuantity(line.product.quantity) })}

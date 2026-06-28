@@ -202,7 +202,10 @@ def _fetch_sales(owner_id, start_dt, end_dt):
     running = 0.0
     for i, s in enumerate(sales, 1):
         item_names = [item.product.name for item in s.items if item.product]
-        item_qtys  = [str(int(item.quantity)) for item in s.items if item.product]
+        item_qtys  = [
+            f"{int(item.quantity) if item.quantity == int(item.quantity) else float(item.quantity)} {item.product.unit or 'pcs'}"
+            for item in s.items if item.product
+        ]
         running += float(s.total_amount)
         rows.append({
             "sn":          i,

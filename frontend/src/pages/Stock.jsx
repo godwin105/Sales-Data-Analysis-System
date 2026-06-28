@@ -16,6 +16,7 @@ export default function Stock() {
   const categoryLabel = (category) => t(`categories.stock.${category}`, category);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [units, setUnits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
@@ -31,6 +32,7 @@ export default function Stock() {
       const { data } = await stockApi.list();
       setProducts(data.products);
       setCategories(data.categories);
+      setUnits(data.units || []);
     } catch (err) {
       toast.error(extractError(err, t('stock.errorLoad')));
     } finally {
@@ -112,7 +114,7 @@ export default function Stock() {
                   <th>{t('stock.headerSelling')}</th>
                   <th>{t('stock.headerQty')}</th>
                   <th>{t('stock.headerStatus')}</th>
-                  <th className="text-right">{t('stock.headerActions')}</th>
+                  <th>{t('stock.headerActions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -122,14 +124,14 @@ export default function Stock() {
                     <td className="text-slate-500 dark:text-slate-400">{p.category ? categoryLabel(p.category) : '—'}</td>
                     <td>{formatTZS(p.purchase_price)}</td>
                     <td>{formatTZS(p.selling_price)}</td>
-                    <td>{formatQuantity(p.quantity)}</td>
+                    <td>{formatQuantity(p.quantity)} <span className="text-slate-400 text-xs">{p.unit || 'pcs'}</span></td>
                     <td>
                       {p.is_low_stock
                         ? <span className="badge-warning">{t('stock.lowStock')}</span>
                         : <span className="badge-success">{t('stock.inStock')}</span>}
                     </td>
                     <td>
-                      <div className="flex justify-end gap-1.5">
+                      <div className="flex gap-1.5">
                         <button onClick={() => setEditingProduct(p)} className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-brand-600" title={t('stock.edit')}>
                           <Edit2 size={15} />
                         </button>
@@ -152,6 +154,7 @@ export default function Stock() {
       <Modal open={showAdd} onClose={() => setShowAdd(false)} title={t('stock.form.addTitle')}>
         <ProductForm
           categories={categories}
+          units={units}
           onCancel={() => setShowAdd(false)}
           onSuccess={() => { setShowAdd(false); load(); }}
         />
@@ -165,6 +168,7 @@ export default function Stock() {
         {editingProduct && (
           <ProductForm
             categories={categories}
+            units={units}
             initial={editingProduct}
             onCancel={() => setEditingProduct(null)}
             onSuccess={() => { setEditingProduct(null); load(); }}
@@ -200,7 +204,7 @@ export default function Stock() {
   );
 }
 
-function ProductForm({ initial, categories, onCancel, onSuccess }) {
+function ProductForm({ initial, categories, units, onCancel, onSuccess }) {
   const toast = useToast();
   const { t } = useTranslation();
   const categoryLabel = (category) => t(`categories.stock.${category}`, category);
@@ -208,6 +212,7 @@ function ProductForm({ initial, categories, onCancel, onSuccess }) {
   const [form, setForm] = useState({
     name: initial?.name || '',
     category: initial?.category || '',
+    unit: initial?.unit || 'pcs',
     purchase_price: initial?.purchase_price ?? '',
     selling_price: initial?.selling_price ?? '',
     quantity: initial?.quantity ?? 0,
@@ -261,17 +266,32 @@ function ProductForm({ initial, categories, onCancel, onSuccess }) {
         {errors.name && <p className="form-error">{errors.name}</p>}
       </div>
 
-      <div>
-        <label className="form-label">{t('stock.form.category')}</label>
-        <select
-          value={form.category || ''}
-          onChange={(e) => update('category', e.target.value)}
-          className={`form-input ${errors.category ? 'error' : ''}`}
-        >
-          <option value="">{t('stock.form.categoryNone')}</option>
-          {categories.map((c) => <option key={c} value={c}>{categoryLabel(c)}</option>)}
-        </select>
-        {errors.category && <p className="form-error">{errors.category}</p>}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="form-label">{t('stock.form.category')}</label>
+          <select
+            value={form.category || ''}
+            onChange={(e) => update('category', e.target.value)}
+            className={`form-input ${errors.category ? 'error' : ''}`}
+          >
+            <option value="">{t('stock.form.categoryNone')}</option>
+            {categories.map((c) => <option key={c} value={c}>{categoryLabel(c)}</option>)}
+          </select>
+          {errors.category && <p className="form-error">{errors.category}</p>}
+        </div>
+        <div>
+          <label className="form-label">{t('stock.form.unit')}</label>
+          <select
+            value={form.unit}
+            onChange={(e) => update('unit', e.target.value)}
+            className={`form-input ${errors.unit ? 'error' : ''}`}
+          >
+            {(units.length ? units : ['pcs','kg','g','L','mL','m','box','pkt','doz','ctn','btl','bag','tin','sack']).map((u) => (
+              <option key={u} value={u}>{t(`units.${u}`, u)}</option>
+            ))}
+          </select>
+          {errors.unit && <p className="form-error">{errors.unit}</p>}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -368,7 +388,7 @@ function RestockForm({ product, onCancel, onSuccess }) {
       <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 text-sm">
         <div className="text-slate-500 dark:text-slate-400">{t('stock.restockForm.currentStock')}</div>
         <div className="font-bold text-slate-800 dark:text-slate-100">
-          {t('stock.restockForm.unitsLabel', { count: Number(product.quantity) || 0, formattedCount: formatQuantity(product.quantity) })}
+          {formatQuantity(product.quantity)} {product.unit || 'pcs'}
         </div>
       </div>
 

@@ -34,9 +34,10 @@ class Config:
         MYSQL_USER     = os.environ.get("MYSQL_USER", "root")
         MYSQL_PASSWORD = os.environ.get("MYSQL_PASSWORD", "")
         MYSQL_DB       = os.environ.get("MYSQL_DB", "sales_analysis_db")
+        _ssl = "&ssl=true" if MYSQL_HOST not in ("localhost", "127.0.0.1") else ""
         SQLALCHEMY_DATABASE_URI = (
             f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}"
-            f"@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DB}?charset=utf8mb4"
+            f"@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DB}?charset=utf8mb4{_ssl}"
         )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {

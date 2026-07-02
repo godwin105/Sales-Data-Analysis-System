@@ -353,7 +353,9 @@
     "avgSale": "Wastani wa Mauzo",
     "expensesSection": "Matumizi",
     "noExpensesNote": "(hakuna matumizi yaliyorekodiwa)",
-    "totalExpenses": "Jumla ya Matumizi",
+    "cogs": "Gharama za Bidhaa Zilizouzwa (COGS)",
+    "grossProfit": "Faida Ghafi",
+    "totalExpenses": "Jumla ya Matumizi ya Uendeshaji",
     "netProfit": "Faida Halisi",
     "netLoss": "Hasara Halisi",
     "errorGenerate": "Imeshindwa kutengeneza ripoti.",
@@ -551,7 +553,6 @@
       "Rent": "Kodi",
       "Utilities": "Huduma",
       "Salaries": "Mishahara",
-      "Purchase Costs": "Gharama za Ununuzi",
       "Miscellaneous": "Mengineyo"
     }
   },

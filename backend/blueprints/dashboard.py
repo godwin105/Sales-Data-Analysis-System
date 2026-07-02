@@ -336,13 +336,14 @@ def expenses_by_month():
 
 
 def _build_expense_breakdown(owner_id, start_dt, end_dt):
-    """FR-22: expense totals by category for current month."""
+    """FR-22: operating expense totals by category for current month."""
     rows = (
         db.session.query(Expense.category, func.sum(Expense.amount))
         .filter(
-            Expense.user_id == owner_id,
+            Expense.user_id      == owner_id,
             Expense.expense_date >= start_dt.date(),
-            Expense.expense_date < end_dt.date(),
+            Expense.expense_date <  end_dt.date(),
+            Expense.category     != "Purchase Costs",
         )
         .group_by(Expense.category)
         .order_by(func.sum(Expense.amount).desc())

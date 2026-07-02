@@ -7,23 +7,27 @@ from flask_jwt_extended import current_user
 from sqlalchemy import func
 
 from extensions import db
-from models import Expense, Sale
+from models import Expense, Sale, SaleItem, Product
 from utils.decorators import cashier_or_admin_required
 
 expenses_bp = Blueprint("expenses", __name__, url_prefix="/api/expenses")
 
 
-EXPENSE_CATEGORIES = ["Rent", "Utilities", "Salaries", "Purchase Costs", "Miscellaneous"]
+EXPENSE_CATEGORIES = ["Rent", "Utilities", "Salaries", "Miscellaneous"]
 
 
 # SHARED HELPER — used by dashboard, analytics, reports
 
 def profit_loss_for_period(owner_id, start_dt, end_dt):
     """
-    Computes revenue, expenses (including Purchase Costs), and net profit for
-    the window [start_dt, end_dt).  Purchase costs are tracked as Expense records
-    created automatically when stock is added or restocked, so no separate COGS
-    deduction is needed here.
+    Computes revenue, COGS, gross profit, operating expenses, and net profit
+    for the window [start_dt, end_dt).
+
+    COGS = sum(units_sold × purchase_price) for all sale items in the period.
+    Operating Expenses = manually recorded expenses (Rent, Utilities, Salaries,
+    Miscellaneous). "Purchase Costs" records are excluded — they are legacy
+    entries created by the old system and are superseded by the COGS calculation.
+    Net Profit = Gross Profit − Operating Expenses.
     """
     revenue_row = (
         db.session.query(
@@ -37,32 +41,54 @@ def profit_loss_for_period(owner_id, start_dt, end_dt):
         )
         .one()
     )
-    revenue = Decimal(revenue_row[0] or 0)
+    revenue     = Decimal(revenue_row[0] or 0)
     total_sales = int(revenue_row[1] or 0)
 
+    # COGS: cost of every unit sold in the period at its purchase price
+    cogs_scalar = (
+        db.session.query(
+            func.coalesce(func.sum(SaleItem.quantity * Product.purchase_price), 0)
+        )
+        .join(Product, SaleItem.product_id == Product.product_id)
+        .join(Sale,    SaleItem.sale_id    == Sale.sale_id)
+        .filter(
+            Sale.user_id   == owner_id,
+            Sale.sale_date >= start_dt,
+            Sale.sale_date <  end_dt,
+        )
+        .scalar()
+    )
+    cogs         = Decimal(cogs_scalar or 0)
+    gross_profit = revenue - cogs
+
+    # Operating expenses — exclude legacy "Purchase Costs" entries
     exp_rows = (
         db.session.query(Expense.category, func.sum(Expense.amount))
         .filter(
-            Expense.user_id == owner_id,
+            Expense.user_id      == owner_id,
             Expense.expense_date >= start_dt.date(),
-            Expense.expense_date < end_dt.date(),
+            Expense.expense_date <  end_dt.date(),
+            Expense.category     != "Purchase Costs",
         )
         .group_by(Expense.category)
         .all()
     )
-    expenses_by_cat = {cat: Decimal(total or 0) for cat, total in exp_rows}
-    expenses_total = sum(expenses_by_cat.values(), Decimal("0"))
+    expenses_by_cat    = {cat: Decimal(total or 0) for cat, total in exp_rows}
+    operating_expenses = sum(expenses_by_cat.values(), Decimal("0"))
 
-    net_profit = revenue - expenses_total
-    avg_sale = (revenue / total_sales) if total_sales else Decimal("0")
+    net_profit = gross_profit - operating_expenses
+    avg_sale   = (revenue / total_sales) if total_sales else Decimal("0")
 
     return {
-        "revenue":         revenue,
-        "expenses_total":  expenses_total,
-        "expenses_by_cat": expenses_by_cat,
-        "net_profit":      net_profit,
-        "total_sales":     total_sales,
-        "avg_sale":        avg_sale,
+        "revenue":            revenue,
+        "cogs":               cogs,
+        "gross_profit":       gross_profit,
+        "operating_expenses": operating_expenses,
+        "expenses_total":     operating_expenses,   # backward-compatible alias
+        "expenses_by_cat":    expenses_by_cat,
+        "net_profit":         net_profit,
+        "total_sales":        total_sales,
+        "avg_sale":           avg_sale,
     }
 
 

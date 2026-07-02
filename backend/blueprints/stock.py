@@ -1,4 +1,3 @@
-from datetime import date
 from decimal import Decimal, InvalidOperation
 from sqlalchemy import func, exists
 
@@ -6,7 +5,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import current_user
 
 from extensions import db
-from models import Product, SaleItem, Expense
+from models import Product, SaleItem
 from utils.decorators import admin_required
 
 stock_bp = Blueprint("stock", __name__, url_prefix="/api/stock")
@@ -189,16 +188,6 @@ def add_product():
         low_stock_threshold=clean["low_stock_threshold"],
     )
     db.session.add(product)
-
-    if clean["quantity"] > 0 and clean["purchase_price"] > 0:
-        db.session.add(Expense(
-            user_id=current_user.owner_id,
-            category="Purchase Costs",
-            description=f"Initial stock: {clean['name']}, {_format_decimal(clean['quantity'])} {clean['unit']} @ TZS {clean['purchase_price']:,.0f}",
-            amount=clean["quantity"] * clean["purchase_price"],
-            expense_date=date.today(),
-        ))
-
     db.session.commit()
 
     return jsonify({
@@ -267,15 +256,6 @@ def restock_product(product_id):
     product.quantity = (product.quantity or Decimal("0")) + qty
     if new_purchase_price is not None:
         product.purchase_price = new_purchase_price
-
-    if price_paid > 0:
-        db.session.add(Expense(
-            user_id=current_user.owner_id,
-            category="Purchase Costs",
-            description=f"Restock: {product.name}, {_format_decimal(qty)} {product.unit or 'pcs'} @ TZS {price_paid:,.0f}",
-            amount=qty * price_paid,
-            expense_date=date.today(),
-        ))
 
     db.session.commit()
 

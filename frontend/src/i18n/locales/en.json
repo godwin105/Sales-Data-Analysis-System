@@ -353,7 +353,9 @@
     "avgSale": "Average Sale Value",
     "expensesSection": "Expenses",
     "noExpensesNote": "(no expenses recorded)",
-    "totalExpenses": "Total Expenses",
+    "cogs": "Cost of Goods Sold (COGS)",
+    "grossProfit": "Gross Profit",
+    "totalExpenses": "Total Operating Expenses",
     "netProfit": "Net Profit",
     "netLoss": "Net Loss",
     "errorGenerate": "Could not generate report.",
@@ -551,7 +553,6 @@
       "Rent": "Rent",
       "Utilities": "Utilities",
       "Salaries": "Salaries",
-      "Purchase Costs": "Purchase Costs",
       "Miscellaneous": "Miscellaneous"
     }
   },

@@ -333,6 +333,8 @@ export default function Reports() {
                       <>
                         <SumRow label={d('totalSalesLabel')} value={formatNumber(report.total_sales)} />
                         <SumRow label={d('grossRevenue')}    value={formatTZS(report.gross_revenue)} />
+                        <SumRow label={t('reports.cogs')}    value={`(${formatTZS(report.cogs)})`} indent />
+                        <SumRow label={t('reports.grossProfit')} value={formatTZS(report.gross_profit)} highlight />
                       </>
                     )}
                     {report.show_expenses && Object.entries(report.expenses).map(([cat, amt]) => (
@@ -397,11 +399,19 @@ function Td({ children, right, center }) {
   );
 }
 
-function SumRow({ label, value }) {
+function SumRow({ label, value, indent, highlight }) {
+  if (highlight) {
+    return (
+      <tr className="border-b border-slate-200 dark:border-slate-600 bg-blue-50 dark:bg-blue-900/20">
+        <td className="py-2 px-3 font-bold text-blue-900 dark:text-blue-200">{label}</td>
+        <td className="py-2 px-3 text-right font-bold text-blue-900 dark:text-blue-200">{value}</td>
+      </tr>
+    );
+  }
   return (
     <tr className="border-b border-slate-200 dark:border-slate-600">
-      <td className="py-2 px-3 text-slate-600 dark:text-slate-400 font-medium">{label}</td>
-      <td className="py-2 px-3 text-right text-slate-800 dark:text-slate-200">{value}</td>
+      <td className={`py-2 px-3 font-medium ${indent ? 'pl-6 text-slate-500 dark:text-slate-400 text-xs' : 'text-slate-600 dark:text-slate-400'}`}>{label}</td>
+      <td className={`py-2 px-3 text-right ${indent ? 'text-slate-500 dark:text-slate-400 text-xs' : 'text-slate-800 dark:text-slate-200'}`}>{value}</td>
     </tr>
   );
 }

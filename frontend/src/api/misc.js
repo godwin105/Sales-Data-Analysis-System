@@ -1,10 +1,11 @@
 import { API_BASE_URL, api } from './client';
 
 export const dashboardApi = {
-  load: () => api.get('/api/dashboard'),
-  topProductsByMonth: (year, month) => api.get('/api/dashboard/top-products', { params: { year, month } }),
-  salesTrendByMonth: (year, month) => api.get('/api/dashboard/sales-trend', { params: { year, month } }),
-  expensesByMonth: (year, month) => api.get('/api/dashboard/expenses', { params: { year, month } }),
+  load:               ()             => api.get('/api/dashboard'),
+  cashier:            ()             => api.get('/api/dashboard/cashier'),
+  topProductsByMonth: (year, month)  => api.get('/api/dashboard/top-products', { params: { year, month } }),
+  salesTrendByMonth:  (year, month)  => api.get('/api/dashboard/sales-trend',  { params: { year, month } }),
+  expensesByMonth:    (year, month)  => api.get('/api/dashboard/expenses',      { params: { year, month } }),
 };
 
 export const insightsApi = {

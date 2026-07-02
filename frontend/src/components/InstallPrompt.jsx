@@ -71,7 +71,7 @@ export default function InstallPrompt() {
               Install Biashara App
             </p>
             <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5 leading-snug">
-              Add to your home screen for quick access — works offline too.
+              Add to your home screen for quick access. Works offline too.
             </p>
           </div>
         </div>

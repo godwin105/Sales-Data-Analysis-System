@@ -11,17 +11,20 @@ export default function Sidebar({ isOpen, onClose }) {
   const { isAdmin } = useAuth();
   const { t } = useTranslation();
 
-  // All nav items; cashier sees a subset for daily operations.
+  // All nav items; adminOnly hides from cashiers, cashierOnly hides from admins.
   const allItems = [
-    { to: '/dashboard',     labelKey: 'nav.dashboard',     icon: LayoutDashboard, adminOnly: true },
-    { to: '/stock',         labelKey: 'nav.stock',         icon: Package,         adminOnly: true },
-    { to: '/sales/new',     labelKey: 'nav.recordSale',    icon: ShoppingCart,    adminOnly: false },
-    { to: '/sales/history', labelKey: 'nav.salesHistory',  icon: History,         adminOnly: false },
-    { to: '/expenses',      labelKey: 'nav.expenses',      icon: Receipt,         adminOnly: false },
-    { to: '/reports',       labelKey: 'nav.reports',       icon: FileText,        adminOnly: true },
-    { to: '/insights',      labelKey: 'nav.insights',      icon: TrendingUp,      adminOnly: true },
+    { to: '/dashboard',     labelKey: 'nav.dashboard',          icon: LayoutDashboard, adminOnly: true },
+    { to: '/cashier',       labelKey: 'nav.cashierDashboard',   icon: LayoutDashboard, cashierOnly: true },
+    { to: '/stock',         labelKey: 'nav.stock',              icon: Package,         adminOnly: true },
+    { to: '/sales/new',     labelKey: 'nav.recordSale',         icon: ShoppingCart },
+    { to: '/sales/history', labelKey: 'nav.salesHistory',       icon: History },
+    { to: '/expenses',      labelKey: 'nav.expenses',           icon: Receipt },
+    { to: '/reports',       labelKey: 'nav.reports',            icon: FileText,        adminOnly: true },
+    { to: '/insights',      labelKey: 'nav.insights',           icon: TrendingUp,      adminOnly: true },
   ];
-  const items = allItems.filter((item) => !item.adminOnly || isAdmin);
+  const items = allItems.filter((item) =>
+    (!item.adminOnly || isAdmin) && (!item.cashierOnly || !isAdmin)
+  );
 
   return (
     <>

@@ -13,6 +13,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 
 import Dashboard from './pages/Dashboard';
+import CashierDashboard from './pages/CashierDashboard';
 import Stock from './pages/Stock';
 import RecordSale from './pages/RecordSale';
 import SalesHistory from './pages/SalesHistory';
@@ -27,7 +28,7 @@ function HomeRedirect() {
   const { isAuthenticated, isCashier, isLoading } = useAuth();
   if (isLoading) return null;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  return <Navigate to={isCashier ? '/sales/new' : '/dashboard'} replace />;
+  return <Navigate to={isCashier ? '/cashier' : '/dashboard'} replace />;
 }
 
 /**
@@ -60,6 +61,7 @@ export default function App() {
         </ProtectedRoute>
       }>
         <Route path="/dashboard"     element={<Dashboard />} />
+        <Route path="/cashier"       element={<CashierDashboard />} />
         <Route path="/stock"         element={<Stock />} />
         <Route path="/sales/new"     element={<RecordSale />} />
         <Route path="/sales/history" element={<SalesHistory />} />

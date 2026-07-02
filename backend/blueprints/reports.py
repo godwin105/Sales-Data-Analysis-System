@@ -62,11 +62,14 @@ _TR = {
         "col_desc":       "DESCRIPTION",
         "col_cumulative": "CUMULATIVE\n(TZS)",
         "total":          "TOTAL",
-        "total_sales":    "Total Sales Transactions",
-        "gross_revenue":  "Gross Revenue",
-        "total_expenses": "Total Expenses",
-        "no_sales":       "No sales recorded for this period.",
-        "no_expenses":    "No expenses recorded for this period.",
+        "total_sales":         "Total Sales Transactions",
+        "gross_revenue":       "Gross Revenue",
+        "cogs":                "Cost of Goods Sold (COGS)",
+        "gross_profit":        "Gross Profit",
+        "operating_expenses":  "Operating Expenses",
+        "total_expenses":      "Total Operating Expenses",
+        "no_sales":            "No sales recorded for this period.",
+        "no_expenses":         "No expenses recorded for this period.",
         "disclaimer":     (
             "Kindly examine this statement carefully. Any discrepancies must be "
             "reported promptly. This document was generated automatically by the "
@@ -112,11 +115,14 @@ _TR = {
         "col_desc":       "MAELEZO",
         "col_cumulative": "JUMLA\nINAYOKUSANYIKA",
         "total":          "JUMLA",
-        "total_sales":    "Jumla ya Miamala ya Mauzo",
-        "gross_revenue":  "Mapato Ghafi",
-        "total_expenses": "Jumla ya Matumizi",
-        "no_sales":       "Hakuna mauzo yaliyorekodiwa katika kipindi hiki.",
-        "no_expenses":    "Hakuna matumizi yaliyorekodiwa katika kipindi hiki.",
+        "total_sales":         "Jumla ya Miamala ya Mauzo",
+        "gross_revenue":       "Mapato Ghafi",
+        "cogs":                "Gharama za Bidhaa Zilizouzwa (COGS)",
+        "gross_profit":        "Faida Ghafi",
+        "operating_expenses":  "Matumizi ya Uendeshaji",
+        "total_expenses":      "Jumla ya Matumizi ya Uendeshaji",
+        "no_sales":            "Hakuna mauzo yaliyorekodiwa katika kipindi hiki.",
+        "no_expenses":         "Hakuna matumizi yaliyorekodiwa katika kipindi hiki.",
         "disclaimer":     (
             "Tafadhali kagua taarifa hii kwa makini. Tofauti yoyote inapaswa "
             "kuripotiwa haraka. Hati hii ilitengenezwa kiotomatiki na Mfumo wa "
@@ -223,9 +229,10 @@ def _fetch_expenses(owner_id, start_dt, end_dt):
     expenses = (
         db.session.query(Expense)
         .filter(
-            Expense.user_id == owner_id,
+            Expense.user_id      == owner_id,
             Expense.expense_date >= start_dt.date(),
-            Expense.expense_date < end_dt.date(),
+            Expense.expense_date <  end_dt.date(),
+            Expense.category     != "Purchase Costs",
         )
         .order_by(Expense.expense_date)
         .all()
@@ -274,6 +281,8 @@ def build_report(owner_id, report_type, start_dt, end_dt, label):
         "show_profit":   show_profit,
         "total_sales":   pl["total_sales"],
         "gross_revenue": pl["revenue"],
+        "cogs":          pl["cogs"],
+        "gross_profit":  pl["gross_profit"],
         "avg_sale":      pl["avg_sale"],
         "expenses":      dict(pl["expenses_by_cat"]),
         "total_expenses":pl["expenses_total"],
@@ -295,6 +304,8 @@ def _report_to_json(report):
         "show_profit":    report["show_profit"],
         "total_sales":    report["total_sales"],
         "gross_revenue":  float(report["gross_revenue"]),
+        "cogs":           float(report["cogs"]),
+        "gross_profit":   float(report["gross_profit"]),
         "expenses":       {k: float(v) for k, v in report["expenses"].items()},
         "total_expenses": float(report["total_expenses"]),
         "net_profit":     float(report["net_profit"]),
@@ -589,12 +600,15 @@ def _render_pdf(report, business_name, owner_name, lang="en"):
 
         P_pl_lbl = _ps("PLlbl", fontSize=11, textColor=pl_color, fontName="Helvetica-Bold", leading=16)
         P_pl_val = _ps("PLval", fontSize=14, textColor=pl_color, fontName="Helvetica-Bold", leading=20, alignment=TA_RIGHT)
+        P_gp_val = _ps("GPval", fontSize=9,  textColor=_NAVY,    fontName="Helvetica-Bold", leading=13, alignment=TA_RIGHT)
 
         sum_rows = []
         if report["show_revenue"]:
             sum_rows += [
-                [Paragraph(tr["total_sales"],   P_lbl), Paragraph(f"{report['total_sales']:,}", P_val)],
-                [Paragraph(tr["gross_revenue"], P_lbl), Paragraph(f"TZS {float(report['gross_revenue']):,.0f}", P_val)],
+                [Paragraph(tr["total_sales"],   P_lbl),      Paragraph(f"{report['total_sales']:,}",                        P_val)],
+                [Paragraph(tr["gross_revenue"], P_lbl),      Paragraph(f"TZS {float(report['gross_revenue']):,.0f}",        P_val)],
+                [Paragraph(f"  {tr['cogs']}",  P_lbl),      Paragraph(f"(TZS {float(report['cogs']):,.0f})",               P_val)],
+                [Paragraph(tr["gross_profit"],  P_val_blue), Paragraph(f"TZS {float(report['gross_profit']):,.0f}",         P_gp_val)],
             ]
         if report["show_expenses"]:
             for cat, amt in report["expenses"].items():

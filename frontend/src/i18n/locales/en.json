@@ -54,6 +54,7 @@
     "insights": "Business Insights",
     "profile": "Edit Profile",
     "staff": "Manage Staff",
+    "cashierDashboard": "Dashboard",
     "logout": "Logout",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
@@ -185,7 +186,7 @@
     "monthlyProfit": "Monthly Profit",
     "totalProducts": "Total Products",
     "lowStockAlerts": "Low Stock Alerts",
-    "salesTrend": "Sales Trend — Units Sold per Day",
+    "salesTrend": "Sales Trend - Units Sold per Day",
     "topProducts": "Top 5 Selling Products (This Month)",
     "expenseBreakdown": "Expense Breakdown",
     "recentSales": "Recent Sales",
@@ -448,7 +449,7 @@
     "forecastUp": "Projected {{pct}}% above this month",
     "forecastDown": "Projected {{pct}}% below this month",
     "forecastFlat": "Projected to stay similar to this month",
-    "historicalView": "Historical view — forecast hidden",
+    "historicalView": "Historical view - forecast hidden",
     "beforeStartTitle": "Business not yet active",
     "beforeStartMessage": "This period is before your business was first recorded in the system. Data is available from {{month}} onwards.",
     "grossProfitByProduct": "Gross Profit by Product",
@@ -510,7 +511,7 @@
       "error": "Could not add cashier."
     },
     "resetForm": {
-      "title": "Reset Password — {{name}}",
+      "title": "Reset Password - {{name}}",
       "introA": "Set a new password for ",
       "introB": ". They'll use this to log in.",
       "newPassword": "New Password *",
@@ -525,9 +526,9 @@
   },
   "passwordStrength": {
     "minLength": "At least 8 characters",
-    "uppercase": "At least one uppercase letter (A–Z)",
-    "lowercase": "At least one lowercase letter (a–z)",
-    "number": "At least one number (0–9)",
+    "uppercase": "At least one uppercase letter (A-Z)",
+    "lowercase": "At least one lowercase letter (a-z)",
+    "number": "At least one number (0-9)",
     "special": "At least one special character (!@#$%^&*…)"
   },
   "errors": {
@@ -553,6 +554,29 @@
       "Purchase Costs": "Purchase Costs",
       "Miscellaneous": "Miscellaneous"
     }
+  },
+  "cashierDashboard": {
+    "title": "Dashboard",
+    "quickAction": "Record New Sale",
+    "mySalesToday": "Sales Today",
+    "transactionsRecorded": "Transactions recorded",
+    "myRevenueToday": "Revenue Today",
+    "totalToday": "Total collected today",
+    "lowStockAlerts": "Low Stock Alerts",
+    "itemsRunningLow": "Items running low",
+    "allStocked": "All stocked up",
+    "pendingPayments": "Pending Payments",
+    "awaitingConfirmation": "Awaiting confirmation",
+    "recentSales": "My Recent Sales",
+    "viewAll": "View all",
+    "noSalesYet": "No sales yet today",
+    "noSalesDesc": "Sales you record will appear here.",
+    "items": "items",
+    "pending": "Pending",
+    "lowStockTitle": "Low Stock Items",
+    "allStockedTitle": "All stocked up",
+    "allStockedDesc": "No products are running low right now.",
+    "lowStockNote": "Inform the business owner to restock these items."
   },
   "units": {
     "pcs": "Pieces (pcs)",

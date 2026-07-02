@@ -112,6 +112,100 @@ def dashboard():
     }), 200
 
 
+@dashboard_bp.route("/cashier", methods=["GET"])
+@jwt_required()
+def cashier_dashboard():
+    """Dashboard payload scoped to the logged-in cashier's own activity."""
+    owner_id   = current_user.owner_id
+    cashier_id = current_user.user_id
+    today      = date.today()
+    today_start = datetime.combine(today, datetime.min.time())
+    today_end   = today_start + timedelta(days=1)
+
+    my_sales_count = (
+        db.session.query(func.count(Sale.sale_id))
+        .filter(
+            Sale.user_id     == owner_id,
+            Sale.recorded_by == cashier_id,
+            Sale.sale_date   >= today_start,
+            Sale.sale_date   <  today_end,
+        )
+        .scalar() or 0
+    )
+
+    my_revenue = (
+        db.session.query(func.coalesce(func.sum(Sale.total_amount), 0))
+        .filter(
+            Sale.user_id     == owner_id,
+            Sale.recorded_by == cashier_id,
+            Sale.sale_date   >= today_start,
+            Sale.sale_date   <  today_end,
+        )
+        .scalar() or 0
+    )
+
+    pending_count = (
+        db.session.query(func.count(Sale.sale_id))
+        .filter(
+            Sale.user_id       == owner_id,
+            Sale.recorded_by   == cashier_id,
+            Sale.payment_status == "pending",
+        )
+        .scalar() or 0
+    )
+
+    low_stock_q = (
+        db.session.query(Product)
+        .filter(
+            Product.user_id    == owner_id,
+            Product.is_deleted.is_(False),
+            Product.quantity   <= Product.low_stock_threshold,
+        )
+        .order_by(Product.quantity)
+        .all()
+    )
+
+    recent_q = (
+        db.session.query(Sale)
+        .filter(
+            Sale.user_id     == owner_id,
+            Sale.recorded_by == cashier_id,
+        )
+        .order_by(Sale.sale_date.desc())
+        .limit(8)
+        .all()
+    )
+
+    return jsonify({
+        "kpi": {
+            "my_sales_today":    int(my_sales_count),
+            "my_revenue_today":  int(my_revenue),
+            "low_stock_count":   len(low_stock_q),
+            "pending_payments":  int(pending_count),
+            "low_stock_items": [
+                {
+                    "name":      p.name,
+                    "quantity":  float(p.quantity),
+                    "unit":      p.unit or "pcs",
+                    "threshold": float(p.low_stock_threshold),
+                }
+                for p in low_stock_q
+            ],
+        },
+        "recent_sales": [
+            {
+                "sale_id":        s.sale_id,
+                "sale_date":      s.sale_date.isoformat(),
+                "total_amount":   float(s.total_amount),
+                "items_count":    len(s.items),
+                "payment_method": s.payment_method,
+                "payment_status": s.payment_status,
+            }
+            for s in recent_q
+        ],
+    }), 200
+
+
 # =========================================================================
 # CHART BUILDERS
 # =========================================================================

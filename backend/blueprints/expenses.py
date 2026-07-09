@@ -5,15 +5,13 @@ from collections import defaultdict
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import current_user
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload
 
 from extensions import db
-from models import Expense, Sale, SaleItem, Product
+from models import Expense, Sale, SaleItem, Product, ExpenseCategory
 from utils.decorators import cashier_or_admin_required
 
 expenses_bp = Blueprint("expenses", __name__, url_prefix="/api/expenses")
-
-
-EXPENSE_CATEGORIES = ["Rent", "Utilities", "Salaries", "Miscellaneous"]
 
 
 # SHARED HELPER — used by dashboard, analytics, reports
@@ -61,16 +59,17 @@ def profit_loss_for_period(owner_id, start_dt, end_dt):
     cogs         = Decimal(cogs_scalar or 0)
     gross_profit = revenue - cogs
 
-    # Operating expenses — exclude legacy "Purchase Costs" entries
+    # Operating expenses — exclude legacy "Purchase Costs" entries via join
     exp_rows = (
-        db.session.query(Expense.category, func.sum(Expense.amount))
+        db.session.query(ExpenseCategory.name, func.sum(Expense.amount))
+        .join(ExpenseCategory, Expense.category_id == ExpenseCategory.id)
         .filter(
             Expense.user_id      == owner_id,
             Expense.expense_date >= start_dt.date(),
             Expense.expense_date <  end_dt.date(),
-            Expense.category     != "Purchase Costs",
+            ExpenseCategory.name != "Purchase Costs",
         )
-        .group_by(Expense.category)
+        .group_by(ExpenseCategory.name)
         .all()
     )
     expenses_by_cat    = {cat: Decimal(total or 0) for cat, total in exp_rows}
@@ -98,13 +97,23 @@ def profit_loss_for_period(owner_id, start_dt, end_dt):
 def _validate_expense_payload(data):
     errors = {}
 
-    category = data.get("category")
-    if not category:
+    # Validate category against the DB lookup table (exclude Purchase Costs)
+    category_id = None
+    category_name = data.get("category")
+    if not category_name:
         errors["category"] = "Please pick a category."
-    elif category not in EXPENSE_CATEGORIES:
-        errors["category"] = (
-            f"Category must be one of: {', '.join(EXPENSE_CATEGORIES)}."
-        )
+    else:
+        cat_obj = db.session.query(ExpenseCategory).filter(
+            ExpenseCategory.name == category_name,
+            ExpenseCategory.name != "Purchase Costs",
+        ).first()
+        if cat_obj is None:
+            valid = [c.name for c in db.session.query(ExpenseCategory).filter(
+                ExpenseCategory.name != "Purchase Costs"
+            ).all()]
+            errors["category"] = f"Category must be one of: {', '.join(valid)}."
+        else:
+            category_id = cat_obj.id
 
     description = (data.get("description") or "").strip()
     if description and len(description) > 255:
@@ -138,9 +147,9 @@ def _validate_expense_payload(data):
         return None, errors
 
     return {
-        "category": category,
-        "description": description or None,
-        "amount": amount,
+        "category_id":  category_id,
+        "description":  description or None,
+        "amount":       amount,
         "expense_date": expense_date,
     }, None
 
@@ -155,26 +164,32 @@ def list_expenses():
 
     expenses = (
         db.session.query(Expense)
+        .options(joinedload(Expense.category_obj))
         .filter_by(user_id=owner_id)
         .order_by(Expense.expense_date.desc(), Expense.created_at.desc())
         .all()
     )
 
-    # FR-18: aggregate totals per category, in canonical order
+    # Aggregate totals per category, in DB-defined order (excluding Purchase Costs)
+    valid_cats = [c.name for c in db.session.query(ExpenseCategory).filter(
+        ExpenseCategory.name != "Purchase Costs"
+    ).order_by(ExpenseCategory.id).all()]
+
     category_totals = defaultdict(lambda: Decimal("0"))
     for exp in expenses:
-        category_totals[exp.category] += exp.amount
+        if exp.category and exp.category != "Purchase Costs":
+            category_totals[exp.category] += exp.amount
 
     ordered_totals = {
         cat: float(category_totals[cat])
-        for cat in EXPENSE_CATEGORIES
+        for cat in valid_cats
         if cat in category_totals
     }
 
     return jsonify({
-        "expenses": [e.to_dict() for e in expenses],
+        "expenses":       [e.to_dict() for e in expenses],
         "category_totals": ordered_totals,
-        "categories": EXPENSE_CATEGORIES,
+        "categories":     valid_cats,
     }), 200
 
 
@@ -190,7 +205,7 @@ def add_expense():
 
     expense = Expense(
         user_id=current_user.owner_id,
-        category=clean["category"],
+        category_id=clean["category_id"],
         description=clean["description"],
         amount=clean["amount"],
         expense_date=clean["expense_date"],

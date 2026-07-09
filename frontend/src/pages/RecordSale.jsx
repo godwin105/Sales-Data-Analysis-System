@@ -32,6 +32,15 @@ export default function RecordSale() {
   // ── Payment ─────────────────────────────────────────────────────────────────
   const [payMethod, setPayMethod] = useState('cash');
   const [phone,     setPhone]     = useState('');
+  const phoneRef = useRef(null);
+
+  useEffect(() => {
+    if (payMethod === 'mobile_money') {
+      // Small timeout lets the input finish rendering before focusing
+      const t = setTimeout(() => phoneRef.current?.focus(), 50);
+      return () => clearTimeout(t);
+    }
+  }, [payMethod]);
 
   // payState: null | { externalId, amount, phone, channel, status, secondsLeft }
   const [payState,  setPayState]  = useState(null);
@@ -187,20 +196,6 @@ export default function RecordSale() {
 
       await refreshProducts();
 
-      if (data.push_failed) {
-        // Push didn't go through — show error state, don't start polling
-        setPayState({
-          externalId:  data.external_id,
-          amount:      data.amount,
-          status:      'push_failed',
-          phone:       phone.trim(),
-          channel:     null,
-          errorMsg:    data.error || 'Payment push failed.',
-          secondsLeft: 0,
-        });
-        return;
-      }
-
       setPayState({
         externalId:      data.external_id,
         amount:          data.amount,
@@ -234,14 +229,13 @@ export default function RecordSale() {
 
   // ── Payment status overlay ───────────────────────────────────────────────────
   if (payState) {
-    const isPending    = payState.status === 'pending';
-    const isConfirmed  = payState.status === 'confirmed';
-    const isFailed     = payState.status === 'failed';
-    const isTimeout    = payState.status === 'timeout';
-    const isPushFailed = payState.status === 'push_failed';
+    const isPending   = payState.status === 'pending';
+    const isConfirmed = payState.status === 'confirmed';
+    const isFailed    = payState.status === 'failed';
+    const isTimeout   = payState.status === 'timeout';
 
-    const borderColor = isConfirmed  ? 'border-green-400 dark:border-green-600'
-                      : (isFailed || isTimeout || isPushFailed) ? 'border-red-400 dark:border-red-600'
+    const borderColor = isConfirmed ? 'border-green-400 dark:border-green-600'
+                      : (isFailed || isTimeout) ? 'border-red-400 dark:border-red-600'
                       : 'border-brand-400 dark:border-brand-600';
 
     return (
@@ -336,35 +330,6 @@ export default function RecordSale() {
                 <p className="text-slate-600 dark:text-slate-300 text-sm mt-1">
                   The customer cancelled or the transaction was rejected.
                 </p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <button onClick={resetAll} className="btn-secondary flex-1 text-sm">
-                  <RefreshCw size={14} /> New Sale
-                </button>
-                <button
-                  onClick={() => { clearTimers(); setPayState(null); setPayMethod('cash'); }}
-                  className="btn-primary flex-1 text-sm"
-                >
-                  <Banknote size={14} /> Collect Cash Instead
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ── Push Failed ── */}
-          {isPushFailed && (
-            <div className="space-y-4 text-center">
-              <XCircle className="text-red-500 mx-auto" size={48} />
-              <div>
-                <p className="font-bold text-red-700 dark:text-red-300 text-lg">Payment Push Failed</p>
-                <p className="text-slate-600 dark:text-slate-300 text-sm mt-1">
-                  The sale was saved but the push to {payState.phone} could not be sent.
-                </p>
-                {payState.errorMsg && (
-                  <p className="mt-2 text-xs bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded p-2 text-red-700 dark:text-red-300 font-mono break-all text-left">
-                    {payState.errorMsg}
-                  </p>
-                )}
               </div>
               <div className="flex flex-col sm:flex-row gap-2">
                 <button onClick={resetAll} className="btn-secondary flex-1 text-sm">
@@ -550,19 +515,6 @@ export default function RecordSale() {
         </button>
       </div>
 
-      {/* Notes */}
-      <div className="card">
-        <label className="form-label">{t('sales.notes')}</label>
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          rows={2}
-          maxLength={500}
-          className="form-input text-sm"
-          placeholder={t('sales.notesPlaceholder')}
-        />
-      </div>
-
       {/* Payment method */}
       <div className="card">
         <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">
@@ -594,6 +546,7 @@ export default function RecordSale() {
           <div className="pt-3 border-t border-slate-100 dark:border-slate-700">
             <label className="form-label">Customer Phone Number</label>
             <input
+              ref={phoneRef}
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
@@ -605,6 +558,19 @@ export default function RecordSale() {
             </p>
           </div>
         )}
+      </div>
+
+      {/* Notes — optional, placed last so it doesn't interrupt the main flow */}
+      <div className="card">
+        <label className="form-label">{t('sales.notes')}</label>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={2}
+          maxLength={500}
+          className="form-input text-sm"
+          placeholder={t('sales.notesPlaceholder')}
+        />
       </div>
 
       {/* Total + submit */}

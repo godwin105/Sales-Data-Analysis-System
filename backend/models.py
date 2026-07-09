@@ -3,7 +3,40 @@ from sqlalchemy import Numeric
 from extensions import db
 
 
-# USER (Authentication)
+# ── Lookup tables (normalization) ─────────────────────────────────────────────
+
+class ProductCategory(db.Model):
+    __tablename__ = "product_categories"
+
+    id   = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False, unique=True)
+
+    def __repr__(self):
+        return f"<ProductCategory {self.name}>"
+
+
+class Unit(db.Model):
+    __tablename__ = "units"
+
+    id     = db.Column(db.Integer, primary_key=True)
+    symbol = db.Column(db.String(20), nullable=False, unique=True)
+    name   = db.Column(db.String(50), nullable=False)
+
+    def __repr__(self):
+        return f"<Unit {self.symbol}>"
+
+
+class ExpenseCategory(db.Model):
+    __tablename__ = "expense_categories"
+
+    id   = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False, unique=True)
+
+    def __repr__(self):
+        return f"<ExpenseCategory {self.name}>"
+
+
+# ── USER (Authentication) ─────────────────────────────────────────────────────
 
 class User(db.Model):
     __tablename__ = "users"
@@ -84,7 +117,8 @@ class User(db.Model):
         return f"<User {self.email} ({self.role})>"
 
 
-# PRODUCT (Stock Management)
+# ── PRODUCT (Stock Management) ───────────────────────────────────────────────
+
 class Product(db.Model):
     __tablename__ = "products"
 
@@ -94,8 +128,14 @@ class Product(db.Model):
         nullable=False, index=True,
     )
     name = db.Column(db.String(100), nullable=False)
-    category = db.Column(db.String(50), nullable=True, index=True)
-    unit = db.Column(db.String(20), nullable=False, default="pcs")
+    category_id = db.Column(
+        db.Integer, db.ForeignKey("product_categories.id", ondelete="SET NULL"),
+        nullable=True, index=True,
+    )
+    unit_id = db.Column(
+        db.Integer, db.ForeignKey("units.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
     purchase_price = db.Column(db.Numeric(10, 2), nullable=False)
     selling_price = db.Column(db.Numeric(10, 2), nullable=False)
     quantity =  db.Column(Numeric(10, 2), nullable=False, default=0)
@@ -103,22 +143,35 @@ class Product(db.Model):
     is_deleted = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
+    category_obj = db.relationship("ProductCategory")
+    unit_obj     = db.relationship("Unit")
+
+    @property
+    def category(self):
+        return self.category_obj.name if self.category_obj else None
+
+    @property
+    def unit(self):
+        return self.unit_obj.symbol if self.unit_obj else "pcs"
+
     @property
     def is_low_stock(self):
         return self.quantity <= self.low_stock_threshold
 
     def to_dict(self):
         return {
-            "product_id": self.product_id,
-            "name": self.name,
-            "category": self.category,
-            "unit": self.unit or "pcs",
+            "product_id":    self.product_id,
+            "name":          self.name,
+            "category":      self.category,
+            "category_id":   self.category_id,
+            "unit":          self.unit,
+            "unit_id":       self.unit_id,
             "purchase_price": float(self.purchase_price),
-            "selling_price": float(self.selling_price),
-            "quantity": float(self.quantity),
+            "selling_price":  float(self.selling_price),
+            "quantity":      float(self.quantity),
             "low_stock_threshold": float(self.low_stock_threshold),
-            "is_low_stock": self.is_low_stock,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "is_low_stock":  self.is_low_stock,
+            "created_at":    self.created_at.isoformat() if self.created_at else None,
         }
 
 
@@ -193,7 +246,7 @@ class SaleItem(db.Model):
 
 
 
-# EXPENSE (Expense Tracking)
+# ── EXPENSE (Expense Tracking) ───────────────────────────────────────────────
 
 class Expense(db.Model):
     __tablename__ = "expenses"
@@ -203,20 +256,30 @@ class Expense(db.Model):
         db.Integer, db.ForeignKey("users.user_id", ondelete="CASCADE"),
         nullable=False, index=True,
     )
-    category = db.Column(db.String(50), nullable=False)
+    category_id = db.Column(
+        db.Integer, db.ForeignKey("expense_categories.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
     description = db.Column(db.String(255), nullable=True)
     amount = db.Column(db.Numeric(10, 2), nullable=False)
     expense_date = db.Column(db.Date, nullable=False, index=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
+    category_obj = db.relationship("ExpenseCategory")
+
+    @property
+    def category(self):
+        return self.category_obj.name if self.category_obj else None
+
     def to_dict(self):
         return {
-            "expense_id": self.expense_id,
-            "category": self.category,
-            "description": self.description,
-            "amount": float(self.amount),
+            "expense_id":   self.expense_id,
+            "category":     self.category,
+            "category_id":  self.category_id,
+            "description":  self.description,
+            "amount":       float(self.amount),
             "expense_date": self.expense_date.isoformat() if self.expense_date else None,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_at":   self.created_at.isoformat() if self.created_at else None,
         }
 
 

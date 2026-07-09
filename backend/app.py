@@ -8,6 +8,8 @@ React SPA (../frontend/) which calls these endpoints via HTTPS.
 Run with:
     python app.py        # development on port 5000
 """
+import threading
+
 from flask import Flask, jsonify
 from flask_jwt_extended import JWTManager
 from sqlalchemy import inspect, text
@@ -84,7 +86,7 @@ def create_app(config_class=Config):
     with app.app_context():
         _ensure_profile_image_column()
         _ensure_payment_columns()
-        _ensure_unit_column()
+        _ensure_normalization_tables()
 
     # ---- Health check ----
     @app.route("/api/health")
@@ -108,7 +110,23 @@ def create_app(config_class=Config):
             db.create_all()
             print("✅ Database tables created.")
 
+    # Pre-warm ClickPesa token so the first USSD push isn't slow
+    _prefetch_clickpesa_token(app)
+
     return app
+
+
+def _prefetch_clickpesa_token(app):
+    """Fetch the ClickPesa auth token in the background on startup so the
+    first USSD push doesn't block while waiting for the token endpoint."""
+    def _do():
+        try:
+            with app.app_context():
+                from services.clickpesa import _get_token
+                _get_token()
+        except Exception:
+            pass  # credentials not set locally or API unreachable — non-fatal
+    threading.Thread(target=_do, daemon=True).start()
 
 
 def _ensure_payment_columns():
@@ -132,19 +150,119 @@ def _ensure_payment_columns():
         db.session.rollback()
 
 
-def _ensure_unit_column():
+def _ensure_normalization_tables():
+    """
+    Idempotent migration: creates lookup tables (product_categories, units,
+    expense_categories) and migrates FK columns on products/expenses.
+    Safe to call on every startup — checks schema before acting.
+    """
     try:
+        # Create all new lookup tables declared in models
+        db.create_all()
+
+        from models import ProductCategory, Unit, ExpenseCategory
+
+        # Seed product categories
+        if not db.session.query(ProductCategory).first():
+            for name in ["Food", "Cleaning", "Beverages", "Other"]:
+                db.session.add(ProductCategory(name=name))
+            db.session.flush()
+
+        # Seed units
+        if not db.session.query(Unit).first():
+            for symbol, uname in [
+                ("pcs", "Pieces"), ("kg", "Kilograms"), ("g", "Grams"),
+                ("L", "Litres"), ("mL", "Millilitres"), ("m", "Metres"),
+                ("box", "Box"), ("pkt", "Packet"), ("doz", "Dozen"),
+                ("ctn", "Carton"), ("btl", "Bottle"), ("bag", "Bag"),
+                ("tin", "Tin"), ("sack", "Sack"),
+            ]:
+                db.session.add(Unit(symbol=symbol, name=uname))
+            db.session.flush()
+
+        # Seed expense categories (include Purchase Costs for legacy FK mapping)
+        if not db.session.query(ExpenseCategory).first():
+            for name in ["Rent", "Utilities", "Salaries", "Purchase Costs", "Miscellaneous"]:
+                db.session.add(ExpenseCategory(name=name))
+            db.session.flush()
+
+        db.session.commit()
+
         inspector = inspect(db.engine)
-        if not inspector.has_table("products"):
-            return
-        cols = {c["name"] for c in inspector.get_columns("products")}
-        if "unit" not in cols:
-            db.session.execute(text(
-                "ALTER TABLE products ADD COLUMN unit VARCHAR(20) NOT NULL DEFAULT 'pcs'"
-            ))
-            db.session.commit()
-    except SQLAlchemyError:
+
+        # ── Migrate products table ─────────────────────────────────────────
+        if inspector.has_table("products"):
+            cols = {c["name"] for c in inspector.get_columns("products")}
+
+            if "category_id" not in cols:
+                db.session.execute(text("ALTER TABLE products ADD COLUMN category_id INT NULL"))
+                if "category" in cols:
+                    db.session.execute(text("""
+                        UPDATE products p
+                        JOIN product_categories pc ON pc.name = p.category
+                        SET p.category_id = pc.id
+                        WHERE p.category IS NOT NULL
+                    """))
+                db.session.commit()
+
+            if "unit_id" not in cols:
+                db.session.execute(text("ALTER TABLE products ADD COLUMN unit_id INT NULL"))
+                if "unit" in cols:
+                    db.session.execute(text("""
+                        UPDATE products p
+                        JOIN units u ON u.symbol = p.unit
+                        SET p.unit_id = u.id
+                        WHERE p.unit IS NOT NULL
+                    """))
+                # Default any remaining NULLs to 'pcs'
+                db.session.execute(text("""
+                    UPDATE products p
+                    JOIN units u ON u.symbol = 'pcs'
+                    SET p.unit_id = u.id
+                    WHERE p.unit_id IS NULL
+                """))
+                db.session.commit()
+
+            # Drop old string columns once FK columns are populated
+            cols = {c["name"] for c in inspect(db.engine).get_columns("products")}
+            if "category" in cols and "category_id" in cols:
+                db.session.execute(text("ALTER TABLE products DROP COLUMN category"))
+                db.session.commit()
+            if "unit" in cols and "unit_id" in cols:
+                db.session.execute(text("ALTER TABLE products DROP COLUMN unit"))
+                db.session.commit()
+
+        # ── Migrate expenses table ─────────────────────────────────────────
+        if inspector.has_table("expenses"):
+            cols = {c["name"] for c in inspector.get_columns("expenses")}
+
+            if "category_id" not in cols:
+                db.session.execute(text("ALTER TABLE expenses ADD COLUMN category_id INT NULL"))
+                if "category" in cols:
+                    db.session.execute(text("""
+                        UPDATE expenses e
+                        JOIN expense_categories ec ON ec.name = e.category
+                        SET e.category_id = ec.id
+                        WHERE e.category IS NOT NULL
+                    """))
+                # Default orphan rows to Miscellaneous
+                db.session.execute(text("""
+                    UPDATE expenses e
+                    JOIN expense_categories ec ON ec.name = 'Miscellaneous'
+                    SET e.category_id = ec.id
+                    WHERE e.category_id IS NULL
+                """))
+                db.session.commit()
+
+            # Drop old string column once FK column is populated
+            cols = {c["name"] for c in inspect(db.engine).get_columns("expenses")}
+            if "category" in cols and "category_id" in cols:
+                db.session.execute(text("ALTER TABLE expenses DROP COLUMN category"))
+                db.session.commit()
+
+    except SQLAlchemyError as exc:
         db.session.rollback()
+        print(f"[migration] Normalization warning: {exc}")
 
 
 def _ensure_profile_image_column():

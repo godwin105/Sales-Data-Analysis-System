@@ -106,73 +106,65 @@ def initiate():
 
         payment = Payment(
             sale_id      = sale.sale_id,
-            provider     = "mobile_money",   # channel set by ClickPesa after push
+            provider     = "mobile_money",
             phone_number = phone,
             amount       = total_amount,
             external_id  = order_ref,
             status       = "pending",
         )
         db.session.add(payment)
-        db.session.commit()
+        # Do NOT commit yet — push must succeed first.
 
         # ── Send USSD push via ClickPesa ──────────────────────────────────────
-        push_failed     = False
-        push_error      = None
-        customer_amount = float(total_amount)   # may be updated with fee below
-        channel         = None
-
         try:
             cp_resp = initiate_ussd_push(
                 phone           = phone,
                 amount          = float(total_amount),
                 order_reference = order_ref,
             )
-            channel = cp_resp.get("channel") or None
-            if channel:
-                payment.provider = channel
-            if cp_resp.get("id"):
-                payment.transaction_id = cp_resp["id"]
-            # ClickPesa returns the fee-inclusive amount the customer is charged
-            if cp_resp.get("collectedAmount"):
-                try:
-                    customer_amount = float(cp_resp["collectedAmount"])
-                except (TypeError, ValueError):
-                    pass
-            db.session.commit()
         except Exception as exc:
+            # Push failed before reaching the customer — roll back everything
+            # so no sale or stock change is recorded.
+            db.session.rollback()
             traceback.print_exc()
-            push_failed = True
-            push_error  = str(exc)
-            payment.status              = "failed"
-            payment.sale.payment_status = "failed"
+            return jsonify({
+                "error": (
+                    f"Payment push failed: {exc}. "
+                    "The sale was NOT recorded — please try again."
+                ),
+            }), 502
+
+        # Push reached the customer's phone — now commit the sale.
+        channel         = cp_resp.get("channel") or None
+        customer_amount = float(total_amount)
+
+        if channel:
+            payment.provider = channel
+        if cp_resp.get("id"):
+            payment.transaction_id = cp_resp["id"]
+        if cp_resp.get("collectedAmount"):
             try:
-                db.session.commit()
-            except SQLAlchemyError:
-                db.session.rollback()
+                customer_amount = float(cp_resp["collectedAmount"])
+            except (TypeError, ValueError):
+                pass
+
+        db.session.commit()
 
         low_stock = [
             p.name for (p, _, _, _) in resolved_items
             if p.quantity <= p.low_stock_threshold
         ]
 
-        resp = {
+        return jsonify({
             "sale_id":            sale.sale_id,
             "external_id":        order_ref,
+            "status":             "pending",
             "amount":             float(total_amount),
+            "customer_amount":    customer_amount,
+            "channel":            channel,
             "low_stock_warnings": low_stock,
-        }
-
-        if push_failed:
-            resp["push_failed"] = True
-            resp["error"]       = push_error
-            resp["message"]     = "Sale saved but payment push failed — see error for details."
-            return jsonify(resp), 201
-
-        resp["status"]          = "pending"
-        resp["customer_amount"] = customer_amount   # amount + fee the customer sees
-        resp["channel"]         = channel
-        resp["message"]         = f"Payment request sent to {phone}. Waiting for customer to confirm."
-        return jsonify(resp), 201
+            "message":            f"Payment request sent to {phone}. Waiting for customer to confirm.",
+        }), 201
 
     except ValueError as ve:
         db.session.rollback()

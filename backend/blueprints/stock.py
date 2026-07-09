@@ -1,19 +1,15 @@
 from decimal import Decimal, InvalidOperation
 from sqlalchemy import func, exists
+from sqlalchemy.orm import joinedload
 
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import current_user
 
 from extensions import db
-from models import Product, SaleItem
+from models import Product, SaleItem, ProductCategory, Unit
 from utils.decorators import admin_required
 
 stock_bp = Blueprint("stock", __name__, url_prefix="/api/stock")
-
-# Same categories as the original Jinja2 form
-PRODUCT_CATEGORIES = ["Food", "Cleaning", "Beverages", "Other"]
-
-PRODUCT_UNITS = ["pcs", "kg", "g", "L", "mL", "m", "box", "pkt", "doz", "ctn", "btl", "bag", "tin", "sack"]
 
 
 def _validate_decimal(value, field_name, *, min_value=Decimal("0"), required=True):
@@ -58,7 +54,6 @@ def _format_decimal(value):
 
 
 def _validate_product_payload(data, *, editing_id=None):
-    #Validate the body of an add/edit product request. Returns (clean, errors)
     errors = {}
 
     name = (data.get("name") or "").strip()
@@ -67,13 +62,24 @@ def _validate_product_payload(data, *, editing_id=None):
     elif len(name) > 100:
         errors["name"] = "Product name is too long (max 100 characters)."
 
-    category = data.get("category")
-    if category and category not in PRODUCT_CATEGORIES:
-        errors["category"] = f"Category must be one of: {', '.join(PRODUCT_CATEGORIES)}."
+    # Validate category against the DB lookup table
+    category_id = None
+    category_name = data.get("category")
+    if category_name:
+        cat_obj = db.session.query(ProductCategory).filter_by(name=category_name).first()
+        if cat_obj is None:
+            valid = [c.name for c in db.session.query(ProductCategory).all()]
+            errors["category"] = f"Category must be one of: {', '.join(valid)}."
+        else:
+            category_id = cat_obj.id
 
-    unit = (data.get("unit") or "pcs").strip()
-    if unit not in PRODUCT_UNITS:
-        errors["unit"] = f"Unit must be one of: {', '.join(PRODUCT_UNITS)}."
+    # Validate unit against the DB lookup table
+    unit_symbol = (data.get("unit") or "pcs").strip()
+    unit_obj = db.session.query(Unit).filter_by(symbol=unit_symbol).first()
+    if unit_obj is None:
+        valid = [u.symbol for u in db.session.query(Unit).all()]
+        errors["unit"] = f"Unit must be one of: {', '.join(valid)}."
+    unit_id = unit_obj.id if unit_obj else None
 
     purchase_price, err = _validate_decimal(data.get("purchase_price"), "Purchase price")
     if err:
@@ -115,23 +121,27 @@ def _validate_product_payload(data, *, editing_id=None):
         return None, errors
 
     return {
-        "name": name,
-        "category": category or None,
-        "unit": unit,
-        "purchase_price": purchase_price,
-        "selling_price": selling_price,
-        "quantity": quantity if quantity is not None else Decimal("0"),
+        "name":                name,
+        "category_id":         category_id,
+        "unit_id":             unit_id,
+        "purchase_price":      purchase_price,
+        "selling_price":       selling_price,
+        "quantity":            quantity if quantity is not None else Decimal("0"),
         "low_stock_threshold": low_stock_threshold if low_stock_threshold is not None else Decimal("5"),
     }, None
 
 
 def _get_owned_product(product_id):
-    #Fetch a product belonging to the current user's business, or None
-    return db.session.query(Product).filter(
-        Product.product_id == product_id,
-        Product.user_id == current_user.owner_id,
-        Product.is_deleted.is_(False),
-    ).first()
+    return (
+        db.session.query(Product)
+        .options(joinedload(Product.category_obj), joinedload(Product.unit_obj))
+        .filter(
+            Product.product_id == product_id,
+            Product.user_id == current_user.owner_id,
+            Product.is_deleted.is_(False),
+        )
+        .first()
+    )
 
 
 #routes
@@ -148,12 +158,20 @@ def list_products():
     if q:
         query = query.filter(Product.name.ilike(f"%{q}%"))
 
-    products = query.order_by(Product.name.asc()).all()
+    products = (
+        query
+        .options(joinedload(Product.category_obj), joinedload(Product.unit_obj))
+        .order_by(Product.name.asc())
+        .all()
+    )
+
+    categories = [c.name for c in db.session.query(ProductCategory).order_by(ProductCategory.name).all()]
+    units = [u.symbol for u in db.session.query(Unit).order_by(Unit.id).all()]
 
     return jsonify({
-        "products": [p.to_dict() for p in products],
-        "categories": PRODUCT_CATEGORIES,
-        "units": PRODUCT_UNITS,
+        "products":   [p.to_dict() for p in products],
+        "categories": categories,
+        "units":      units,
     }), 200
 
 
@@ -180,8 +198,8 @@ def add_product():
     product = Product(
         user_id=current_user.owner_id,
         name=clean["name"],
-        category=clean["category"],
-        unit=clean["unit"],
+        category_id=clean["category_id"],
+        unit_id=clean["unit_id"],
         purchase_price=clean["purchase_price"],
         selling_price=clean["selling_price"],
         quantity=clean["quantity"],
@@ -211,8 +229,8 @@ def edit_product(product_id):
         return jsonify({"error": "Validation failed", "fields": errors}), 400
 
     product.name = clean["name"]
-    product.category = clean["category"]
-    product.unit = clean["unit"]
+    product.category_id = clean["category_id"]
+    product.unit_id = clean["unit_id"]
     product.purchase_price = clean["purchase_price"]
     product.selling_price = clean["selling_price"]
     product.quantity = clean["quantity"]

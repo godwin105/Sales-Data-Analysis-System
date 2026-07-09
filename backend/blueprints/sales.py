@@ -7,6 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from extensions import db
 from models import Product, Sale, SaleItem
+from sqlalchemy.orm import joinedload
 from utils.decorators import cashier_or_admin_required
 
 sales_bp = Blueprint("sales", __name__, url_prefix="/api/sales")
@@ -22,6 +23,7 @@ def in_stock_products():
     #List products available to sell (qty > 0, not deleted).
     products = (
         db.session.query(Product)
+        .options(joinedload(Product.category_obj), joinedload(Product.unit_obj))
         .filter(
             Product.user_id == current_user.owner_id,
             Product.quantity > 0,

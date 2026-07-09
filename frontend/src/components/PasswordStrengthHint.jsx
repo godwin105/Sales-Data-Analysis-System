@@ -14,7 +14,7 @@ export default function PasswordStrengthHint({ value = '' }) {
   if (!value) return null;
 
   return (
-    <ul className="mt-2 space-y-1">
+    <ul className="mt-2 grid grid-cols-2 gap-x-3 gap-y-0.5">
       {rules.map(({ key, test }) => {
         const ok = test(value);
         return (

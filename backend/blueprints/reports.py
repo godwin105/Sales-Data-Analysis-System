@@ -4,7 +4,7 @@ from io import BytesIO
 
 from flask import Blueprint, request, jsonify, send_file
 from flask_jwt_extended import current_user
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, contains_eager
 from reportlab.pdfgen import canvas as rl_canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
@@ -16,7 +16,7 @@ from reportlab.platypus import (
 from reportlab.lib.enums import TA_LEFT, TA_RIGHT, TA_CENTER
 
 from extensions import db
-from models import Sale, SaleItem, Expense
+from models import Sale, SaleItem, Expense, ExpenseCategory
 from blueprints.expenses import profit_loss_for_period
 from utils.decorators import admin_required
 
@@ -228,11 +228,13 @@ def _fetch_sales(owner_id, start_dt, end_dt):
 def _fetch_expenses(owner_id, start_dt, end_dt):
     expenses = (
         db.session.query(Expense)
+        .join(ExpenseCategory, Expense.category_id == ExpenseCategory.id)
+        .options(contains_eager(Expense.category_obj))
         .filter(
             Expense.user_id      == owner_id,
             Expense.expense_date >= start_dt.date(),
             Expense.expense_date <  end_dt.date(),
-            Expense.category     != "Purchase Costs",
+            ExpenseCategory.name != "Purchase Costs",
         )
         .order_by(Expense.expense_date)
         .all()

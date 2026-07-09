@@ -32,12 +32,15 @@ export function initials(fullName) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+const EAT = 'Africa/Nairobi'; // UTC+3, Tanzania / East Africa Time
+
 /** Format an ISO datetime as "19 Feb 2026, 14:32" (or Swahili equivalent). */
 export function formatDateTime(iso, locale) {
   if (!iso) return '—';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '—';
   return d.toLocaleString(resolveLocale(locale), {
+    timeZone: EAT,
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -52,6 +55,7 @@ export function formatDate(iso, locale) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '—';
   return d.toLocaleDateString(resolveLocale(locale), {
+    timeZone: EAT,
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -62,6 +66,7 @@ export function formatDate(iso, locale) {
 export function todayLong(locale) {
   const d = new Date();
   return d.toLocaleDateString(resolveLocale(locale), {
+    timeZone: EAT,
     weekday: 'long',
     day: '2-digit',
     month: 'long',

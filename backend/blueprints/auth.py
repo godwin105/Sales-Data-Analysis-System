@@ -303,6 +303,37 @@ def update_profile():
     }), 200
 
 
+# ── Payment settings (ClickPesa credentials) ─────────────────────────────────
+@auth_bp.route("/me/payment-settings", methods=["GET"])
+@admin_required
+def get_payment_settings():
+    """Return whether ClickPesa credentials are configured (never returns keys in full)."""
+    client_id = current_user.clickpesa_client_id or ""
+    return jsonify({
+        "has_clickpesa_configured": bool(current_user.clickpesa_client_id and current_user.clickpesa_api_key),
+        "clickpesa_client_id": client_id,
+    }), 200
+
+
+@auth_bp.route("/me/payment-settings", methods=["PUT"])
+@admin_required
+def update_payment_settings():
+    """Save or clear the business owner's ClickPesa merchant credentials."""
+    data      = request.get_json(silent=True) or {}
+    client_id = (data.get("clickpesa_client_id") or "").strip()
+    api_key   = (data.get("clickpesa_api_key")   or "").strip()
+
+    if bool(client_id) != bool(api_key):
+        return jsonify({"error": "Both Client ID and API Key must be provided together."}), 400
+
+    current_user.clickpesa_client_id = client_id or None
+    current_user.clickpesa_api_key   = api_key   or None
+    db.session.commit()
+
+    msg = "Payment settings saved. Payments will go directly to your ClickPesa account." if client_id else "Payment credentials cleared."
+    return jsonify({"message": msg, "has_clickpesa_configured": bool(client_id)}), 200
+
+
 @auth_bp.route("/me/profile-image", methods=["POST"])
 @jwt_required()
 def upload_profile_image():

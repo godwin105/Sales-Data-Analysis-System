@@ -47,14 +47,30 @@ def _safe_raise(resp: requests.Response) -> None:
     raise RuntimeError(f"ClickPesa {resp.status_code}: {body}")
 
 
-def _get_token() -> str:
+def _get_token(client_id: str = None, api_key: str = None) -> str:
     """
     Return a valid Bearer token string (includes "Bearer " prefix).
-    Uses a module-level cache; refreshes when less than 60 seconds remain.
+    If owner-specific credentials are provided, fetches a fresh token for them
+    (not cached — per-owner calls are infrequent).
+    Platform credentials use a module-level cache.
     """
     global _token_cache
-    token, expires_at = _token_cache
 
+    if client_id and api_key:
+        # Owner-specific credentials — always fetch fresh
+        resp = requests.post(
+            f"{BASE_URL}/third-parties/generate-token",
+            headers={"client-id": client_id, "api-key": api_key},
+            timeout=15,
+        )
+        _safe_raise(resp)
+        body = resp.json()
+        if not body.get("success"):
+            raise RuntimeError(f"ClickPesa token rejected: {body}")
+        return body["token"]
+
+    # Platform credentials — use module-level cache
+    token, expires_at = _token_cache
     if token and time.time() < expires_at - 60:
         return token
 
@@ -77,20 +93,19 @@ def _get_token() -> str:
     return token
 
 
-def initiate_ussd_push(*, phone: str, amount: float, order_reference: str) -> dict:
+def initiate_ussd_push(
+    *,
+    phone: str,
+    amount: float,
+    order_reference: str,
+    client_id: str = None,
+    api_key: str = None,
+) -> dict:
     """
     Send a mobile-money USSD push to the customer's phone.
 
-    Args:
-        phone:           Customer phone (any TZ format — normalized internally).
-        amount:          Amount in TZS (integer only).
-        order_reference: Unique reference string for this transaction.
-
-    Returns:
-        ClickPesa response dict with keys: id, status, channel, orderReference, …
-
-    Raises:
-        RuntimeError: with the full ClickPesa error body if the call fails.
+    Pass client_id + api_key to use the business owner's own ClickPesa merchant
+    account (money goes directly to them). Omit to use the platform credentials.
     """
     normalized = _normalize_phone(phone)
     payload = {
@@ -100,12 +115,13 @@ def initiate_ussd_push(*, phone: str, amount: float, order_reference: str) -> di
         "phoneNumber":    normalized,
     }
 
-    print(f"[ClickPesa] USSD push → phone={normalized} amount={payload['amount']} ref={order_reference}")
+    account = "owner" if (client_id and api_key) else "platform"
+    print(f"[ClickPesa] USSD push → phone={normalized} amount={payload['amount']} ref={order_reference} account={account}")
 
     resp = requests.post(
         f"{BASE_URL}/third-parties/payments/initiate-ussd-push-request",
         headers={
-            "Authorization": _get_token(),
+            "Authorization": _get_token(client_id=client_id, api_key=api_key),
             "Content-Type":  "application/json",
         },
         json=payload,

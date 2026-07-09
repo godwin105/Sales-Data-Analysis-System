@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Camera, User, Lock } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Camera, User, Lock, Smartphone, Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { authApi } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
@@ -30,6 +30,22 @@ export default function Profile() {
   });
   const [pwdErrors, setPwdErrors] = useState({});
   const [savingPwd, setSavingPwd] = useState(false);
+
+  // ── ClickPesa payment settings (admin only) ──────────────────────────────
+  const [cpCreds, setCpCreds] = useState({ clickpesa_client_id: '', clickpesa_api_key: '' });
+  const [cpConfigured, setCpConfigured] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [savingCp, setSavingCp] = useState(false);
+
+  useEffect(() => {
+    if (user?.role !== 'admin') return;
+    authApi.getPaymentSettings()
+      .then(({ data }) => {
+        setCpConfigured(data.has_clickpesa_configured);
+        setCpCreds((prev) => ({ ...prev, clickpesa_client_id: data.clickpesa_client_id || '' }));
+      })
+      .catch(() => {});
+  }, [user?.role]);
 
   async function handleProfileSubmit(e) {
     e.preventDefault();
@@ -93,6 +109,39 @@ export default function Profile() {
     } finally {
       setSavingPwd(false);
     }
+  }
+
+  async function saveCpCreds(payload) {
+    setSavingCp(true);
+    try {
+      const { data } = await authApi.savePaymentSettings(payload);
+      toast.success(data.message);
+      setCpConfigured(data.has_clickpesa_configured);
+      if (!data.has_clickpesa_configured) {
+        setCpCreds({ clickpesa_client_id: '', clickpesa_api_key: '' });
+      } else {
+        setCpCreds((prev) => ({ ...prev, clickpesa_api_key: '' }));
+      }
+    } catch (err) {
+      toast.error(extractError(err, 'Failed to save payment settings.'));
+    } finally {
+      setSavingCp(false);
+    }
+  }
+
+  function handleCpSubmit(e) {
+    e.preventDefault();
+    const id  = cpCreds.clickpesa_client_id.trim();
+    const key = cpCreds.clickpesa_api_key.trim();
+    if (!id && !key) {
+      toast.error('Enter your ClickPesa Client ID and API Key to save.');
+      return;
+    }
+    if (!id || !key) {
+      toast.error('Both Client ID and API Key are required.');
+      return;
+    }
+    saveCpCreds({ clickpesa_client_id: id, clickpesa_api_key: key });
   }
 
   return (
@@ -245,6 +294,80 @@ export default function Profile() {
           </button>
         </div>
       </form>
+
+      {user?.role === 'admin' && (
+        <form onSubmit={handleCpSubmit} className="card lg:col-span-2">
+          <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-1 flex items-center gap-2">
+            <Smartphone size={18} />
+            Mobile Payment Settings
+          </h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+            Enter your own ClickPesa merchant credentials so payments go directly into your account.
+            Leave blank to use the platform's shared account.
+          </p>
+
+          {cpConfigured && (
+            <div className="mb-4 flex items-center gap-2 px-3 py-2 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-sm text-green-700 dark:text-green-300">
+              <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
+              Your ClickPesa credentials are configured — payments go to your account.
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div>
+              <label className="form-label">ClickPesa Client ID</label>
+              <input
+                type="text"
+                value={cpCreds.clickpesa_client_id}
+                onChange={(e) => setCpCreds({ ...cpCreds, clickpesa_client_id: e.target.value })}
+                className="form-input font-mono text-sm"
+                placeholder="Your ClickPesa Client ID"
+                autoComplete="off"
+              />
+            </div>
+            <div>
+              <label className="form-label">ClickPesa API Key</label>
+              <div className="relative">
+                <input
+                  type={showApiKey ? 'text' : 'password'}
+                  value={cpCreds.clickpesa_api_key}
+                  onChange={(e) => setCpCreds({ ...cpCreds, clickpesa_api_key: e.target.value })}
+                  className="form-input font-mono text-sm pr-10"
+                  placeholder={cpConfigured ? 'Enter new key to update' : 'Your ClickPesa API Key'}
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowApiKey((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  tabIndex={-1}
+                >
+                  {showApiKey ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+              <p className="form-help mt-1">
+                Find your credentials in your ClickPesa Dashboard → Settings → API Keys.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button type="submit" className="btn-primary flex-1" disabled={savingCp}>
+                {savingCp ? 'Saving…' : 'Save Payment Settings'}
+              </button>
+              {cpConfigured && (
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  disabled={savingCp}
+                  onClick={() => saveCpCreds({ clickpesa_client_id: '', clickpesa_api_key: '' })}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+        </form>
+      )}
     </div>
   );
 }

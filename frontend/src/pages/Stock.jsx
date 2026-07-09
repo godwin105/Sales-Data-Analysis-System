@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Plus, Search, Edit2, Package2, RefreshCw, Trash2 } from 'lucide-react';
+import { Plus, Search, Edit2, Package2, RefreshCw, Trash2, PlusCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { stockApi } from '../api/stock';
 import { useToast } from '../context/ToastContext';
@@ -157,6 +157,7 @@ export default function Stock() {
           units={units}
           onCancel={() => setShowAdd(false)}
           onSuccess={() => { setShowAdd(false); load(); }}
+          onCategoryAdded={(name) => setCategories((prev) => [...prev, name].sort())}
         />
       </Modal>
 
@@ -172,6 +173,7 @@ export default function Stock() {
             initial={editingProduct}
             onCancel={() => setEditingProduct(null)}
             onSuccess={() => { setEditingProduct(null); load(); }}
+            onCategoryAdded={(name) => setCategories((prev) => [...prev, name].sort())}
           />
         )}
       </Modal>
@@ -204,7 +206,7 @@ export default function Stock() {
   );
 }
 
-function ProductForm({ initial, categories, units, onCancel, onSuccess }) {
+function ProductForm({ initial, categories, units, onCancel, onSuccess, onCategoryAdded }) {
   const toast = useToast();
   const { t } = useTranslation();
   const categoryLabel = (category) => t(`categories.stock.${category}`, category);
@@ -220,6 +222,27 @@ function ProductForm({ initial, categories, units, onCancel, onSuccess }) {
   });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [addingCat, setAddingCat] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [savingCat, setSavingCat] = useState(false);
+
+  async function handleAddCategory() {
+    const name = newCatName.trim();
+    if (!name) return;
+    setSavingCat(true);
+    try {
+      await stockApi.addCategory(name);
+      onCategoryAdded?.(name);
+      update('category', name);
+      setNewCatName('');
+      setAddingCat(false);
+      toast.success(`Category '${name}' added.`);
+    } catch (err) {
+      toast.error(extractError(err, 'Failed to add category.'));
+    } finally {
+      setSavingCat(false);
+    }
+  }
 
   function update(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -268,15 +291,47 @@ function ProductForm({ initial, categories, units, onCancel, onSuccess }) {
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="form-label">{t('stock.form.category')}</label>
-          <select
-            value={form.category || ''}
-            onChange={(e) => update('category', e.target.value)}
-            className={`form-input ${errors.category ? 'error' : ''}`}
-          >
-            <option value="">{t('stock.form.categoryNone')}</option>
-            {categories.map((c) => <option key={c} value={c}>{categoryLabel(c)}</option>)}
-          </select>
+          <div className="flex items-center justify-between mb-1">
+            <label className="form-label !mb-0">{t('stock.form.category')}</label>
+            <button
+              type="button"
+              onClick={() => setAddingCat((v) => !v)}
+              className="flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700 font-medium"
+            >
+              <PlusCircle size={13} />
+              {t('stock.form.addCategory', 'Add')}
+            </button>
+          </div>
+          {addingCat ? (
+            <div className="flex gap-1">
+              <input
+                type="text"
+                autoFocus
+                placeholder={t('stock.form.newCategoryPlaceholder', 'New category...')}
+                value={newCatName}
+                onChange={(e) => setNewCatName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCategory(); } if (e.key === 'Escape') setAddingCat(false); }}
+                className="form-input text-sm flex-1 min-w-0"
+              />
+              <button
+                type="button"
+                onClick={handleAddCategory}
+                disabled={savingCat || !newCatName.trim()}
+                className="btn-primary px-3 py-1.5 text-xs"
+              >
+                {savingCat ? '…' : t('common.save', 'Save')}
+              </button>
+            </div>
+          ) : (
+            <select
+              value={form.category || ''}
+              onChange={(e) => update('category', e.target.value)}
+              className={`form-input ${errors.category ? 'error' : ''}`}
+            >
+              <option value="">{t('stock.form.categoryNone')}</option>
+              {categories.map((c) => <option key={c} value={c}>{categoryLabel(c)}</option>)}
+            </select>
+          )}
           {errors.category && <p className="form-error">{errors.category}</p>}
         </div>
         <div>

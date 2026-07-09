@@ -8,7 +8,7 @@ import {
   Tooltip, Legend, Filler,
 } from 'chart.js';
 import {
-  DollarSign, TrendingUp, Package, AlertTriangle, ShoppingCart,
+  DollarSign, TrendingUp, TrendingDown, Package, AlertTriangle, ShoppingCart,
   BarChart3,
   BarChart2,
 } from 'lucide-react';
@@ -134,7 +134,7 @@ export default function Dashboard() {
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard label={t('dashboard.todayRevenue')} value={formatTZS(kpi.today_revenue)} icon={BarChart2} color="brand" />
-        <KpiCard label={t('dashboard.monthlyProfit')} value={formatTZS(kpi.monthly_profit)} icon={TrendingUp} color={kpi.monthly_profit >= 0 ? 'success' : 'danger'} />
+        <KpiCard label={t('dashboard.monthlyProfit')} value={formatTZS(kpi.monthly_profit)} icon={kpi.monthly_profit >= 0 ? TrendingUp : TrendingDown} color={kpi.monthly_profit >= 0 ? 'success' : 'danger'} />
         <KpiCard label={t('dashboard.totalProducts')} value={formatNumber(kpi.total_products)} icon={Package} color="warning" />
         <KpiCard
           label={t('dashboard.lowStockAlerts')}
@@ -176,6 +176,7 @@ export default function Dashboard() {
                   datasets: displayTrendData.datasets.map((ds, i) => ({
                     label: ds.name,
                     data: ds.values,
+                    unit: ds.unit || 'pcs',
                     borderColor: CHART_COLORS[i],
                     backgroundColor: CHART_COLORS[i],
                     fill: false,
@@ -229,7 +230,7 @@ export default function Dashboard() {
                     borderRadius: 6,
                   }],
                 }}
-                options={verticalBarOpts(tickColor, gridColor)}
+                options={verticalBarOpts(tickColor, gridColor, displayTopData.units || [])}
               />
             </div>
           ) : (
@@ -425,7 +426,7 @@ function multiLineOpts(tickColor, gridColor) {
         mode: 'nearest',
         intersect: false,
         callbacks: {
-          label: (ctx) => ` ${ctx.dataset.label}: ${formatNumber(ctx.parsed.y)} units`,
+          label: (ctx) => ` ${ctx.dataset.label}: ${formatNumber(ctx.parsed.y)} ${ctx.dataset.unit || 'pcs'}`,
         },
       },
     },
@@ -441,7 +442,7 @@ function multiLineOpts(tickColor, gridColor) {
 }
 
 // Vertical bar: products on X-axis, units sold on Y-axis
-function verticalBarOpts(tickColor, gridColor) {
+function verticalBarOpts(tickColor, gridColor, units = []) {
   return {
     responsive: true, maintainAspectRatio: false,
     indexAxis: 'x',
@@ -449,7 +450,7 @@ function verticalBarOpts(tickColor, gridColor) {
       legend: { display: false },
       tooltip: {
         callbacks: {
-          label: (ctx) => ` ${formatNumber(ctx.parsed.y)} units sold`,
+          label: (ctx) => ` ${formatNumber(ctx.parsed.y)} ${units[ctx.dataIndex] || 'pcs'} sold`,
         },
       },
     },

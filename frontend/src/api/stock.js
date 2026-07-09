@@ -7,4 +7,5 @@ export const stockApi = {
   update: (id, data) => api.put(`/api/stock/${id}`, data),
   restock: (id, data) => api.post(`/api/stock/${id}/restock`, data),
   remove: (id) => api.delete(`/api/stock/${id}`),
+  addCategory: (name) => api.post('/api/stock/categories', { name }),
 };

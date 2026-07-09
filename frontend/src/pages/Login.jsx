@@ -38,10 +38,7 @@ export default function Login() {
     try {
       const data = await login(email.trim(), password);
       toast.success(data.message || t('auth.login.welcomeToast'));
-      navigate(
-        data.user.role === 'cashier' ? '/sales/new' : '/dashboard',
-        { replace: true }
-      );
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       const data = err?.response?.data || {};
       if (data.code === 'email_not_verified') {

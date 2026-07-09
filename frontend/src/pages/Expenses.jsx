@@ -151,9 +151,14 @@ export default function Expenses() {
       <div className="lg:col-span-2 space-y-5">
         {Object.keys(categoryTotals).length > 0 && (
           <div className="card">
-            <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3 uppercase tracking-wider">
-              {t('expenses.totalsByCategory')}
-            </h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">
+                {t('expenses.totalsByCategory')}
+              </h3>
+              <span className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                {t('expenses.grandTotal', 'Total')}: <span className="text-brand-600 dark:text-brand-400">{formatTZS(Object.values(categoryTotals).reduce((a, b) => a + b, 0))}</span>
+              </span>
+            </div>
             <div className="flex flex-wrap gap-2">
               {Object.entries(categoryTotals).map(([cat, total]) => (
                 <span key={cat} className="px-3 py-1.5 text-sm font-semibold text-slate-700 dark:text-slate-200">

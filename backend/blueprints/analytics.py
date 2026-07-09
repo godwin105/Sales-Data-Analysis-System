@@ -7,7 +7,7 @@ from flask_jwt_extended import current_user
 from sqlalchemy import case, func
 
 from extensions import db
-from models import Sale, SaleItem, Product, Expense
+from models import Sale, SaleItem, Product, ProductCategory, Expense
 from blueprints.expenses import profit_loss_for_period
 from utils.decorators import admin_required
 
@@ -317,14 +317,15 @@ def _build_insights_charts(owner_id, ref_date, expenses_by_cat):
     # ── Revenue by product category ───────────────────────────────────────────
     cat_rev_rows = (
         db.session.query(
-            func.coalesce(Product.category, "Uncategorised").label("cat"),
+            func.coalesce(ProductCategory.name, "Uncategorised").label("cat"),
             func.sum(SaleItem.subtotal).label("revenue"),
         )
         .join(Product, SaleItem.product_id == Product.product_id)
         .join(Sale, SaleItem.sale_id == Sale.sale_id)
+        .outerjoin(ProductCategory, Product.category_id == ProductCategory.id)
         .filter(Sale.user_id == owner_id, Sale.sale_date >= month_start,
                 Sale.sale_date < next_m, Product.is_deleted.is_(False))
-        .group_by(func.coalesce(Product.category, "Uncategorised"))
+        .group_by(ProductCategory.name)
         .order_by(func.sum(SaleItem.subtotal).desc())
         .all()
     )

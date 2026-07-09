@@ -25,6 +25,11 @@
     @apply bg-slate-900 text-slate-100;
   }
 
+  /* Tell the browser to render native UI (scrollbars, inputs) in dark style */
+  .dark {
+    color-scheme: dark;
+  }
+
   /* Hide number-input arrows for a cleaner look */
  input[type='number']::-webkit-outer-spin-button,
 input[type='number']::-webkit-inner-spin-button {
@@ -153,4 +158,5 @@ input[type='number'] {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
 }

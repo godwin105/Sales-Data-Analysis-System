@@ -7,7 +7,7 @@ from flask_jwt_extended import current_user
 
 from extensions import db
 from models import Product, SaleItem, ProductCategory, Unit
-from utils.decorators import admin_required
+from utils.decorators import admin_required, cashier_or_admin_required
 
 stock_bp = Blueprint("stock", __name__, url_prefix="/api/stock")
 
@@ -105,6 +105,21 @@ def _validate_product_payload(data, *, editing_id=None):
     if err:
         errors["low_stock_threshold"] = err
 
+    # Optional barcode — max 50 chars, unique per business
+    barcode = (data.get("barcode") or "").strip() or None
+    if barcode and len(barcode) > 50:
+        errors["barcode"] = "Barcode is too long (max 50 characters)."
+    elif barcode:
+        q = db.session.query(Product).filter(
+            Product.user_id == current_user.owner_id,
+            Product.barcode == barcode,
+            Product.is_deleted.is_(False),
+        )
+        if editing_id is not None:
+            q = q.filter(Product.product_id != editing_id)
+        if q.first() is not None:
+            errors["barcode"] = "Another product already has this barcode."
+
     # Duplicate-name check (case-insensitive, per business)
     if not errors.get("name"):
         q = db.session.query(Product).filter(
@@ -122,6 +137,7 @@ def _validate_product_payload(data, *, editing_id=None):
 
     return {
         "name":                name,
+        "barcode":             barcode,
         "category_id":         category_id,
         "unit_id":             unit_id,
         "purchase_price":      purchase_price,
@@ -220,6 +236,7 @@ def add_product():
     product = Product(
         user_id=current_user.owner_id,
         name=clean["name"],
+        barcode=clean["barcode"],
         category_id=clean["category_id"],
         unit_id=clean["unit_id"],
         purchase_price=clean["purchase_price"],
@@ -251,6 +268,7 @@ def edit_product(product_id):
         return jsonify({"error": "Validation failed", "fields": errors}), 400
 
     product.name = clean["name"]
+    product.barcode = clean["barcode"]
     product.category_id = clean["category_id"]
     product.unit_id = clean["unit_id"]
     product.purchase_price = clean["purchase_price"]
@@ -306,6 +324,25 @@ def restock_product(product_id):
         ),
         "product": product.to_dict(),
     }), 200
+
+
+@stock_bp.route("/barcode/<barcode>", methods=["GET"])
+@cashier_or_admin_required
+def get_by_barcode(barcode):
+    """Look up a product by barcode — used by the scanner in Record Sale."""
+    product = (
+        db.session.query(Product)
+        .options(joinedload(Product.category_obj), joinedload(Product.unit_obj))
+        .filter(
+            Product.user_id == current_user.owner_id,
+            Product.barcode == barcode.strip(),
+            Product.is_deleted.is_(False),
+        )
+        .first()
+    )
+    if product is None:
+        return jsonify({"error": "No product found with that barcode."}), 404
+    return jsonify({"product": product.to_dict()}), 200
 
 
 @stock_bp.route("/<int:product_id>", methods=["DELETE"])

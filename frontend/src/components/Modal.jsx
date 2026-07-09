@@ -21,7 +21,7 @@ export default function Modal({ open, onClose, title, children, size = 'md' }) {
 
   return (
     <div
-      className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 overflow-y-auto"
+      className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 overflow-hidden"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -40,7 +40,7 @@ export default function Modal({ open, onClose, title, children, size = 'md' }) {
             <X size={20} />
           </button>
         </div>
-        <div className="px-5 py-5 overflow-y-auto">{children}</div>
+        <div className="px-5 py-5 overflow-y-auto no-scrollbar">{children}</div>
       </div>
     </div>
   );

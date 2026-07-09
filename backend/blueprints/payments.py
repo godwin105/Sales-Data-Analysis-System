@@ -16,7 +16,7 @@ from flask_jwt_extended import current_user
 from sqlalchemy.exc import SQLAlchemyError
 
 from extensions import db
-from models import Product, Sale, SaleItem, Payment
+from models import Product, Sale, SaleItem, Payment, User
 from utils.decorators import cashier_or_admin_required
 from services.clickpesa import initiate_ussd_push
 
@@ -116,11 +116,17 @@ def initiate():
         # Do NOT commit yet — push must succeed first.
 
         # ── Send USSD push via ClickPesa ──────────────────────────────────────
+        owner = db.session.get(User, owner_id)
+        owner_client_id = owner.clickpesa_client_id if owner else None
+        owner_api_key   = owner.clickpesa_api_key   if owner else None
+
         try:
             cp_resp = initiate_ussd_push(
                 phone           = phone,
                 amount          = float(total_amount),
                 order_reference = order_ref,
+                client_id       = owner_client_id or None,
+                api_key         = owner_api_key   or None,
             )
         except Exception as exc:
             # Push failed before reaching the customer — roll back everything
@@ -175,6 +181,8 @@ def initiate():
 
 
 # ── Poll status ───────────────────────────────────────────────────────────────
+USSD_EXPIRY_SECONDS = 50  # auto-fail after 60 seconds if no webhook received
+
 @payments_bp.route("/status/<external_id>", methods=["GET"])
 @cashier_or_admin_required
 def payment_status(external_id):
@@ -186,6 +194,19 @@ def payment_status(external_id):
     if payment.sale.user_id != current_user.owner_id:
         return jsonify({"error": "Forbidden."}), 403
 
+    # Auto-fail if still pending after USSD session has clearly expired.
+    # This handles the case where the customer cancelled but the ClickPesa
+    # webhook was never received (e.g. webhook URL not yet configured).
+    if payment.status == "pending":
+        elapsed = (datetime.utcnow() - payment.initiated_at).total_seconds()
+        if elapsed > USSD_EXPIRY_SECONDS:
+            payment.status = "failed"
+            payment.sale.payment_status = "failed"
+            try:
+                db.session.commit()
+            except SQLAlchemyError:
+                db.session.rollback()
+
     return jsonify({
         "external_id":    payment.external_id,
         "status":         payment.status,
@@ -195,6 +216,53 @@ def payment_status(external_id):
         "transaction_id": payment.transaction_id,
         "confirmed_at":   payment.confirmed_at.isoformat() if payment.confirmed_at else None,
     }), 200
+
+
+# ── Cancel payment (reverse sale + restore stock) ────────────────────────────
+@payments_bp.route("/<external_id>/cancel", methods=["POST"])
+@cashier_or_admin_required
+def cancel_payment(external_id):
+    """
+    Cancel a pending or failed mobile-money payment.
+    Restores stock and deletes the sale record so it never appears in history.
+    Only allowed while the payment hasn't been confirmed (money not received).
+    """
+    payment = db.session.query(Payment).filter_by(external_id=external_id).first()
+    if not payment:
+        return jsonify({"error": "Payment not found."}), 404
+    if payment.sale.user_id != current_user.owner_id:
+        return jsonify({"error": "Forbidden."}), 403
+    if payment.status == "confirmed":
+        return jsonify({"error": "Cannot cancel a confirmed payment."}), 409
+
+    sale = payment.sale
+
+    # Restore stock for each item — lock rows to prevent a race with a late webhook
+    for item in sale.items:
+        product = (
+            db.session.query(Product)
+            .filter_by(product_id=item.product_id)
+            .with_for_update()
+            .first()
+        )
+        if product:
+            product.quantity += item.quantity
+
+    # Delete payment explicitly first so SQLAlchemy doesn't get confused by the
+    # bidirectional relationship when the sale is deleted next.
+    db.session.delete(payment)
+    db.session.flush()
+
+    # Delete sale — ORM cascade removes all SaleItems automatically.
+    db.session.delete(sale)
+
+    try:
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        return jsonify({"error": "Could not cancel payment. Please try again."}), 500
+
+    return jsonify({"message": "Payment cancelled and sale reversed."}), 200
 
 
 # ── ClickPesa webhook (no JWT — external call) ────────────────────────────────
@@ -209,12 +277,27 @@ def clickpesa_callback():
     Then set URL to: https://<ngrok-id>.ngrok.io/api/payments/callback
     """
     data = request.get_json(silent=True) or {}
+    print(f"[ClickPesa callback] payload: {data}")
 
-    # ClickPesa webhook payload fields
-    order_ref  = (data.get("orderReference") or "").strip()
-    status_raw = (data.get("status") or "").upper()          # "SUCCESS" or "FAILED"
-    event      = (data.get("event") or "").upper()
-    tx_id      = data.get("id") or data.get("transactionId") or ""
+    # ClickPesa webhook payload — try multiple field name variations
+    order_ref = (
+        data.get("orderReference")
+        or data.get("order_reference")
+        or data.get("OrderReference")
+        or ""
+    ).strip()
+
+    status_raw = (
+        data.get("status") or data.get("Status") or ""
+    ).upper()
+
+    event = (
+        data.get("event") or data.get("Event") or data.get("eventType") or ""
+    ).upper()
+
+    tx_id = (
+        data.get("id") or data.get("transactionId") or data.get("transaction_id") or ""
+    )
 
     if not order_ref:
         return jsonify({"message": "ok"}), 200
@@ -223,10 +306,15 @@ def clickpesa_callback():
     if not payment or payment.status != "pending":
         return jsonify({"message": "ok"}), 200
 
-    # Map ClickPesa status → internal status
-    if status_raw == "SUCCESS" or event == "PAYMENT RECEIVED":
+    # Map ClickPesa status → internal status (handle multiple variants)
+    success_signals = {"SUCCESS", "SUCCESSFUL", "COMPLETED", "PAID"}
+    failed_signals  = {"FAILED", "FAILURE", "DECLINED", "CANCELLED", "CANCELED", "REJECTED"}
+    success_events  = {"PAYMENT RECEIVED", "PAYMENT_RECEIVED", "PAYMENT SUCCESS", "PAYMENT_SUCCESS"}
+    failed_events   = {"PAYMENT FAILED", "PAYMENT_FAILED", "PAYMENT FAILURE", "PAYMENT_FAILURE"}
+
+    if status_raw in success_signals or event in success_events:
         new_status = "confirmed"
-    elif status_raw == "FAILED" or event == "PAYMENT FAILED":
+    elif status_raw in failed_signals or event in failed_events:
         new_status = "failed"
     else:
         return jsonify({"message": "ok"}), 200

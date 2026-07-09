@@ -15,7 +15,7 @@ import PageSpinner from '../components/PageSpinner';
 import EmptyState from '../components/EmptyState';
 
 const POLL_MS      = 4000;   // poll every 4 seconds
-const TIMEOUT_SECS = 90;     // give up after 90 seconds
+const TIMEOUT_SECS = 60;     // safety-net: server auto-fails at 50s, UI normally resolves before this
 
 export default function RecordSale() {
   const toast    = useToast();
@@ -43,7 +43,8 @@ export default function RecordSale() {
   }, [payMethod]);
 
   // payState: null | { externalId, amount, phone, channel, status, secondsLeft }
-  const [payState,  setPayState]  = useState(null);
+  const [payState,   setPayState]  = useState(null);
+  const [cancelling, setCancelling] = useState(false);
 
   const pollRef    = useRef(null);
   const countdownRef = useRef(null);
@@ -139,6 +140,20 @@ export default function RecordSale() {
     setNotes('');
     setPhone('');
     setPayState(null);
+    setCancelling(false);
+  }
+
+  async function cancelPayment() {
+    if (!payState?.externalId) { resetAll(); return; }
+    clearTimers();
+    setCancelling(true);
+    try {
+      await paymentsApi.cancel(payState.externalId);
+      await refreshProducts(); // stock was restored on the server
+    } catch {
+      // If cancel fails (e.g. already confirmed), still reset the UI
+    }
+    resetAll();
   }
 
   async function refreshProducts() {
@@ -220,8 +235,7 @@ export default function RecordSale() {
         <EmptyState
           icon={ShoppingCart}
           title={t('sales.noStockTitle')}
-          message={t('sales.noStockMessage')}
-          action={<button onClick={() => navigate('/stock')} className="btn-primary">{t('sales.goToStock')}</button>}
+          message={t('sales.noStockMessageCashier', 'No products have been recorded in the system yet. Please contact the business owner to add products.')}
         />
       </div>
     );
@@ -293,14 +307,15 @@ export default function RecordSale() {
               </div>
 
               <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-xs text-amber-700 dark:text-amber-300">
-                To cancel: ask the customer to press <strong>Cancel</strong> on their phone's USSD menu. The prompt expires automatically after ~2 minutes.
+                The USSD prompt expires automatically after ~2 minutes. Cancelling below will reverse the sale and restore stock.
               </div>
 
               <button
-                onClick={resetAll}
+                onClick={cancelPayment}
+                disabled={cancelling}
                 className="btn-secondary w-full text-sm"
               >
-                Cancel &amp; Start New Sale
+                {cancelling ? 'Cancelling…' : 'Cancel & Start New Sale'}
               </button>
             </div>
           )}
@@ -332,11 +347,12 @@ export default function RecordSale() {
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-2">
-                <button onClick={resetAll} className="btn-secondary flex-1 text-sm">
-                  <RefreshCw size={14} /> New Sale
+                <button onClick={cancelPayment} disabled={cancelling} className="btn-secondary flex-1 text-sm">
+                  {cancelling ? 'Reversing…' : <><RefreshCw size={14} /> New Sale</>}
                 </button>
                 <button
                   onClick={() => { clearTimers(); setPayState(null); setPayMethod('cash'); }}
+                  disabled={cancelling}
                   className="btn-primary flex-1 text-sm"
                 >
                   <Banknote size={14} /> Collect Cash Instead
@@ -350,19 +366,27 @@ export default function RecordSale() {
             <div className="space-y-4 text-center">
               <Clock className="text-amber-500 mx-auto" size={48} />
               <div>
-                <p className="font-bold text-amber-700 dark:text-amber-300 text-lg">Request Timed Out</p>
+                <p className="font-bold text-amber-700 dark:text-amber-300 text-lg">No Response Yet</p>
                 <p className="text-slate-600 dark:text-slate-300 text-sm mt-1">
-                  No response from {payState.phone} after {TIMEOUT_SECS} seconds.
-                  The sale was saved — collect payment manually or retry.
+                  No confirmation received from {payState.phone} after {TIMEOUT_SECS / 60} minutes.
+                  If the customer did pay, click <strong>Check Again</strong> to re-check.
+                  The sale is saved regardless.
                 </p>
               </div>
+              <button
+                onClick={() => setPayState((prev) => ({ ...prev, status: 'pending', secondsLeft: 120 }))}
+                className="btn-primary w-full text-sm"
+              >
+                <RefreshCw size={14} className="inline mr-1" /> Check Again (2 more minutes)
+              </button>
               <div className="flex flex-col sm:flex-row gap-2">
-                <button onClick={resetAll} className="btn-secondary flex-1 text-sm">
-                  <RefreshCw size={14} /> New Sale
+                <button onClick={cancelPayment} disabled={cancelling} className="btn-secondary flex-1 text-sm">
+                  {cancelling ? 'Reversing…' : 'Cancel Sale'}
                 </button>
                 <button
                   onClick={() => { clearTimers(); setPayState(null); setPayMethod('cash'); }}
-                  className="btn-primary flex-1 text-sm"
+                  disabled={cancelling}
+                  className="btn-secondary flex-1 text-sm"
                 >
                   <Banknote size={14} /> Collect Cash Instead
                 </button>

@@ -33,4 +33,8 @@ export const authApi = {
   // Email verification
   verifyEmail: (token) => api.get(`/api/auth/verify-email/${token}`),
   resendVerification: (data) => api.post('/api/auth/resend-verification', data),
+
+  // ClickPesa payment settings
+  getPaymentSettings: () => api.get('/api/auth/me/payment-settings'),
+  savePaymentSettings: (data) => api.put('/api/auth/me/payment-settings', data),
 };

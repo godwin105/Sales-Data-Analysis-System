@@ -87,6 +87,7 @@ def create_app(config_class=Config):
         _ensure_profile_image_column()
         _ensure_payment_columns()
         _ensure_normalization_tables()
+        _ensure_clickpesa_columns()
 
     # ---- Health check ----
     @app.route("/api/health")
@@ -162,11 +163,17 @@ def _ensure_normalization_tables():
 
         from models import ProductCategory, Unit, ExpenseCategory
 
-        # Seed product categories
-        if not db.session.query(ProductCategory).first():
-            for name in ["Food", "Cleaning", "Beverages", "Other"]:
+        # Seed product categories (idempotent: only adds missing ones)
+        _default_cats = [
+            "Food", "Beverages", "Cleaning", "Electronics", "Clothing",
+            "Stationery", "Household", "Beauty & Health", "Fruits & Vegetables",
+            "Dairy & Eggs", "Construction", "Other",
+        ]
+        existing_cats = {c.name for c in db.session.query(ProductCategory).all()}
+        for name in _default_cats:
+            if name not in existing_cats:
                 db.session.add(ProductCategory(name=name))
-            db.session.flush()
+        db.session.flush()
 
         # Seed units
         if not db.session.query(Unit).first():
@@ -263,6 +270,27 @@ def _ensure_normalization_tables():
     except SQLAlchemyError as exc:
         db.session.rollback()
         print(f"[migration] Normalization warning: {exc}")
+
+
+def _ensure_clickpesa_columns():
+    """Add per-owner ClickPesa credential columns to users table if missing."""
+    try:
+        inspector = inspect(db.engine)
+        if not inspector.has_table("users"):
+            return
+        cols = {c["name"] for c in inspector.get_columns("users")}
+        if "clickpesa_client_id" not in cols:
+            db.session.execute(text(
+                "ALTER TABLE users ADD COLUMN clickpesa_client_id VARCHAR(255) NULL"
+            ))
+            db.session.commit()
+        if "clickpesa_api_key" not in cols:
+            db.session.execute(text(
+                "ALTER TABLE users ADD COLUMN clickpesa_api_key VARCHAR(255) NULL"
+            ))
+            db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
 
 
 def _ensure_profile_image_column():

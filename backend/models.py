@@ -54,6 +54,8 @@ class User(db.Model):
         db.ForeignKey("users.user_id", ondelete="SET NULL"),
         nullable=True,
     )
+    clickpesa_client_id = db.Column(db.String(255), nullable=True)
+    clickpesa_api_key = db.Column(db.String(255), nullable=True)
     failed_login_attempts = db.Column(db.Integer, nullable=False, default=0)
     locked_until = db.Column(db.DateTime, nullable=True)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
@@ -111,6 +113,7 @@ class User(db.Model):
             "is_active": self.is_active,
             "is_email_verified": self.is_email_verified,
             "created_at": self.created_at.isoformat() if self.created_at else None,
+            "has_clickpesa_configured": bool(self.clickpesa_client_id and self.clickpesa_api_key),
         }
 
     def __repr__(self):

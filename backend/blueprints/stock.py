@@ -144,6 +144,28 @@ def _get_owned_product(product_id):
     )
 
 
+# ── Custom category creation ──────────────────────────────────────────────────
+@stock_bp.route("/categories", methods=["POST"])
+@admin_required
+def add_category():
+    """Allow business owner to create a custom product category."""
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+    if not name:
+        return jsonify({"error": "Category name is required."}), 400
+    if len(name) > 50:
+        return jsonify({"error": "Category name too long (max 50 characters)."}), 400
+    existing = db.session.query(ProductCategory).filter(
+        func.lower(ProductCategory.name) == name.lower()
+    ).first()
+    if existing:
+        return jsonify({"error": f"Category '{existing.name}' already exists."}), 409
+    cat = ProductCategory(name=name)
+    db.session.add(cat)
+    db.session.commit()
+    return jsonify({"name": cat.name, "message": f"Category '{cat.name}' created."}), 201
+
+
 #routes
 @stock_bp.route("", methods=["GET"])
 @admin_required

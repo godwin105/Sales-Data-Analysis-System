@@ -5,7 +5,7 @@ from flask_jwt_extended import jwt_required, current_user
 from sqlalchemy import func
 
 from extensions import db
-from models import Sale, SaleItem, Product, Expense, ExpenseCategory
+from models import Sale, SaleItem, Product, Expense, ExpenseCategory, Unit
 from blueprints.expenses import profit_loss_for_period
 
 dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/api/dashboard")
@@ -101,6 +101,7 @@ def dashboard():
         "top_products": {
             "labels": [r.name for r in top_products],
             "values": [int(r.qty_sold) for r in top_products],
+            "units":  [r.unit_symbol or "pcs" for r in top_products],
         },
         "expenses": _build_expense_breakdown(owner_id, month_start, next_month_start),
     }
@@ -216,15 +217,17 @@ def _get_top_products(owner_id, start_dt, end_dt):
             Product.product_id,
             Product.name,
             func.coalesce(func.sum(SaleItem.quantity), 0).label("qty_sold"),
+            Unit.symbol.label("unit_symbol"),
         )
         .join(Product, SaleItem.product_id == Product.product_id)
+        .outerjoin(Unit, Product.unit_id == Unit.id)
         .join(Sale, SaleItem.sale_id == Sale.sale_id)
         .filter(
             Sale.user_id == owner_id,
             Sale.sale_date >= start_dt,
             Sale.sale_date < end_dt,
         )
-        .group_by(Product.product_id, Product.name)
+        .group_by(Product.product_id, Product.name, Unit.symbol)
         .order_by(func.sum(SaleItem.quantity).desc())
         .limit(5)
         .all()
@@ -259,7 +262,7 @@ def _build_trend_datasets(owner_id, month_start, days, start_dt, end_dt, top_pro
             k = row.day if isinstance(row.day, date) else datetime.strptime(str(row.day), "%Y-%m-%d").date()
             day_map[k] = int(row.total or 0)
         values = [day_map.get(month_start + timedelta(days=i), 0) for i in range(days)]
-        datasets.append({"name": product.name, "values": values})
+        datasets.append({"name": product.name, "values": values, "unit": product.unit_symbol or "pcs"})
 
     return {"labels": labels, "datasets": datasets}
 
@@ -316,6 +319,7 @@ def top_products_by_month():
     return jsonify({
         "labels": [r.name for r in rows],
         "values": [int(r.qty_sold) for r in rows],
+        "units":  [r.unit_symbol or "pcs" for r in rows],
     }), 200
 
 

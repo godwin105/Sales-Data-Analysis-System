@@ -5,7 +5,7 @@ from flask_jwt_extended import jwt_required, current_user
 from sqlalchemy import func
 
 from extensions import db
-from models import Sale, SaleItem, Product, Expense
+from models import Sale, SaleItem, Product, Expense, ExpenseCategory
 from blueprints.expenses import profit_loss_for_period
 
 dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/api/dashboard")
@@ -338,14 +338,15 @@ def expenses_by_month():
 def _build_expense_breakdown(owner_id, start_dt, end_dt):
     """FR-22: operating expense totals by category for current month."""
     rows = (
-        db.session.query(Expense.category, func.sum(Expense.amount))
+        db.session.query(ExpenseCategory.name, func.sum(Expense.amount))
+        .join(ExpenseCategory, Expense.category_id == ExpenseCategory.id)
         .filter(
             Expense.user_id      == owner_id,
             Expense.expense_date >= start_dt.date(),
             Expense.expense_date <  end_dt.date(),
-            Expense.category     != "Purchase Costs",
+            ExpenseCategory.name != "Purchase Costs",
         )
-        .group_by(Expense.category)
+        .group_by(ExpenseCategory.name)
         .order_by(func.sum(Expense.amount).desc())
         .all()
     )

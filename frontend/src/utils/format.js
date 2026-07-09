@@ -34,11 +34,21 @@ export function initials(fullName) {
 
 const EAT = 'Africa/Nairobi'; // UTC+3, Tanzania / East Africa Time
 
+/** Treat a naive ISO string (no TZ offset) as UTC — server stores in UTC. */
+function toUtcDate(iso) {
+  if (!iso) return null;
+  const s = String(iso);
+  // If the string already carries TZ info (Z or ±HH:MM) leave it as-is
+  const hasOffset = s.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(s);
+  const d = new Date(hasOffset ? s : s + 'Z');
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
 /** Format an ISO datetime as "19 Feb 2026, 14:32" (or Swahili equivalent). */
 export function formatDateTime(iso, locale) {
   if (!iso) return '—';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '—';
+  const d = toUtcDate(iso);
+  if (!d) return '—';
   return d.toLocaleString(resolveLocale(locale), {
     timeZone: EAT,
     day: '2-digit',
@@ -52,8 +62,8 @@ export function formatDateTime(iso, locale) {
 /** Format an ISO date or datetime as "19 Feb 2026" (or Swahili equivalent). */
 export function formatDate(iso, locale) {
   if (!iso) return '—';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '—';
+  const d = toUtcDate(iso);
+  if (!d) return '—';
   return d.toLocaleDateString(resolveLocale(locale), {
     timeZone: EAT,
     day: '2-digit',

@@ -1,9 +1,12 @@
 from datetime import datetime, timedelta
+import base64
 import os
 import re
 import secrets
 import hashlib
+from io import BytesIO
 from uuid import uuid4
+from PIL import Image
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import (
     create_access_token, jwt_required, current_user, get_jwt_identity,
@@ -349,26 +352,33 @@ def upload_profile_image():
             code="invalid_profile_image_type",
         )
 
-    upload_dir = _profile_image_dir()
-    os.makedirs(upload_dir, exist_ok=True)
+    # Resize to 200×200 thumbnail and encode as base64 JPEG stored in the DB.
+    # This survives container restarts/redeploys (no local filesystem dependency).
+    try:
+        img = Image.open(file.stream)
+        if img.mode not in ("RGB", "L"):
+            img = img.convert("RGB")
+        img.thumbnail((200, 200), Image.LANCZOS)
+        buf = BytesIO()
+        img.save(buf, format="JPEG", quality=85, optimize=True)
+        data_uri = "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()
+    except Exception:
+        return _err("Could not process the image. Please try a different file.", 400)
 
-    original = secure_filename(file.filename)
-    ext = original.rsplit(".", 1)[1].lower()
-    filename = f"user_{current_user.user_id}_{uuid4().hex}.{ext}"
-    path = os.path.join(upload_dir, filename)
-    file.save(path)
-
-    old_url = current_user.profile_image_url
-    current_user.profile_image_url = f"/static/uploads/profile_images/{filename}"
-    db.session.commit()
-
-    if old_url and old_url.startswith("/static/uploads/profile_images/"):
-        old_path = os.path.join(current_app.root_path, old_url.lstrip("/").replace("/", os.sep))
+    # Clean up any old filesystem-based image left from before this migration
+    old_url = current_user.profile_image_url or ""
+    if old_url.startswith("/static/uploads/profile_images/"):
+        old_path = os.path.join(
+            current_app.root_path, old_url.lstrip("/").replace("/", os.sep)
+        )
         try:
             if os.path.isfile(old_path):
                 os.remove(old_path)
         except OSError:
             pass
+
+    current_user.profile_image_url = data_uri
+    db.session.commit()
 
     return jsonify({
         "message": "Profile picture updated successfully.",

@@ -300,8 +300,11 @@ def _ensure_profile_image_column():
             return
         columns = {col["name"] for col in inspector.get_columns("users")}
         if "profile_image_url" not in columns:
-            db.session.execute(text("ALTER TABLE users ADD COLUMN profile_image_url VARCHAR(255) NULL"))
-            db.session.commit()
+            db.session.execute(text("ALTER TABLE users ADD COLUMN profile_image_url MEDIUMTEXT NULL"))
+        else:
+            # Widen to MEDIUMTEXT so base64 images fit (idempotent in MySQL)
+            db.session.execute(text("ALTER TABLE users MODIFY COLUMN profile_image_url MEDIUMTEXT NULL"))
+        db.session.commit()
     except SQLAlchemyError:
         db.session.rollback()
 

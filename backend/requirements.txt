@@ -10,3 +10,4 @@ email-validator==2.2.0
 reportlab==4.2.2
 requests==2.32.3
 gunicorn==22.0.0
+Pillow==10.4.0

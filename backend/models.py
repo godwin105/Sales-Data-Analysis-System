@@ -47,7 +47,7 @@ class User(db.Model):
     last_name = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
-    profile_image_url = db.Column(db.String(255), nullable=True)
+    profile_image_url = db.Column(db.Text, nullable=True)
     role = db.Column(db.Enum("admin", "cashier"), nullable=False, default="admin")
     parent_user_id = db.Column(
         db.Integer,

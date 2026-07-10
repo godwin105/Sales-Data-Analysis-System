@@ -100,9 +100,9 @@ export default function RecordSale() {
           clearTimers();
           setPayState((prev) => ({ ...prev, status: data.status }));
           if (data.status === 'confirmed') {
-            toast.success(`Payment confirmed! ${formatTZS(payState.amount)} received.`);
+            toast.success(t('sales.paymentConfirmedToast', { amount: formatTZS(payState.amount) }));
           } else {
-            toast.error('Payment was declined or cancelled.');
+            toast.error(t('sales.paymentDeclinedToast'));
           }
         }
       } catch { /* network hiccup — retry next tick */ }
@@ -190,9 +190,9 @@ export default function RecordSale() {
         const newId = Math.max(0, ...arr.map((i) => i.rowId)) + 1;
         return [...arr, { rowId: newId, product_id: String(p.product_id), quantity: '1' }];
       });
-      toast.success(`Added: ${p.name}`);
+      toast.success(t('sales.barcodeAdded', { name: p.name }));
     } catch {
-      toast.error(`Barcode not found: ${code}`);
+      toast.error(t('sales.barcodeNotFound', { code }));
     }
     scanRef.current?.focus();
   }
@@ -231,7 +231,7 @@ export default function RecordSale() {
     }
 
     // ── Mobile money ──────────────────────────────────────────────────────────
-    if (!phone.trim()) { toast.error('Enter the customer\'s phone number.'); setSubmitting(false); return; }
+    if (!phone.trim()) { toast.error(t('sales.enterPhone')); setSubmitting(false); return; }
 
     try {
       const { data } = await paymentsApi.initiate({
@@ -296,30 +296,30 @@ export default function RecordSale() {
               <div className="flex items-center gap-3">
                 <Loader className="text-brand-600 animate-spin flex-shrink-0" size={22} />
                 <p className="font-bold text-slate-800 dark:text-slate-100 text-base">
-                  Waiting for customer to confirm…
+                  {t('sales.waitingConfirm')}
                 </p>
               </div>
 
               <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3 text-sm space-y-1.5">
                 <p className="text-slate-600 dark:text-slate-300">
-                  Prompt sent to <span className="font-bold">{payState.phone}</span>
+                  {t('sales.promptSentTo')} <span className="font-bold">{payState.phone}</span>
                 </p>
                 {payState.channel && (
                   <p className="text-slate-600 dark:text-slate-300">
-                    Network: <span className="font-bold">{payState.channel}</span>
+                    {t('sales.networkLabel')}: <span className="font-bold">{payState.channel}</span>
                   </p>
                 )}
                 <div className="pt-1 border-t border-slate-200 dark:border-slate-700">
                   <p className="text-slate-600 dark:text-slate-300">
-                    Sale amount: <span className="font-semibold">{formatTZS(payState.amount)}</span>
+                    {t('sales.saleAmount')}: <span className="font-semibold">{formatTZS(payState.amount)}</span>
                   </p>
                   {payState.customerAmount > payState.amount && (
                     <>
                       <p className="text-amber-600 dark:text-amber-400 text-xs">
-                        Network fee: +{formatTZS(payState.customerAmount - payState.amount)}
+                        {t('sales.networkFee')}: +{formatTZS(payState.customerAmount - payState.amount)}
                       </p>
                       <p className="text-slate-800 dark:text-slate-100 font-bold">
-                        Customer pays: {formatTZS(payState.customerAmount)}
+                        {t('sales.customerPays')}: {formatTZS(payState.customerAmount)}
                       </p>
                     </>
                   )}
@@ -329,8 +329,8 @@ export default function RecordSale() {
               {/* Countdown bar */}
               <div>
                 <div className="flex justify-between text-xs text-slate-400 mb-1">
-                  <span>Checking every 4 s</span>
-                  <span className="font-mono">{payState.secondsLeft}s left</span>
+                  <span>{t('sales.checkingEvery')}</span>
+                  <span className="font-mono">{t('sales.secondsLeft', { s: payState.secondsLeft })}</span>
                 </div>
                 <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5">
                   <div
@@ -341,7 +341,7 @@ export default function RecordSale() {
               </div>
 
               <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-xs text-amber-700 dark:text-amber-300">
-                The USSD prompt expires automatically after ~2 minutes. Cancelling below will reverse the sale and restore stock.
+                {t('sales.ussdWarning')}
               </div>
 
               <button
@@ -349,7 +349,7 @@ export default function RecordSale() {
                 disabled={cancelling}
                 className="btn-secondary w-full text-sm"
               >
-                {cancelling ? 'Cancelling…' : 'Cancel & Start New Sale'}
+                {cancelling ? t('sales.cancelling') : t('sales.cancelNewSale')}
               </button>
             </div>
           )}
@@ -359,13 +359,14 @@ export default function RecordSale() {
             <div className="space-y-4 text-center">
               <CheckCircle className="text-green-500 mx-auto" size={48} />
               <div>
-                <p className="font-bold text-green-700 dark:text-green-300 text-lg">Payment Confirmed!</p>
+                <p className="font-bold text-green-700 dark:text-green-300 text-lg">{t('sales.paymentConfirmed')}</p>
                 <p className="text-slate-600 dark:text-slate-300 text-sm mt-1">
-                  {formatTZS(payState.customerAmount ?? payState.amount)} received from {payState.phone}{payState.channel ? ` via ${payState.channel}` : ''}
+                  {t('sales.receivedFrom', { amount: formatTZS(payState.customerAmount ?? payState.amount), phone: payState.phone })}
+                  {payState.channel && ` ${t('sales.viaNetwork', { channel: payState.channel })}`}
                 </p>
               </div>
               <button onClick={resetAll} className="btn-primary w-full">
-                Record Another Sale
+                {t('sales.recordAnother')}
               </button>
             </div>
           )}
@@ -375,21 +376,21 @@ export default function RecordSale() {
             <div className="space-y-4 text-center">
               <XCircle className="text-red-500 mx-auto" size={48} />
               <div>
-                <p className="font-bold text-red-700 dark:text-red-300 text-lg">Payment Declined</p>
+                <p className="font-bold text-red-700 dark:text-red-300 text-lg">{t('sales.paymentDeclined')}</p>
                 <p className="text-slate-600 dark:text-slate-300 text-sm mt-1">
-                  The customer cancelled or the transaction was rejected.
+                  {t('sales.declinedMessage')}
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-2">
                 <button onClick={cancelPayment} disabled={cancelling} className="btn-secondary flex-1 text-sm">
-                  {cancelling ? 'Reversing…' : <><RefreshCw size={14} /> New Sale</>}
+                  {cancelling ? t('sales.reversing') : <><RefreshCw size={14} /> {t('sales.newSale')}</>}
                 </button>
                 <button
                   onClick={() => { clearTimers(); setPayState(null); setPayMethod('cash'); }}
                   disabled={cancelling}
                   className="btn-primary flex-1 text-sm"
                 >
-                  <Banknote size={14} /> Collect Cash Instead
+                  <Banknote size={14} /> {t('sales.collectCash')}
                 </button>
               </div>
             </div>
@@ -400,29 +401,27 @@ export default function RecordSale() {
             <div className="space-y-4 text-center">
               <Clock className="text-amber-500 mx-auto" size={48} />
               <div>
-                <p className="font-bold text-amber-700 dark:text-amber-300 text-lg">No Response Yet</p>
+                <p className="font-bold text-amber-700 dark:text-amber-300 text-lg">{t('sales.noResponseYet')}</p>
                 <p className="text-slate-600 dark:text-slate-300 text-sm mt-1">
-                  No confirmation received from {payState.phone} after {TIMEOUT_SECS / 60} minutes.
-                  If the customer did pay, click <strong>Check Again</strong> to re-check.
-                  The sale is saved regardless.
+                  {t('sales.noResponseMessage', { phone: payState.phone, minutes: TIMEOUT_SECS / 60 })}
                 </p>
               </div>
               <button
                 onClick={() => setPayState((prev) => ({ ...prev, status: 'pending', secondsLeft: 120 }))}
                 className="btn-primary w-full text-sm"
               >
-                <RefreshCw size={14} className="inline mr-1" /> Check Again (2 more minutes)
+                <RefreshCw size={14} className="inline mr-1" /> {t('sales.checkAgain')}
               </button>
               <div className="flex flex-col sm:flex-row gap-2">
                 <button onClick={cancelPayment} disabled={cancelling} className="btn-secondary flex-1 text-sm">
-                  {cancelling ? 'Reversing…' : 'Cancel Sale'}
+                  {cancelling ? t('sales.reversing') : t('sales.cancelSale')}
                 </button>
                 <button
                   onClick={() => { clearTimers(); setPayState(null); setPayMethod('cash'); }}
                   disabled={cancelling}
                   className="btn-secondary flex-1 text-sm"
                 >
-                  <Banknote size={14} /> Collect Cash Instead
+                  <Banknote size={14} /> {t('sales.collectCash')}
                 </button>
               </div>
             </div>
@@ -458,7 +457,7 @@ export default function RecordSale() {
                 if (code) handleBarcodeScan(code);
               }
             }}
-            placeholder="Scan barcode to add product…"
+            placeholder={t('sales.scanBarcodePlaceholder')}
             className="form-input text-sm font-mono flex-1"
             autoComplete="off"
           />
@@ -598,13 +597,13 @@ export default function RecordSale() {
       {/* Payment method */}
       <div className="card">
         <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">
-          Payment Method
+          {t('sales.paymentMethod')}
         </h3>
 
         <div className="grid grid-cols-2 gap-2 mb-4">
           {[
-            { id: 'cash',         label: 'Cash',         Icon: Banknote },
-            { id: 'mobile_money', label: 'Mobile Money', Icon: Smartphone },
+            { id: 'cash',         label: t('sales.cash'),        Icon: Banknote },
+            { id: 'mobile_money', label: t('sales.mobileMoney'), Icon: Smartphone },
           ].map(({ id, label, Icon }) => (
             <button
               key={id}
@@ -624,17 +623,17 @@ export default function RecordSale() {
 
         {payMethod === 'mobile_money' && (
           <div className="pt-3 border-t border-slate-100 dark:border-slate-700">
-            <label className="form-label">Customer Phone Number</label>
+            <label className="form-label">{t('sales.customerPhone')}</label>
             <input
               ref={phoneRef}
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="e.g. 0712 345 678"
+              placeholder={t('sales.phonePlaceholder')}
               className="form-input"
             />
             <p className="mt-1 text-xs text-slate-400">
-              Network detected automatically from the number (M-Pesa, Tigo, Airtel, Halopesa)
+              {t('sales.networkDetected')}
             </p>
           </div>
         )}
@@ -670,9 +669,9 @@ export default function RecordSale() {
             disabled={submitting || computed.total <= 0}
           >
             {submitting
-              ? (payMethod === 'mobile_money' ? 'Sending request…' : t('sales.recording'))
+              ? (payMethod === 'mobile_money' ? t('sales.sendingRequest') : t('sales.recording'))
               : payMethod === 'mobile_money'
-                ? `Send ${formatTZS(computed.total)} Request`
+                ? t('sales.sendRequest', { amount: formatTZS(computed.total) })
                 : t('sales.confirmSale')
             }
           </button>

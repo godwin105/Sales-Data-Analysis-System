@@ -242,7 +242,10 @@
       "thresholdHelp": "Alert when stock drops below this",
       "saveChanges": "Save Changes",
       "addButton": "Add Product",
-      "errorSave": "Could not save product."
+      "errorSave": "Could not save product.",
+      "barcode": "Barcode",
+      "barcodePlaceholder": "Scan or type barcode…",
+      "addCategory": "Add"
     },
     "restockForm": {
       "currentStock": "Current stock",
@@ -281,7 +284,47 @@
     "noStockTitle": "No products in stock",
     "noStockMessage": "Add products with stock greater than zero to record a sale.",
     "goToStock": "Go to Stock Management",
-    "lowStockToast": "Low stock alert: {{names}}"
+    "lowStockToast": "Low stock alert: {{names}}",
+    "inStock": "in stock",
+    "noStockMessageCashier": "No products have been recorded in the system yet. Please contact the business owner to add products.",
+    "scanBarcodePlaceholder": "Scan barcode to add product…",
+    "barcodeAdded": "Added: {{name}}",
+    "barcodeNotFound": "Barcode not found: {{code}}",
+    "paymentMethod": "Payment Method",
+    "cash": "Cash",
+    "mobileMoney": "Mobile Money",
+    "customerPhone": "Customer Phone Number",
+    "phonePlaceholder": "e.g. 0712 345 678",
+    "networkDetected": "Network detected automatically from the number (M-Pesa, Tigo, Airtel, Halopesa)",
+    "enterPhone": "Enter the customer's phone number.",
+    "sendingRequest": "Sending request…",
+    "sendRequest": "Send {{amount}} Request",
+    "waitingConfirm": "Waiting for customer to confirm…",
+    "promptSentTo": "Prompt sent to",
+    "networkLabel": "Network",
+    "saleAmount": "Sale amount",
+    "networkFee": "Network fee",
+    "customerPays": "Customer pays",
+    "checkingEvery": "Checking every 4 s",
+    "secondsLeft": "{{s}}s left",
+    "ussdWarning": "The USSD prompt expires automatically after ~2 minutes. Cancelling below will reverse the sale and restore stock.",
+    "cancelNewSale": "Cancel & Start New Sale",
+    "cancelling": "Cancelling…",
+    "reversing": "Reversing…",
+    "paymentConfirmed": "Payment Confirmed!",
+    "receivedFrom": "{{amount}} received from {{phone}}",
+    "viaNetwork": "via {{channel}}",
+    "recordAnother": "Record Another Sale",
+    "paymentDeclined": "Payment Declined",
+    "declinedMessage": "The customer cancelled or the transaction was rejected.",
+    "newSale": "New Sale",
+    "collectCash": "Collect Cash Instead",
+    "noResponseYet": "No Response Yet",
+    "noResponseMessage": "No confirmation received from {{phone}} after {{minutes}} minute(s). If the customer did pay, tap 'Check Again' to re-check. The sale is saved regardless.",
+    "checkAgain": "Check Again (2 more minutes)",
+    "cancelSale": "Cancel Sale",
+    "paymentConfirmedToast": "Payment confirmed! {{amount}} received.",
+    "paymentDeclinedToast": "Payment was declined or cancelled."
   },
   "history": {
     "search": "Search",
@@ -319,6 +362,7 @@
     "save": "Save Expense",
     "saving": "Saving...",
     "totalsByCategory": "Totals by Category",
+    "grandTotal": "Total",
     "noExpenses": "No expenses recorded yet",
     "noExpensesMessage": "Use the form on the left to record your first expense.",
     "loading": "Loading expenses...",
@@ -487,7 +531,22 @@
     "errorPicture": "Could not upload profile picture.",
     "pictureUpdated": "Profile picture updated successfully.",
     "errorPassword": "Could not change password.",
-    "errorMatch": "Passwords must match."
+    "errorMatch": "Passwords must match.",
+    "mobilePaymentSettings": "Mobile Payment Settings",
+    "mobilePaymentHelp": "Enter your own ClickPesa merchant credentials so payments go directly into your account. Leave blank to use the platform's shared account.",
+    "clickpesaConfigured": "Your ClickPesa credentials are configured — payments go to your account.",
+    "clickpesaClientId": "ClickPesa Client ID",
+    "clickpesaApiKey": "ClickPesa API Key",
+    "clickpesaClientIdPlaceholder": "Your ClickPesa Client ID",
+    "clickpesaApiKeyPlaceholder": "Enter new key to update",
+    "clickpesaApiKeyNewPlaceholder": "Your ClickPesa API Key",
+    "clickpesaKeysHelp": "Find your credentials in your ClickPesa Dashboard → Settings → API Keys.",
+    "savePaymentSettings": "Save Payment Settings",
+    "savingPaymentSettings": "Saving…",
+    "clearSettings": "Clear",
+    "errorSavePayment": "Failed to save payment settings.",
+    "enterCredentials": "Enter your ClickPesa Client ID and API Key to save.",
+    "bothCredentialsRequired": "Both Client ID and API Key are required."
   },
   "staff": {
     "subtitle": "Manage cashier accounts who can record sales for your business.",
@@ -542,17 +601,35 @@
     "5": "May", "6": "June", "7": "July", "8": "August",
     "9": "September", "10": "October", "11": "November", "12": "December"
   },
+  "monthsAbbr": {
+    "1": "Jan", "2": "Feb", "3": "Mar", "4": "Apr",
+    "5": "May", "6": "Jun", "7": "Jul", "8": "Aug",
+    "9": "Sep", "10": "Oct", "11": "Nov", "12": "Dec"
+  },
+  "days": {
+    "Mon": "Mon", "Tue": "Tue", "Wed": "Wed", "Thu": "Thu",
+    "Fri": "Fri", "Sat": "Sat", "Sun": "Sun"
+  },
   "categories": {
     "stock": {
       "Food": "Food",
       "Cleaning": "Cleaning",
       "Beverages": "Beverages",
+      "Electronics": "Electronics",
+      "Clothing": "Clothing",
+      "Stationery": "Stationery",
+      "Household": "Household",
+      "Beauty & Health": "Beauty & Health",
+      "Fruits & Vegetables": "Fruits & Vegetables",
+      "Dairy & Eggs": "Dairy & Eggs",
+      "Construction": "Construction",
       "Other": "Other"
     },
     "expenses": {
       "Rent": "Rent",
       "Utilities": "Utilities",
       "Salaries": "Salaries",
+      "Purchase Costs": "Purchase Costs",
       "Miscellaneous": "Miscellaneous"
     }
   },

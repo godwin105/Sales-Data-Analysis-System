@@ -293,14 +293,14 @@ function ProductForm({ initial, categories, units, onCancel, onSuccess, onCatego
       <div>
         <label className="form-label flex items-center gap-1.5">
           <Barcode size={14} className="text-slate-400" />
-          Barcode <span className="text-slate-400 font-normal">(optional)</span>
+          {t('stock.form.barcode')} <span className="text-slate-400 font-normal">{t('common.optional')}</span>
         </label>
         <input
           type="text"
           value={form.barcode}
           onChange={(e) => update('barcode', e.target.value)}
           className={`form-input font-mono text-sm ${errors.barcode ? 'error' : ''}`}
-          placeholder="Scan or type barcode…"
+          placeholder={t('stock.form.barcodePlaceholder')}
           maxLength={50}
           autoComplete="off"
         />

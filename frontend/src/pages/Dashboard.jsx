@@ -372,7 +372,7 @@ function KpiCard({ label, value, icon: Icon, color, href, lowStockItems }) {
       >
         <Link
           to={href}
-          className="card flex items-start justify-between hover:ring-2 hover:ring-brand-300 dark:hover:ring-brand-700 transition-all"
+          className="card flex items-start justify-between hover:ring-2 hover:ring-brand-300 dark:hover:ring-brand-700 transition-all h-full"
         >
           {inner}
         </Link>

@@ -414,7 +414,7 @@ function ProductForm({ initial, categories, units, onCancel, onSuccess, onCatego
         </div>
       </div>
 
-      <div className="flex justify-end gap-3 pt-2">
+      <div className="sticky bottom-0 -mx-5 px-5 py-3 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-3">
         <button type="button" onClick={onCancel} className="btn-secondary" disabled={submitting}>
           {t('common.cancel')}
         </button>

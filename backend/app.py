@@ -88,6 +88,7 @@ def create_app(config_class=Config):
         _ensure_payment_columns()
         _ensure_normalization_tables()
         _ensure_clickpesa_columns()
+        _ensure_barcode_column()
 
     # ---- Health check ----
     @app.route("/api/health")
@@ -287,6 +288,25 @@ def _ensure_clickpesa_columns():
         if "clickpesa_api_key" not in cols:
             db.session.execute(text(
                 "ALTER TABLE users ADD COLUMN clickpesa_api_key VARCHAR(255) NULL"
+            ))
+            db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+
+
+def _ensure_barcode_column():
+    """Add barcode column to products table if missing."""
+    try:
+        inspector = inspect(db.engine)
+        if not inspector.has_table("products"):
+            return
+        cols = {c["name"] for c in inspector.get_columns("products")}
+        if "barcode" not in cols:
+            db.session.execute(text(
+                "ALTER TABLE products ADD COLUMN barcode VARCHAR(50) NULL"
+            ))
+            db.session.execute(text(
+                "ALTER TABLE products ADD INDEX idx_products_barcode (barcode)"
             ))
             db.session.commit()
     except SQLAlchemyError:

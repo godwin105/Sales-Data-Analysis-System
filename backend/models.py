@@ -131,6 +131,7 @@ class Product(db.Model):
         nullable=False, index=True,
     )
     name = db.Column(db.String(100), nullable=False)
+    barcode = db.Column(db.String(50), nullable=True, index=True)
     category_id = db.Column(
         db.Integer, db.ForeignKey("product_categories.id", ondelete="SET NULL"),
         nullable=True, index=True,
@@ -165,6 +166,7 @@ class Product(db.Model):
         return {
             "product_id":    self.product_id,
             "name":          self.name,
+            "barcode":       self.barcode,
             "category":      self.category,
             "category_id":   self.category_id,
             "unit":          self.unit,

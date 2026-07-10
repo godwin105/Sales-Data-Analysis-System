@@ -8,4 +8,5 @@ export const stockApi = {
   restock: (id, data) => api.post(`/api/stock/${id}/restock`, data),
   remove: (id) => api.delete(`/api/stock/${id}`),
   addCategory: (name) => api.post('/api/stock/categories', { name }),
+  getByBarcode: (barcode) => api.get(`/api/stock/barcode/${encodeURIComponent(barcode)}`),
 };

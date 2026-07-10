@@ -22,6 +22,8 @@ import EmptyState from '../components/EmptyState';
 
 const TODAY = new Date();
 
+const EN_MONTH_ABB = { Jan:1, Feb:2, Mar:3, Apr:4, May:5, Jun:6, Jul:7, Aug:8, Sep:9, Oct:10, Nov:11, Dec:12 };
+
 ChartJS.register(
   CategoryScale, LinearScale,
   PointElement, LineElement, BarElement, ArcElement,
@@ -37,6 +39,10 @@ export default function Insights() {
   const toast       = useToast();
   const { isDark }  = useTheme();
   const { t }       = useTranslation();
+
+  const tMonthAbbr = (abbr) => { const n = EN_MONTH_ABB[abbr]; return n ? t(`monthsAbbr.${n}`) : abbr; };
+  const tDay       = (day)  => t(`days.${day}`, day);
+  const tCat       = (cat)  => t(`categories.stock.${cat}`, cat);
 
   const [selYear,  setSelYear]  = useState(TODAY.getFullYear());
   const [selMonth, setSelMonth] = useState(TODAY.getMonth() + 1);
@@ -128,7 +134,8 @@ export default function Insights() {
   if (!data)   return <EmptyState icon={AlertTriangle} title={t('insights.unavailable')} />;
 
   const isBeforeStart = data.is_before_start;
-  const { kpis, priority_alerts, forecast, charts, period_label } = data;
+  const { kpis, priority_alerts, forecast, charts } = data;
+  const periodLabel = `${t(`months.${selMonth}`)} ${selYear}`;
   const tickColor = isDark ? '#94A3B8' : '#64748B';
   const gridColor = isDark ? '#334155' : '#E2E8F0';
 
@@ -150,7 +157,7 @@ export default function Insights() {
           <p className="text-xs uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400">
             {t('insights.period')}
           </p>
-          <p className="text-base font-bold text-slate-800 dark:text-slate-100">{period_label}</p>
+          <p className="text-base font-bold text-slate-800 dark:text-slate-100">{periodLabel}</p>
           {!isCurrentMonth && !isBeforeStart && (
             <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
               {t('insights.historicalView')}
@@ -180,8 +187,7 @@ export default function Insights() {
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                 {t('insights.beforeStartMessage', {
                   month: businessStart
-                    ? new Date(businessStart.year, businessStart.month - 1, 1)
-                        .toLocaleString('default', { month: 'long', year: 'numeric' })
+                    ? `${t(`months.${businessStart.month}`)} ${businessStart.year}`
                     : '',
                 })}
               </p>
@@ -392,7 +398,7 @@ export default function Insights() {
         <ChartCard title={t('insights.avgRevenueByDay')}>
           <Bar
             data={{
-              labels: charts.days.labels,
+              labels: charts.days.labels.map(tDay),
               datasets: [{ label: t('insights.revenue'), data: charts.days.values, backgroundColor: '#F59E0B', borderRadius: 6 }],
             }}
             options={moneyOpts(tickColor, gridColor)}
@@ -403,7 +409,7 @@ export default function Insights() {
         <ChartCard title={t('insights.profitMarginTrend')}>
           <Line
             data={{
-              labels: charts.margin.labels,
+              labels: charts.margin.labels.map(tMonthAbbr),
               datasets: [{
                 label: t('insights.margin'),
                 data: charts.margin.values,
@@ -432,7 +438,7 @@ export default function Insights() {
           {compareData && (
             <Bar
               data={{
-                labels: compareData.labels,
+                labels: compareData.labels.map(tMonthAbbr),
                 datasets: [
                   { label: t('insights.revenue'),  data: compareData.revenue,  backgroundColor: '#2563EB', borderRadius: 6 },
                   { label: t('insights.expenses'), data: compareData.expenses, backgroundColor: '#DC2626', borderRadius: 6 },
@@ -489,7 +495,7 @@ export default function Insights() {
           {charts.cat_revenue?.values?.length > 0 ? (
             <Doughnut
               data={{
-                labels: charts.cat_revenue.labels,
+                labels: charts.cat_revenue.labels.map(tCat),
                 datasets: [{
                   data: charts.cat_revenue.values,
                   backgroundColor: DOUGHNUT_COLORS,

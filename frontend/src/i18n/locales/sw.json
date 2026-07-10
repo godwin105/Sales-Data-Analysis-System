@@ -242,7 +242,10 @@
       "thresholdHelp": "Tahadharisha bidhaa ikishuka chini ya kiwango hiki",
       "saveChanges": "Hifadhi Mabadiliko",
       "addButton": "Ongeza Bidhaa",
-      "errorSave": "Imeshindwa kuhifadhi bidhaa."
+      "errorSave": "Imeshindwa kuhifadhi bidhaa.",
+      "barcode": "Msimbo wa Bidhaa",
+      "barcodePlaceholder": "Piga msimbo au andika...",
+      "addCategory": "Ongeza"
     },
     "restockForm": {
       "currentStock": "Bidhaa zilizopo",
@@ -281,7 +284,47 @@
     "noStockTitle": "Hakuna bidhaa stoo",
     "noStockMessage": "Ongeza bidhaa zenye idadi zaidi ya sifuri ili kurekodi mauzo.",
     "goToStock": "Nenda Usimamizi wa Bidhaa",
-    "lowStockToast": "Tahadhari ya bidhaa pungufu: {{names}}"
+    "lowStockToast": "Tahadhari ya bidhaa pungufu: {{names}}",
+    "inStock": "stoo",
+    "noStockMessageCashier": "Hakuna bidhaa zilizorekodiwa kwenye mfumo bado. Tafadhali wasiliana na mmiliki wa biashara kuongeza bidhaa.",
+    "scanBarcodePlaceholder": "Piga msimbo wa bidhaa kuiongeza...",
+    "barcodeAdded": "Imeongezwa: {{name}}",
+    "barcodeNotFound": "Msimbo haujapatikana: {{code}}",
+    "paymentMethod": "Njia ya Malipo",
+    "cash": "Taslimu",
+    "mobileMoney": "Pesa ya Simu",
+    "customerPhone": "Nambari ya Simu ya Mteja",
+    "phonePlaceholder": "k.m. 0712 345 678",
+    "networkDetected": "Mtandao unagunduliwa kiotomatiki kutoka kwa nambari (M-Pesa, Tigo, Airtel, Halopesa)",
+    "enterPhone": "Ingiza nambari ya simu ya mteja.",
+    "sendingRequest": "Inatuma ombi...",
+    "sendRequest": "Tuma Ombi la {{amount}}",
+    "waitingConfirm": "Inasubiri mteja kuthibitisha...",
+    "promptSentTo": "Ujumbe umetumwa kwa",
+    "networkLabel": "Mtandao",
+    "saleAmount": "Kiasi cha mauzo",
+    "networkFee": "Ada ya mtandao",
+    "customerPays": "Mteja analipa",
+    "checkingEvery": "Inaangalia kila sekunde 4",
+    "secondsLeft": "Sekunde {{s}} zimebaki",
+    "ussdWarning": "Ujumbe wa USSD unaisha kiotomatiki baada ya dakika ~2. Kughairi chini kutabatilisha mauzo na kurejesha bidhaa.",
+    "cancelNewSale": "Ghairi na Anza Mauzo Mapya",
+    "cancelling": "Inaghairi...",
+    "reversing": "Inarudisha...",
+    "paymentConfirmed": "Malipo Yamethibitishwa!",
+    "receivedFrom": "{{amount}} ilipokelewa kutoka {{phone}}",
+    "viaNetwork": "kupitia {{channel}}",
+    "recordAnother": "Rekodi Muuzo Mwingine",
+    "paymentDeclined": "Malipo Yamekataliwa",
+    "declinedMessage": "Mteja alighairi au muamala ulikataliwa.",
+    "newSale": "Mauzo Mapya",
+    "collectCash": "Chukua Pesa Taslimu",
+    "noResponseYet": "Hakuna Jibu Bado",
+    "noResponseMessage": "Hakuna uthibitisho ulipokelewa kutoka {{phone}} baada ya dakika {{minutes}}. Iwapo mteja alilipa, gonga 'Angalia Tena' kukagua. Muuzo umehifadhiwa.",
+    "checkAgain": "Angalia Tena (dakika 2 zaidi)",
+    "cancelSale": "Ghairi Muuzo",
+    "paymentConfirmedToast": "Malipo yamethibitishwa! {{amount}} imepokelewa.",
+    "paymentDeclinedToast": "Malipo yalikataliwa au kughairiwa."
   },
   "history": {
     "search": "Tafuta",
@@ -319,6 +362,7 @@
     "save": "Hifadhi Matumizi",
     "saving": "Inahifadhi...",
     "totalsByCategory": "Jumla kwa Aina",
+    "grandTotal": "Jumla",
     "noExpenses": "Hakuna matumizi yaliyorekodiwa bado",
     "noExpensesMessage": "Tumia fomu upande wa kushoto kurekodi matumizi yako ya kwanza.",
     "loading": "Inapakia matumizi...",
@@ -487,7 +531,22 @@
     "errorPicture": "Imeshindwa kupakia picha ya wasifu.",
     "pictureUpdated": "Picha ya wasifu imesasishwa.",
     "errorPassword": "Imeshindwa kubadilisha neno la siri.",
-    "errorMatch": "Maneno ya siri lazima yafanane."
+    "errorMatch": "Maneno ya siri lazima yafanane.",
+    "mobilePaymentSettings": "Mipangilio ya Malipo ya Simu",
+    "mobilePaymentHelp": "Ingiza taarifa zako za mfanyabiashara wa ClickPesa ili malipo yaende moja kwa moja kwenye akaunti yako. Acha wazi kutumia akaunti ya pamoja ya mfumo.",
+    "clickpesaConfigured": "Taarifa zako za ClickPesa zimewekwa — malipo yanaenda kwenye akaunti yako.",
+    "clickpesaClientId": "Kitambulisho cha ClickPesa",
+    "clickpesaApiKey": "Funguo ya API ya ClickPesa",
+    "clickpesaClientIdPlaceholder": "Kitambulisho chako cha ClickPesa",
+    "clickpesaApiKeyPlaceholder": "Ingiza funguo mpya kusasisha",
+    "clickpesaApiKeyNewPlaceholder": "Funguo yako ya API ya ClickPesa",
+    "clickpesaKeysHelp": "Pata taarifa zako katika Dashibodi ya ClickPesa → Mipangilio → Funguo za API.",
+    "savePaymentSettings": "Hifadhi Mipangilio ya Malipo",
+    "savingPaymentSettings": "Inahifadhi...",
+    "clearSettings": "Futa",
+    "errorSavePayment": "Imeshindwa kuhifadhi mipangilio ya malipo.",
+    "enterCredentials": "Ingiza Kitambulisho cha ClickPesa na Funguo ya API kuhifadhi.",
+    "bothCredentialsRequired": "Kitambulisho na Funguo ya API vyote vinahitajika."
   },
   "staff": {
     "subtitle": "Simamia akaunti za makarani wanaoweza kurekodi mauzo kwa biashara yako.",
@@ -542,17 +601,35 @@
     "5": "Mei", "6": "Juni", "7": "Julai", "8": "Agosti",
     "9": "Septemba", "10": "Oktoba", "11": "Novemba", "12": "Desemba"
   },
+  "monthsAbbr": {
+    "1": "Jan", "2": "Feb", "3": "Mac", "4": "Apr",
+    "5": "Mei", "6": "Jun", "7": "Jul", "8": "Ago",
+    "9": "Sep", "10": "Okt", "11": "Nov", "12": "Des"
+  },
+  "days": {
+    "Mon": "Jtt", "Tue": "Jne", "Wed": "Jto", "Thu": "Alh",
+    "Fri": "Iju", "Sat": "Jmo", "Sun": "Jpl"
+  },
   "categories": {
     "stock": {
       "Food": "Vyakula",
       "Cleaning": "Usafi",
       "Beverages": "Vinywaji",
+      "Electronics": "Elektroniki",
+      "Clothing": "Nguo",
+      "Stationery": "Vifaa vya Ofisi",
+      "Household": "Vifaa vya Nyumbani",
+      "Beauty & Health": "Uzuri na Afya",
+      "Fruits & Vegetables": "Matunda na Mboga",
+      "Dairy & Eggs": "Bidhaa za Maziwa na Mayai",
+      "Construction": "Ujenzi",
       "Other": "Nyingine"
     },
     "expenses": {
       "Rent": "Kodi",
       "Utilities": "Huduma",
       "Salaries": "Mishahara",
+      "Purchase Costs": "Gharama za Ununuzi",
       "Miscellaneous": "Mengineyo"
     }
   },

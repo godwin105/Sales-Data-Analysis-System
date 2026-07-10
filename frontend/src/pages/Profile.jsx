@@ -123,7 +123,7 @@ export default function Profile() {
         setCpCreds((prev) => ({ ...prev, clickpesa_api_key: '' }));
       }
     } catch (err) {
-      toast.error(extractError(err, 'Failed to save payment settings.'));
+      toast.error(extractError(err, t('profile.errorSavePayment')));
     } finally {
       setSavingCp(false);
     }
@@ -134,11 +134,11 @@ export default function Profile() {
     const id  = cpCreds.clickpesa_client_id.trim();
     const key = cpCreds.clickpesa_api_key.trim();
     if (!id && !key) {
-      toast.error('Enter your ClickPesa Client ID and API Key to save.');
+      toast.error(t('profile.enterCredentials'));
       return;
     }
     if (!id || !key) {
-      toast.error('Both Client ID and API Key are required.');
+      toast.error(t('profile.bothCredentialsRequired'));
       return;
     }
     saveCpCreds({ clickpesa_client_id: id, clickpesa_api_key: key });
@@ -299,41 +299,40 @@ export default function Profile() {
         <form onSubmit={handleCpSubmit} className="card lg:col-span-2">
           <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-1 flex items-center gap-2">
             <Smartphone size={18} />
-            Mobile Payment Settings
+            {t('profile.mobilePaymentSettings')}
           </h3>
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-            Enter your own ClickPesa merchant credentials so payments go directly into your account.
-            Leave blank to use the platform's shared account.
+            {t('profile.mobilePaymentHelp')}
           </p>
 
           {cpConfigured && (
             <div className="mb-4 flex items-center gap-2 px-3 py-2 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-sm text-green-700 dark:text-green-300">
               <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
-              Your ClickPesa credentials are configured — payments go to your account.
+              {t('profile.clickpesaConfigured')}
             </div>
           )}
 
           <div className="space-y-4">
             <div>
-              <label className="form-label">ClickPesa Client ID</label>
+              <label className="form-label">{t('profile.clickpesaClientId')}</label>
               <input
                 type="text"
                 value={cpCreds.clickpesa_client_id}
                 onChange={(e) => setCpCreds({ ...cpCreds, clickpesa_client_id: e.target.value })}
                 className="form-input font-mono text-sm"
-                placeholder="Your ClickPesa Client ID"
+                placeholder={t('profile.clickpesaClientIdPlaceholder')}
                 autoComplete="off"
               />
             </div>
             <div>
-              <label className="form-label">ClickPesa API Key</label>
+              <label className="form-label">{t('profile.clickpesaApiKey')}</label>
               <div className="relative">
                 <input
                   type={showApiKey ? 'text' : 'password'}
                   value={cpCreds.clickpesa_api_key}
                   onChange={(e) => setCpCreds({ ...cpCreds, clickpesa_api_key: e.target.value })}
                   className="form-input font-mono text-sm pr-10"
-                  placeholder={cpConfigured ? 'Enter new key to update' : 'Your ClickPesa API Key'}
+                  placeholder={cpConfigured ? t('profile.clickpesaApiKeyPlaceholder') : t('profile.clickpesaApiKeyNewPlaceholder')}
                   autoComplete="new-password"
                 />
                 <button
@@ -346,13 +345,13 @@ export default function Profile() {
                 </button>
               </div>
               <p className="form-help mt-1">
-                Find your credentials in your ClickPesa Dashboard → Settings → API Keys.
+                {t('profile.clickpesaKeysHelp')}
               </p>
             </div>
 
             <div className="flex gap-3">
               <button type="submit" className="btn-primary flex-1" disabled={savingCp}>
-                {savingCp ? 'Saving…' : 'Save Payment Settings'}
+                {savingCp ? t('profile.savingPaymentSettings') : t('profile.savePaymentSettings')}
               </button>
               {cpConfigured && (
                 <button
@@ -361,7 +360,7 @@ export default function Profile() {
                   disabled={savingCp}
                   onClick={() => saveCpCreds({ clickpesa_client_id: '', clickpesa_api_key: '' })}
                 >
-                  Clear
+                  {t('profile.clearSettings')}
                 </button>
               )}
             </div>

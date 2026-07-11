@@ -671,6 +671,31 @@
     "allStockedDesc": "Hakuna bidhaa zinazokaribia kuisha sasa hivi.",
     "lowStockNote": "Mwarifu mmiliki wa biashara kuongeza bidhaa hizi."
   },
+  "notifications": {
+    "title": "Arifa",
+    "empty": "Hakuna arifa bado",
+    "emptyMessage": "Utaarifiwa kuhusu bidhaa chache, matumizi makubwa, na shughuli za biashara.",
+    "markAllRead": "Soma zote",
+    "types": {
+      "low_stock": "Bidhaa Pungufu",
+      "out_of_stock": "Bidhaa Imeisha",
+      "high_expense": "Matumizi Makubwa",
+      "cashier_sale": "Mauzo Yamerekodiwa",
+      "insight": "Maarifa ya Biashara"
+    },
+    "titleText": {
+      "low_stock": "Bidhaa Pungufu: {{name}}",
+      "out_of_stock": "Bidhaa Imeisha: {{name}}",
+      "high_expense": "Matumizi Makubwa: {{name}}",
+      "cashier_sale": "Mauzo na {{name}}"
+    },
+    "bodyText": {
+      "low_stock": "{{name}} imebaki vitengo {{qty}} (kiwango: {{threshold}})",
+      "out_of_stock": "{{name}} imeisha kabisa.",
+      "high_expense": "TZS {{amount}} imerekodiwa chini ya {{name}}.",
+      "cashier_sale": "{{name}} amerekordi mauzo ya TZS {{amount}}."
+    }
+  },
   "units": {
     "pcs": "Vipande (pcs)",
     "kg": "Kilogramu (kg)",

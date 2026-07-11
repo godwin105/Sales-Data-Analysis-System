@@ -53,8 +53,8 @@ export default function Expenses() {
     setSubmitting(true);
     setErrors({});
     try {
-      const { data } = await expensesApi.add(form);
-      toast.success(data.message);
+      await expensesApi.add(form);
+      toast.success(t('expenses.savedToast'));
       setForm({ category: form.category, description: '', amount: '', expense_date: toIsoDate() });
       await load();
     } catch (err) {
@@ -73,8 +73,8 @@ export default function Expenses() {
     if (!deleteCandidate) return;
     setBusyDelete(true);
     try {
-      const { data } = await expensesApi.remove(deleteCandidate.expense_id);
-      toast.success(data.message);
+      await expensesApi.remove(deleteCandidate.expense_id);
+      toast.success(t('expenses.deletedToast'));
       await load();
     } catch (err) {
       toast.error(extractError(err, t('expenses.errorDelete')));

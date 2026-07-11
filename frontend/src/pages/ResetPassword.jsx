@@ -56,7 +56,7 @@ export default function ResetPassword() {
         confirm_password: confirmPassword,
       });
       setDone(true);
-      toast.success(data.message);
+      toast.success(t('auth.reset.successToast'));
       setTimeout(() => navigate('/login', { replace: true }), 1500);
     } catch (err) {
       const fields = extractFieldErrors(err);

@@ -48,12 +48,15 @@ export default function Sidebar({ isOpen, onClose }) {
       >
         {/* Brand */}
         <div className="px-5 py-5 border-b border-slate-700 flex items-center justify-between">
-          <div>
-            <div className="text-xs font-extrabold tracking-widest text-slate-400">
-              {t('brand.shortName')}
-            </div>
-            <div className="text-[10px] text-slate-500 mt-1">
-              {t('brand.subtitle')}
+          <div className="flex items-center gap-3">
+            <img src="/favicon.svg" alt={t('brand.shortName')} className="w-8 h-8 flex-shrink-0" draggable={false} />
+            <div>
+              <div className="text-xs font-extrabold tracking-widest text-slate-400">
+                {t('brand.shortName')}
+              </div>
+              <div className="text-[10px] text-slate-500 mt-1">
+                {t('brand.subtitle')}
+              </div>
             </div>
           </div>
           <button

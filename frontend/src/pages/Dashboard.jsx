@@ -8,7 +8,7 @@ import {
   Tooltip, Legend, Filler,
 } from 'chart.js';
 import {
-  DollarSign, TrendingUp, TrendingDown, Package, AlertTriangle, ShoppingCart,
+  TrendingUp, TrendingDown, Package, AlertTriangle, ShoppingCart,
   BarChart3,
   BarChart2,
 } from 'lucide-react';
@@ -126,6 +126,13 @@ export default function Dashboard() {
   const displayTopData = topData || charts.top_products;
   const displayTrendData = trendData || charts.trend;
   const displayExpenseData = expenseData || charts.expenses;
+  // OPTION B (active): trendTotalValues sums all products per day — needed by the Line chart
+  // OPTION C (inactive): remove/comment this const when switching back to the stacked Bar
+  const trendTotalValues = (displayTrendData.datasets || []).length > 0
+    ? displayTrendData.labels.map((_, i) =>
+        displayTrendData.datasets.reduce((sum, ds) => sum + (ds.values[i] || 0), 0)
+      )
+    : [];
   const tickColor = isDark ? '#94A3B8' : '#64748B';
   const gridColor = isDark ? '#334155' : '#E2E8F0';
   const expenseLabels = displayExpenseData.labels.map((label) => t(`categories.expenses.${label}`, label));
@@ -170,25 +177,43 @@ export default function Dashboard() {
             </div>
           ) : displayTrendData.datasets?.length > 0 ? (
             <div className="h-72">
+
+              {/* ── OPTION B (active): single total line with per-product tooltip ── */}
               <Line
+                data={{
+                  labels: displayTrendData.labels,
+                  datasets: [{
+                    label: t('dashboard.salesTrend'),
+                    data: trendTotalValues,
+                    borderColor: '#2563EB',
+                    backgroundColor: 'rgba(37,99,235,0.08)',
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
+                    borderWidth: 2.5,
+                  }],
+                }}
+                options={singleLineTrendOpts(tickColor, gridColor, displayTrendData.datasets)}
+              />
+
+              {/* ── OPTION C (inactive): stacked bar — one segment per product ──
+              <Bar
                 data={{
                   labels: displayTrendData.labels,
                   datasets: displayTrendData.datasets.map((ds, i) => ({
                     label: ds.name,
                     data: ds.values,
                     unit: ds.unit || 'pcs',
-                    borderColor: CHART_COLORS[i],
-                    backgroundColor: CHART_COLORS[i],
-                    fill: false,
-                    tension: 0.3,
-                    pointRadius: 0,
-                    pointHoverRadius: 5,
-                    pointStyle: 'circle',
-                    borderWidth: 2,
+                    backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
+                    borderRadius: 3,
+                    stack: 'daily',
                   })),
                 }}
-                options={multiLineOpts(tickColor, gridColor)}
+                options={stackedBarOpts(tickColor, gridColor)}
               />
+              ────────────────────────────────────────────────────────────────────── */}
+
             </div>
           ) : (
             <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-12">
@@ -228,6 +253,7 @@ export default function Dashboard() {
                     data: displayTopData.values,
                     backgroundColor: CHART_COLORS,
                     borderRadius: 6,
+                    barThickness: 40,
                   }],
                 }}
                 options={verticalBarOpts(tickColor, gridColor, displayTopData.units || [])}
@@ -405,28 +431,23 @@ function KpiCard({ label, value, icon: Icon, color, href, lowStockItems }) {
   );
 }
 
-function multiLineOpts(tickColor, gridColor) {
+function singleLineTrendOpts(tickColor, gridColor, productDatasets = []) {
   return {
     responsive: true, maintainAspectRatio: false,
-    interaction: { mode: 'nearest', intersect: false, axis: 'xy' },
     plugins: {
-      legend: {
-        display: true,
-        position: 'top',
-        labels: {
-          color: tickColor,
-          font: { size: 10 },
-          boxWidth: 10,
-          padding: 8,
-          usePointStyle: true,
-          pointStyleWidth: 10,
-        },
-      },
+      legend: { display: false },
       tooltip: {
-        mode: 'nearest',
+        mode: 'index',
         intersect: false,
         callbacks: {
-          label: (ctx) => ` ${ctx.dataset.label}: ${formatNumber(ctx.parsed.y)} ${ctx.dataset.unit || 'pcs'}`,
+          label: (ctx) => ` Total: ${formatNumber(ctx.parsed.y)}`,
+          afterBody: (items) => {
+            const idx = items[0]?.dataIndex;
+            if (idx === undefined) return [];
+            return productDatasets
+              .filter((ds) => (ds.values[idx] || 0) > 0)
+              .map((ds) => `  ${ds.name}: ${formatNumber(ds.values[idx])} ${ds.unit || 'pcs'}`);
+          },
         },
       },
     },
@@ -440,6 +461,32 @@ function multiLineOpts(tickColor, gridColor) {
     },
   };
 }
+
+// ── OPTION C chart options (active) ──────────────────────────────────────────
+function stackedBarOpts(tickColor, gridColor) {
+  return {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true, position: 'top',
+        labels: { color: tickColor, font: { size: 10 }, boxWidth: 12, padding: 8, usePointStyle: true },
+      },
+      tooltip: {
+        mode: 'index', intersect: false,
+        filter: (item) => item.parsed.y > 0,
+        callbacks: {
+          label: (ctx) => ` ${ctx.dataset.label}: ${formatNumber(ctx.parsed.y)} ${ctx.dataset.unit || 'pcs'}`,
+          footer: (items) => { const tot = items.reduce((s, i) => s + i.parsed.y, 0); return tot > 0 ? `Total: ${formatNumber(tot)}` : ''; },
+        },
+      },
+    },
+    scales: {
+      x: { stacked: true, ticks: { color: tickColor, font: { size: 10 } }, grid: { display: false } },
+      y: { stacked: true, ticks: { color: tickColor, font: { size: 10 }, callback: (v) => formatNumber(v) }, grid: { color: gridColor, drawBorder: false }, beginAtZero: true },
+    },
+  };
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 // Vertical bar: products on X-axis, units sold on Y-axis
 function verticalBarOpts(tickColor, gridColor, units = []) {

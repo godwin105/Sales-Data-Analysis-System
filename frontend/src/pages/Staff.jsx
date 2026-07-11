@@ -38,8 +38,8 @@ export default function Staff() {
     if (!removeCandidate) return;
     setBusyRemove(true);
     try {
-      const { data } = await authApi.removeCashier(removeCandidate.user_id);
-      toast.success(data.message);
+      await authApi.removeCashier(removeCandidate.user_id);
+      toast.success(t('staff.removedToast'));
       await load();
     } catch (err) {
       toast.error(extractError(err, t('staff.errorRemove')));
@@ -174,8 +174,8 @@ function AddCashierForm({ onCancel, onSuccess }) {
     setSubmitting(true);
     setErrors({});
     try {
-      const { data } = await authApi.addCashier(form);
-      toast.success(data.message);
+      await authApi.addCashier(form);
+      toast.success(t('staff.addedToast'));
       onSuccess();
     } catch (err) {
       const fields = extractFieldErrors(err);
@@ -263,7 +263,7 @@ function ResetPasswordForm({ cashier, onCancel, onSuccess }) {
       const { data } = await authApi.resetCashierPassword(cashier.user_id, {
         new_password: newPassword,
       });
-      toast.success(data.message);
+      toast.success(t('staff.passwordResetToast'));
       setDone(data.new_password);
     } catch (err) {
       const fields = extractFieldErrors(err);

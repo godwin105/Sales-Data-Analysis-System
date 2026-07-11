@@ -671,6 +671,31 @@
     "allStockedDesc": "No products are running low right now.",
     "lowStockNote": "Inform the business owner to restock these items."
   },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications yet",
+    "emptyMessage": "You will be notified about low stock, high expenses, and business activity.",
+    "markAllRead": "Mark all read",
+    "types": {
+      "low_stock": "Low Stock",
+      "out_of_stock": "Out of Stock",
+      "high_expense": "High Expense",
+      "cashier_sale": "Sale Recorded",
+      "insight": "Business Insight"
+    },
+    "titleText": {
+      "low_stock": "Low Stock: {{name}}",
+      "out_of_stock": "Out of Stock: {{name}}",
+      "high_expense": "High Expense: {{name}}",
+      "cashier_sale": "Sale by {{name}}"
+    },
+    "bodyText": {
+      "low_stock": "{{name}} has {{qty}} units left (threshold: {{threshold}})",
+      "out_of_stock": "{{name}} is now out of stock.",
+      "high_expense": "TZS {{amount}} recorded under {{name}}.",
+      "cashier_sale": "{{name}} recorded a sale of TZS {{amount}}."
+    }
+  },
   "units": {
     "pcs": "Pieces (pcs)",
     "kg": "Kilograms (kg)",

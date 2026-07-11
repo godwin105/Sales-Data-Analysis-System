@@ -1,12 +1,13 @@
 from datetime import datetime
 from decimal import Decimal
+import json
 
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import current_user
 from sqlalchemy.exc import SQLAlchemyError
 
 from extensions import db
-from models import Product, Sale, SaleItem
+from models import Product, Sale, SaleItem, Notification
 from sqlalchemy.orm import joinedload
 from utils.decorators import cashier_or_admin_required
 
@@ -130,6 +131,40 @@ def record_sale():
             p.name for (p, _, _, _) in resolved_items
             if p.quantity <= p.low_stock_threshold
         ]
+
+        # Create in-app notifications (best-effort; failures don't break the sale)
+        try:
+            for product, _, _, _ in resolved_items:
+                qty = float(product.quantity)
+                threshold = float(product.low_stock_threshold)
+                if qty == 0:
+                    ntype = "out_of_stock"
+                    body = json.dumps({})
+                elif qty <= threshold:
+                    ntype = "low_stock"
+                    body = json.dumps({"qty": qty, "threshold": threshold})
+                else:
+                    continue
+                already_exists = db.session.query(Notification).filter_by(
+                    user_id=owner_id, type=ntype, related_id=product.product_id, is_read=False,
+                ).first()
+                if not already_exists:
+                    db.session.add(Notification(
+                        user_id=owner_id, type=ntype,
+                        title=product.name,
+                        body=body,
+                        related_id=product.product_id,
+                    ))
+            if current_user.is_cashier:
+                db.session.add(Notification(
+                    user_id=owner_id,
+                    type="cashier_sale",
+                    title=current_user.full_name,
+                    body=json.dumps({"amount": float(total_amount)}),
+                ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
 
         return jsonify({
             "message": f"Sale recorded — total TZS {total_amount:,.0f}. Stock updated.",

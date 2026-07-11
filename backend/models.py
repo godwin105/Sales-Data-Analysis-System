@@ -355,6 +355,35 @@ class PasswordReset(db.Model):
         return not self.is_expired and not self.is_used
 
 
+# NOTIFICATIONS
+
+class Notification(db.Model):
+    __tablename__ = "notifications"
+
+    notification_id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.user_id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+    type = db.Column(db.String(30), nullable=False)   # low_stock | out_of_stock | high_expense | cashier_sale
+    title = db.Column(db.String(255), nullable=False)
+    body = db.Column(db.Text, nullable=True)
+    is_read = db.Column(db.Boolean, nullable=False, default=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    related_id = db.Column(db.Integer, nullable=True)
+
+    def to_dict(self):
+        return {
+            "notification_id": self.notification_id,
+            "type": self.type,
+            "title": self.title,
+            "body": self.body,
+            "is_read": self.is_read,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "related_id": self.related_id,
+        }
+
+
 # EMAIL VERIFICATION (signup flow)
 
 class EmailVerification(db.Model):

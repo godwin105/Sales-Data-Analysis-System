@@ -1,6 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from collections import defaultdict
+import json
 
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import current_user
@@ -8,7 +9,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
 from extensions import db
-from models import Expense, Sale, SaleItem, Product, ExpenseCategory
+from models import Expense, Sale, SaleItem, Product, ExpenseCategory, Notification
 from utils.decorators import cashier_or_admin_required
 
 expenses_bp = Blueprint("expenses", __name__, url_prefix="/api/expenses")
@@ -212,6 +213,21 @@ def add_expense():
     )
     db.session.add(expense)
     db.session.commit()
+
+    # Notify about high expenses (best-effort)
+    _HIGH_EXPENSE_THRESHOLD = 500_000
+    try:
+        if float(expense.amount) >= _HIGH_EXPENSE_THRESHOLD:
+            db.session.add(Notification(
+                user_id=current_user.owner_id,
+                type="high_expense",
+                title=expense.category,
+                body=json.dumps({"amount": float(expense.amount)}),
+                related_id=expense.expense_id,
+            ))
+            db.session.commit()
+    except Exception:
+        db.session.rollback()
 
     return jsonify({
         "message": (

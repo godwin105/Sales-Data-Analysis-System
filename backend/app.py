@@ -27,6 +27,7 @@ from blueprints.expenses import expenses_bp
 from blueprints.analytics import analytics_bp
 from blueprints.reports import reports_bp
 from blueprints.payments import payments_bp
+from blueprints.notifications import notifications_bp
 
 # Models must be imported so SQLAlchemy registers them
 import models  # noqa: F401
@@ -81,6 +82,7 @@ def create_app(config_class=Config):
     app.register_blueprint(analytics_bp)
     app.register_blueprint(reports_bp)
     app.register_blueprint(payments_bp)
+    app.register_blueprint(notifications_bp)
 
     # ---- Lightweight compatibility migrations ----
     with app.app_context():
@@ -89,6 +91,7 @@ def create_app(config_class=Config):
         _ensure_normalization_tables()
         _ensure_clickpesa_columns()
         _ensure_barcode_column()
+        _ensure_notifications_table()
 
     # ---- Health check ----
     @app.route("/api/health")
@@ -311,6 +314,15 @@ def _ensure_barcode_column():
             db.session.commit()
     except SQLAlchemyError:
         db.session.rollback()
+
+
+def _ensure_notifications_table():
+    """Create the notifications table if it does not yet exist."""
+    try:
+        db.create_all()
+    except SQLAlchemyError as exc:
+        db.session.rollback()
+        print(f"[migration] Notifications table warning: {exc}")
 
 
 def _ensure_profile_image_column():

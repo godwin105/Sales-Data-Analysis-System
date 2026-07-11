@@ -56,8 +56,8 @@ export default function Stock() {
     if (!deleteCandidate) return;
     setBusyDelete(true);
     try {
-      const { data } = await stockApi.remove(deleteCandidate.product_id);
-      toast.success(data.message);
+      await stockApi.remove(deleteCandidate.product_id);
+      toast.success(t('stock.deletedToast'));
       await load();
     } catch (err) {
       toast.error(extractError(err, t('stock.errorDelete')));
@@ -237,9 +237,9 @@ function ProductForm({ initial, categories, units, onCancel, onSuccess, onCatego
       update('category', name);
       setNewCatName('');
       setAddingCat(false);
-      toast.success(`Category '${name}' added.`);
+      toast.success(t('stock.form.categoryAddedToast', { name }));
     } catch (err) {
-      toast.error(extractError(err, 'Failed to add category.'));
+      toast.error(extractError(err, t('stock.form.categoryAddError')));
     } finally {
       setSavingCat(false);
     }
@@ -257,11 +257,11 @@ function ProductForm({ initial, categories, units, onCancel, onSuccess, onCatego
     try {
       const payload = { ...form };
       if (isEdit) {
-        const { data } = await stockApi.update(initial.product_id, payload);
-        toast.success(data.message);
+        await stockApi.update(initial.product_id, payload);
+        toast.success(t('stock.savedToast'));
       } else {
-        const { data } = await stockApi.add(payload);
-        toast.success(data.message);
+        await stockApi.add(payload);
+        toast.success(t('stock.savedToast'));
       }
       onSuccess();
     } catch (err) {
@@ -441,8 +441,8 @@ function RestockForm({ product, onCancel, onSuccess }) {
     try {
       const payload = { quantity };
       if (purchasePrice) payload.purchase_price = purchasePrice;
-      const { data } = await stockApi.restock(product.product_id, payload);
-      toast.success(data.message);
+      await stockApi.restock(product.product_id, payload);
+      toast.success(t('stock.restockedToast'));
       onSuccess();
     } catch (err) {
       const fields = extractFieldErrors(err);

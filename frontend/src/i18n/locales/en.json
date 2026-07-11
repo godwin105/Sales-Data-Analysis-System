@@ -158,7 +158,8 @@
       "doneMessage": "Redirecting you to login...",
       "backToLogin": "Back to login",
       "errorMatch": "Passwords must match.",
-      "errorFailed": "Reset failed."
+      "errorFailed": "Reset failed.",
+      "successToast": "Password reset successfully."
     },
     "checkEmail": {
       "title": "Check your email",
@@ -226,6 +227,9 @@
     "deleteConfirmTitle": "Delete '{{name}}'?",
     "deleteConfirmMessage": "If this product has sales history, it will be archived (soft-deleted) to preserve your records. Otherwise it will be permanently removed.",
     "errorDelete": "Could not delete product.",
+    "deletedToast": "Product deleted.",
+    "savedToast": "Product saved.",
+    "restockedToast": "Stock updated.",
     "form": {
       "addTitle": "Add Product",
       "editTitle": "Edit Product — {{name}}",
@@ -245,7 +249,9 @@
       "errorSave": "Could not save product.",
       "barcode": "Barcode",
       "barcodePlaceholder": "Scan or type barcode…",
-      "addCategory": "Add"
+      "addCategory": "Add",
+      "categoryAddedToast": "Category '{{name}}' added.",
+      "categoryAddError": "Failed to add category."
     },
     "restockForm": {
       "currentStock": "Current stock",
@@ -324,7 +330,8 @@
     "checkAgain": "Check Again (2 more minutes)",
     "cancelSale": "Cancel Sale",
     "paymentConfirmedToast": "Payment confirmed! {{amount}} received.",
-    "paymentDeclinedToast": "Payment was declined or cancelled."
+    "paymentDeclinedToast": "Payment was declined or cancelled.",
+    "saleRecordedToast": "Sale recorded successfully."
   },
   "history": {
     "search": "Search",
@@ -375,7 +382,9 @@
     "deleteConfirmMessage": "This action cannot be undone.",
     "errorLoad": "Could not load expenses.",
     "errorSave": "Could not save expense.",
-    "errorDelete": "Could not delete expense."
+    "errorDelete": "Could not delete expense.",
+    "savedToast": "Expense saved.",
+    "deletedToast": "Expense deleted."
   },
   "reports": {
     "type": "Report Type",
@@ -546,7 +555,10 @@
     "clearSettings": "Clear",
     "errorSavePayment": "Failed to save payment settings.",
     "enterCredentials": "Enter your ClickPesa Client ID and API Key to save.",
-    "bothCredentialsRequired": "Both Client ID and API Key are required."
+    "bothCredentialsRequired": "Both Client ID and API Key are required.",
+    "updatedToast": "Profile updated.",
+    "passwordChangedToast": "Password changed successfully.",
+    "paymentSettingsSavedToast": "Payment settings saved."
   },
   "staff": {
     "subtitle": "Manage cashier accounts who can record sales for your business.",
@@ -560,6 +572,9 @@
     "removeConfirmMessage": "If they have sales history, their account will be deactivated and history preserved. Otherwise it will be permanently deleted.",
     "errorLoad": "Could not load staff.",
     "errorRemove": "Could not remove cashier.",
+    "removedToast": "Cashier removed.",
+    "addedToast": "Cashier added.",
+    "passwordResetToast": "Password has been reset.",
     "addForm": {
       "title": "Add Cashier",
       "firstName": "First Name *",

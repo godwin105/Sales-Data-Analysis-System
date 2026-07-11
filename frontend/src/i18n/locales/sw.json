@@ -158,7 +158,8 @@
       "doneMessage": "Tunakupeleka kuingia...",
       "backToLogin": "Rudi kuingia",
       "errorMatch": "Maneno ya siri lazima yafanane.",
-      "errorFailed": "Kuweka upya kumeshindwa."
+      "errorFailed": "Kuweka upya kumeshindwa.",
+      "successToast": "Nenosiri limewekwa upya."
     },
     "checkEmail": {
       "title": "Angalia barua pepe yako",
@@ -226,6 +227,9 @@
     "deleteConfirmTitle": "Futa '{{name}}'?",
     "deleteConfirmMessage": "Iwapo bidhaa hii ina historia ya mauzo, itahifadhiwa (haitafutwa kabisa) ili kulinda kumbukumbu zako. La sivyo, itafutwa kabisa.",
     "errorDelete": "Imeshindwa kufuta bidhaa.",
+    "deletedToast": "Bidhaa imefutwa.",
+    "savedToast": "Bidhaa imehifadhiwa.",
+    "restockedToast": "Bidhaa zimeongezwa.",
     "form": {
       "addTitle": "Ongeza Bidhaa",
       "editTitle": "Hariri Bidhaa — {{name}}",
@@ -245,7 +249,9 @@
       "errorSave": "Imeshindwa kuhifadhi bidhaa.",
       "barcode": "Msimbo wa Bidhaa",
       "barcodePlaceholder": "Piga msimbo au andika...",
-      "addCategory": "Ongeza"
+      "addCategory": "Ongeza",
+      "categoryAddedToast": "Aina '{{name}}' imeongezwa.",
+      "categoryAddError": "Imeshindwa kuongeza aina."
     },
     "restockForm": {
       "currentStock": "Bidhaa zilizopo",
@@ -324,7 +330,8 @@
     "checkAgain": "Angalia Tena (dakika 2 zaidi)",
     "cancelSale": "Ghairi Muuzo",
     "paymentConfirmedToast": "Malipo yamethibitishwa! {{amount}} imepokelewa.",
-    "paymentDeclinedToast": "Malipo yalikataliwa au kughairiwa."
+    "paymentDeclinedToast": "Malipo yalikataliwa au kughairiwa.",
+    "saleRecordedToast": "Mauzo yamerekodiwa."
   },
   "history": {
     "search": "Tafuta",
@@ -375,7 +382,9 @@
     "deleteConfirmMessage": "Kitendo hiki hakiwezi kutenduliwa.",
     "errorLoad": "Imeshindwa kupakia matumizi.",
     "errorSave": "Imeshindwa kuhifadhi matumizi.",
-    "errorDelete": "Imeshindwa kufuta matumizi."
+    "errorDelete": "Imeshindwa kufuta matumizi.",
+    "savedToast": "Matumizi yamehifadhiwa.",
+    "deletedToast": "Matumizi yamefutwa."
   },
   "reports": {
     "type": "Aina ya Ripoti",
@@ -546,7 +555,10 @@
     "clearSettings": "Futa",
     "errorSavePayment": "Imeshindwa kuhifadhi mipangilio ya malipo.",
     "enterCredentials": "Ingiza Kitambulisho cha ClickPesa na Funguo ya API kuhifadhi.",
-    "bothCredentialsRequired": "Kitambulisho na Funguo ya API vyote vinahitajika."
+    "bothCredentialsRequired": "Kitambulisho na Funguo ya API vyote vinahitajika.",
+    "updatedToast": "Wasifu umesasishwa.",
+    "passwordChangedToast": "Nenosiri limebadilishwa.",
+    "paymentSettingsSavedToast": "Mipangilio ya malipo imehifadhiwa."
   },
   "staff": {
     "subtitle": "Simamia akaunti za makarani wanaoweza kurekodi mauzo kwa biashara yako.",
@@ -560,6 +572,9 @@
     "removeConfirmMessage": "Iwapo ana historia ya mauzo, akaunti yake itasimamishwa na historia itahifadhiwa. La sivyo, itafutwa kabisa.",
     "errorLoad": "Imeshindwa kupakia wafanyakazi.",
     "errorRemove": "Imeshindwa kumwondoa karani.",
+    "removedToast": "Karani ameondolewa.",
+    "addedToast": "Karani ameongezwa.",
+    "passwordResetToast": "Nenosiri limewekwa upya.",
     "addForm": {
       "title": "Ongeza Karani",
       "firstName": "Jina la Kwanza *",

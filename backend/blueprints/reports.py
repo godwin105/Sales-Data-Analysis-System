@@ -1,4 +1,5 @@
 import html as _html
+import os
 from datetime import datetime, date, timedelta
 from io import BytesIO
 
@@ -21,6 +22,8 @@ from blueprints.expenses import profit_loss_for_period
 from utils.decorators import admin_required
 
 reports_bp = Blueprint("reports", __name__, url_prefix="/api/reports")
+
+_LOGO_PATH = os.path.join(os.path.dirname(__file__), "..", "static", "favicon-192.png")
 
 # ── Brand palette ─────────────────────────────────────────────────────────────
 _NAVY     = colors.HexColor("#1E3A5F")
@@ -395,12 +398,27 @@ class _FooterCanvas(rl_canvas.Canvas):
         self.saveState()
         y = 10 * mm
         w = A4[0]
+
+        # Separator line
         self.setStrokeColor(_BORDER)
         self.setLineWidth(0.4)
         self.line(15 * mm, y + 5 * mm, w - 15 * mm, y + 5 * mm)
+
+        # Small platform icon — sits entirely below the separator line
+        icon_size = 7 * mm
+        line_y    = y + 5 * mm          # where the separator line is drawn
+        icon_y    = line_y - icon_size - 1 * mm  # top of icon 1 mm below the line
+        if os.path.exists(_LOGO_PATH):
+            self.drawImage(
+                _LOGO_PATH,
+                15 * mm, icon_y,
+                width=icon_size, height=icon_size,
+                preserveAspectRatio=True, mask="auto",
+            )
+
+        # Generated timestamp (centre) and page number (right)
         self.setFont("Helvetica", 7.5)
         self.setFillColor(_SLATE)
-        self.drawString(15 * mm, y, self._biz)
         ts = datetime.now().strftime("%d %B %Y  %H:%M")
         self.drawCentredString(w / 2, y, f"{self._tr['generated']}: {ts}")
         self.drawRightString(w - 15 * mm, y, f"{self._tr['page']} {page_num} {self._tr['of']} {total}")

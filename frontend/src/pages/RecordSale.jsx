@@ -217,7 +217,7 @@ export default function RecordSale() {
     if (payMethod === 'cash') {
       try {
         const { data } = await salesApi.record({ items: validItems, notes: notes.trim() || undefined });
-        toast.success(data.message);
+        toast.success(t('sales.saleRecordedToast'));
         if (data.low_stock_warnings?.length)
           toast.warning(t('sales.lowStockToast', { names: data.low_stock_warnings.join(', ') }));
         resetAll();

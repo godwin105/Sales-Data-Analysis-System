@@ -37,7 +37,7 @@ export default function Login() {
     setSubmitting(true);
     try {
       const data = await login(email.trim(), password);
-      toast.success(data.message || t('auth.login.welcomeToast'));
+      toast.success(t('auth.login.welcomeToast'));
       navigate('/dashboard', { replace: true });
     } catch (err) {
       const data = err?.response?.data || {};

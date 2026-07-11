@@ -52,8 +52,8 @@ export default function Profile() {
     setSavingProfile(true);
     setProfileErrors({});
     try {
-      const { data } = await authApi.updateProfile(profile);
-      toast.success(data.message);
+      await authApi.updateProfile(profile);
+      toast.success(t('profile.updatedToast'));
       await refreshUser();
     } catch (err) {
       const fields = extractFieldErrors(err);
@@ -96,8 +96,8 @@ export default function Profile() {
     }
 
     try {
-      const { data } = await authApi.changePassword(pwd);
-      toast.success(data.message);
+      await authApi.changePassword(pwd);
+      toast.success(t('profile.passwordChangedToast'));
       setPwd({ current_password: '', new_password: '', confirm_new_password: '' });
     } catch (err) {
       const fields = extractFieldErrors(err);
@@ -115,7 +115,7 @@ export default function Profile() {
     setSavingCp(true);
     try {
       const { data } = await authApi.savePaymentSettings(payload);
-      toast.success(data.message);
+      toast.success(t('profile.paymentSettingsSavedToast'));
       setCpConfigured(data.has_clickpesa_configured);
       if (!data.has_clickpesa_configured) {
         setCpCreds({ clickpesa_client_id: '', clickpesa_api_key: '' });

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Bell, Package, TrendingDown, TrendingUp, ShoppingCart, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNotifications } from '../context/NotificationContext';
+import { formatQuantity } from '../utils/format';
 
 const TYPE_ICON = {
   low_stock:    <TrendingDown size={14} className="text-amber-500" />,
@@ -74,6 +75,9 @@ export default function NotificationBell() {
     // Old-format: body is a plain English sentence, not JSON → show it as-is
     if (params === null) return n.body || '';
     if (params.amount !== undefined) params.amount = formatAmount(params.amount);
+    if (params.qty !== undefined) params.qty = formatQuantity(params.qty);
+    if (params.threshold !== undefined) params.threshold = formatQuantity(params.threshold);
+    if (params.unit === undefined) params.unit = '';
     return t(`notifications.bodyText.${n.type}`, {
       name: n.title,
       defaultValue: n.body || '',
@@ -99,10 +103,10 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 flex flex-col overflow-hidden">
+        <div className="fixed left-3 right-3 top-16 max-h-[calc(100vh-5rem)] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 flex flex-col overflow-hidden sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-80 sm:max-h-none">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700">
-            <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+          <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-200 dark:border-slate-700">
+            <span className="min-w-0 text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">
               {t('notifications.title')}
               {unreadCount > 0 && (
                 <span className="ml-2 px-1.5 py-0.5 rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 text-[10px] font-bold">
@@ -110,11 +114,11 @@ export default function NotificationBell() {
                 </span>
               )}
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-shrink-0 items-center gap-2">
               {unreadCount > 0 && (
                 <button
                   onClick={markAllRead}
-                  className="text-xs text-brand-600 dark:text-brand-400 hover:underline"
+                  className="text-xs text-brand-600 dark:text-brand-400 hover:underline whitespace-nowrap"
                 >
                   {t('notifications.markAllRead')}
                 </button>
@@ -129,7 +133,7 @@ export default function NotificationBell() {
           </div>
 
           {/* List */}
-          <div className="overflow-y-auto max-h-96">
+          <div className="overflow-y-auto max-h-[calc(100vh-9rem)] sm:max-h-96">
             {notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
                 <Bell size={32} className="text-slate-300 dark:text-slate-600 mb-3" />
@@ -155,7 +159,7 @@ export default function NotificationBell() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-2">
-                      <p className={`text-xs leading-snug ${n.is_read ? 'text-slate-600 dark:text-slate-300' : 'text-slate-800 dark:text-slate-100 font-semibold'}`}>
+                      <p className={`text-xs leading-snug break-words ${n.is_read ? 'text-slate-600 dark:text-slate-300' : 'text-slate-800 dark:text-slate-100 font-semibold'}`}>
                         {getTitle(n)}
                       </p>
                       {!n.is_read && (
@@ -163,7 +167,7 @@ export default function NotificationBell() {
                       )}
                     </div>
                     {n.body && (
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug break-words">
                         {getBody(n)}
                       </p>
                     )}

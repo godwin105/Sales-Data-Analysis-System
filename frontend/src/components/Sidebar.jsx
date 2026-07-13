@@ -47,7 +47,7 @@ export default function Sidebar({ isOpen, onClose }) {
         `}
       >
         {/* Brand */}
-        <div className="px-5 py-5 border-b border-slate-700 flex items-center justify-between">
+        <div className="px-5 py-3 border-b border-slate-700 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src="/favicon.svg" alt={t('brand.shortName')} className="w-8 h-8 flex-shrink-0" draggable={false} />
             <div>

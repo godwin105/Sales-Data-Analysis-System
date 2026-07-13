@@ -139,10 +139,14 @@ def record_sale():
                 threshold = float(product.low_stock_threshold)
                 if qty == 0:
                     ntype = "out_of_stock"
-                    body = json.dumps({})
+                    body = json.dumps({"unit": product.unit})
                 elif qty <= threshold:
                     ntype = "low_stock"
-                    body = json.dumps({"qty": qty, "threshold": threshold})
+                    body = json.dumps({
+                        "qty": qty,
+                        "unit": product.unit,
+                        "threshold": threshold,
+                    })
                 else:
                     continue
                 already_exists = db.session.query(Notification).filter_by(

@@ -690,7 +690,7 @@
       "cashier_sale": "Sale by {{name}}"
     },
     "bodyText": {
-      "low_stock": "{{name}} has {{qty}} units left (threshold: {{threshold}})",
+      "low_stock": "{{name}} has {{qty}}{{unit}} left (threshold: {{threshold}}{{unit}})",
       "out_of_stock": "{{name}} is now out of stock.",
       "high_expense": "TZS {{amount}} recorded under {{name}}.",
       "cashier_sale": "{{name}} recorded a sale of TZS {{amount}}."

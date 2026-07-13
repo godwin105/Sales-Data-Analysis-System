@@ -690,7 +690,7 @@
       "cashier_sale": "Mauzo na {{name}}"
     },
     "bodyText": {
-      "low_stock": "{{name}} imebaki vitengo {{qty}} (kiwango: {{threshold}})",
+      "low_stock": "{{name}} imebaki {{qty}}{{unit}} (kiwango: {{threshold}}{{unit}})",
       "out_of_stock": "{{name}} imeisha kabisa.",
       "high_expense": "TZS {{amount}} imerekodiwa chini ya {{name}}.",
       "cashier_sale": "{{name}} amerekordi mauzo ya TZS {{amount}}."

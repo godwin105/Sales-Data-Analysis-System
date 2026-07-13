@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -111,6 +111,7 @@ export default function Dashboard() {
       .finally(() => setExpenseLoading(false));
   }
 
+  if (isCashier) return <Navigate to="/cashier" replace />;
   if (loading) return <PageSpinner label={t('dashboard.loading')} />;
   if (!data) {
     return (

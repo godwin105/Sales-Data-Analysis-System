@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Mail } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import AuthLayout from '../components/AuthLayout';
@@ -13,9 +13,7 @@ export default function Login() {
   const { login } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
-  const location = useLocation();
   const { t } = useTranslation();
-  const from = location.state?.from?.pathname || '/dashboard';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,7 +36,7 @@ export default function Login() {
     try {
       const data = await login(email.trim(), password);
       toast.success(t('auth.login.welcomeToast'));
-      navigate('/dashboard', { replace: true });
+      navigate(data.user?.role === 'cashier' ? '/cashier' : '/dashboard', { replace: true });
     } catch (err) {
       const data = err?.response?.data || {};
       if (data.code === 'email_not_verified') {

@@ -1,6 +1,7 @@
 from datetime import datetime, date, timedelta
 from decimal import Decimal
 from collections import defaultdict
+from calendar import monthrange
 
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import current_user
@@ -412,3 +413,105 @@ def velocity_chart():
 def _short_money(value):
     v = float(value or 0)
     return f"{v:,.0f}"
+
+
+def _get_month_weeks(year, month):
+    """Return list of (week_start, week_end) Mon–Sun tuples that overlap with the given month."""
+    _, last_day = monthrange(year, month)
+    month_start = date(year, month, 1)
+    month_end   = date(year, month, last_day)
+    # Find Monday of the week containing month_start
+    first_monday = month_start - timedelta(days=month_start.weekday())
+    weeks = []
+    current = first_monday
+    while current <= month_end:
+        week_end = current + timedelta(days=7)  # exclusive
+        weeks.append((current, week_end))
+        current = week_end
+    return weeks
+
+
+@analytics_bp.route("/weekly-revenue", methods=["GET"])
+@admin_required
+def weekly_revenue():
+    """Daily revenue (Mon–Sun) for a selected week within a month.
+    ?year=&month=&week=<0-based index>   — defaults to the current week.
+    """
+    owner_id = current_user.owner_id
+    today    = eat_today()
+    sel_year, sel_month = _parse_period()
+
+    try:
+        week_idx = int(request.args.get("week", -1))
+    except (TypeError, ValueError):
+        week_idx = -1
+
+    weeks = _get_month_weeks(sel_year, sel_month)
+    if not weeks:
+        return jsonify({
+            "labels": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+            "values": [0] * 7,
+            "week_index": 0,
+            "week_start": None,
+            "weeks": [],
+        }), 200
+
+    # Default: the week that contains today (or the last available week)
+    if week_idx < 0 or week_idx >= len(weeks):
+        week_idx = len(weeks) - 1
+        for i, (ws, we) in enumerate(weeks):
+            if ws <= today < we:
+                week_idx = i
+                break
+
+    week_start, week_end = weeks[week_idx]
+    start_dt = datetime.combine(week_start, datetime.min.time())
+    # Don't query beyond today
+    cap_end  = min(
+        datetime.combine(week_end, datetime.min.time()),
+        datetime.combine(today + timedelta(days=1), datetime.min.time()),
+    )
+
+    rows = (
+        db.session.query(
+            func.date(Sale.sale_date).label("day"),
+            func.coalesce(func.sum(Sale.total_amount), 0).label("revenue"),
+        )
+        .filter(
+            Sale.user_id  == owner_id,
+            Sale.sale_date >= start_dt,
+            Sale.sale_date <  cap_end,
+        )
+        .group_by("day")
+        .all()
+    )
+
+    day_map = {}
+    for row in rows:
+        d = row.day if isinstance(row.day, date) else datetime.strptime(str(row.day), "%Y-%m-%d").date()
+        day_map[d] = int(row.revenue or 0)
+
+    day_labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    values = [day_map.get(week_start + timedelta(days=i), 0) for i in range(7)]
+
+    # Build human-readable option labels (clamp to month boundaries for display)
+    _, last_day = monthrange(sel_year, sel_month)
+    month_start_date = date(sel_year, sel_month, 1)
+    month_end_date   = date(sel_year, sel_month, last_day)
+    week_options = []
+    for i, (ws, we) in enumerate(weeks):
+        disp_start = max(ws, month_start_date)
+        disp_end   = min(we - timedelta(days=1), month_end_date)
+        week_options.append({
+            "index": i,
+            "start": ws.isoformat(),
+            "label": f"{disp_start.strftime('%b %d')} – {disp_end.strftime('%b %d')}",
+        })
+
+    return jsonify({
+        "labels":     day_labels,
+        "values":     values,
+        "week_index": week_idx,
+        "week_start": week_start.isoformat(),
+        "weeks":      week_options,
+    }), 200

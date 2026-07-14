@@ -17,6 +17,7 @@ import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
 import { extractError } from '../api/client';
 import { formatNumber, formatQuantity, formatTZS, toIsoDate } from '../utils/format';
+import { getProductColors } from '../utils/productColors';
 import PageSpinner from '../components/PageSpinner';
 import EmptyState from '../components/EmptyState';
 
@@ -58,26 +59,47 @@ export default function Insights() {
   const [velocityData,    setVelocityData]    = useState(null);
   const [velocityLoading, setVelocityLoading] = useState(false);
 
+  const [weeklyData,    setWeeklyData]   = useState(null);
+  const [weeklyLoading, setWeeklyLoading]= useState(false);
+
   const isCurrentMonth = selYear === EAT_YEAR && selMonth === EAT_MONTH;
 
   // Persisted across period changes so the prev boundary stays consistent
   const [businessStart, setBusinessStart] = useState(null);
 
+  // Max months we can compare back — capped to when the business actually started
+  const maxCompareMonths = businessStart
+    ? Math.max(1, (selYear - businessStart.year) * 12 + (selMonth - businessStart.month) + 1)
+    : 12;
+
   useEffect(() => {
     let active = true;
     setLoading(true);
-    setCompareMonths(6);
     setVelocityMonths(1);
+    setWeeklyData(null);
     insightsApi.load(selYear, selMonth)
       .then(({ data: d }) => {
         if (!active) return;
         setData(d);
         setCompareData(d.charts?.compare  ?? null);
         setVelocityData(d.charts?.velocity ?? null);
-        if (d.business_start) setBusinessStart(d.business_start);
+        if (d.business_start) {
+          setBusinessStart(d.business_start);
+          // Cap compareMonths to how long the business has actually been running
+          const maxMo = Math.max(1,
+            (selYear - d.business_start.year) * 12 + (selMonth - d.business_start.month) + 1
+          );
+          setCompareMonths((prev) => Math.min(prev, maxMo));
+        }
       })
       .catch((err) => active && toast.error(extractError(err, t('insights.errorLoad'))))
       .finally(() => active && setLoading(false));
+    // Fetch initial weekly data (auto-detect current week)
+    setWeeklyLoading(true);
+    insightsApi.weeklyRevenue(selYear, selMonth, -1)
+      .then(({ data: d }) => { if (active) setWeeklyData(d); })
+      .catch(() => {})
+      .finally(() => active && setWeeklyLoading(false));
     return () => { active = false; };
   }, [selYear, selMonth]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -97,6 +119,14 @@ export default function Insights() {
       .finally(() => setVelocityLoading(false));
   }, []);
 
+  const fetchWeekly = useCallback((year, month, weekIndex) => {
+    setWeeklyLoading(true);
+    insightsApi.weeklyRevenue(year, month, weekIndex)
+      .then(({ data: d }) => setWeeklyData(d))
+      .catch(() => {})
+      .finally(() => setWeeklyLoading(false));
+  }, []);
+
   function handleCompareChange(e) {
     const v = Number(e.target.value);
     setCompareMonths(v);
@@ -109,11 +139,17 @@ export default function Insights() {
     fetchVelocity(v, selYear, selMonth);
   }
 
-  // One month before business_start is the hard floor
+  function handleWeekChange(e) {
+    const idx = Number(e.target.value);
+    // Optimistically update the stored data's week_index so dropdown stays in sync
+    setWeeklyData((prev) => prev ? { ...prev, week_index: idx } : prev);
+    fetchWeekly(selYear, selMonth, idx);
+  }
+
   const minSel = businessStart
     ? businessStart.month === 1
       ? { year: businessStart.year - 1, month: 12 }
-      : { year: businessStart.year,     month: businessStart.month - 1 }
+      : { year: businessStart.year, month: businessStart.month - 1 }
     : null;
 
   const isAtMin = minSel && selYear === minSel.year && selMonth === minSel.month;
@@ -394,15 +430,31 @@ export default function Insights() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 min-w-0">
 
-        {/* Top-left: Average Revenue by Day of Week */}
-        <ChartCard title={t('insights.avgRevenueByDay')}>
-          <Bar
-            data={{
-              labels: charts.days.labels.map(tDay),
-              datasets: [{ label: t('insights.revenue'), data: charts.days.values, backgroundColor: '#F59E0B', borderRadius: 6 }],
-            }}
-            options={moneyOpts(tickColor, gridColor)}
-          />
+        {/* Top-left: Weekly Revenue by Day of Week */}
+        <ChartCard
+          title={t('insights.weeklyRevByDay')}
+          loading={weeklyLoading}
+          action={
+            weeklyData?.weeks?.length > 1 ? (
+              <PeriodSelect
+                value={weeklyData.week_index ?? 0}
+                onChange={handleWeekChange}
+                options={(weeklyData.weeks || []).map((w) => ({ value: w.index, label: w.label }))}
+              />
+            ) : null
+          }
+        >
+          {weeklyData?.values?.length > 0 ? (
+            <Bar
+              data={{
+                labels: (weeklyData.labels || []).map(tDay),
+                datasets: [{ label: t('insights.revenue'), data: weeklyData.values, backgroundColor: '#F59E0B', borderRadius: 6 }],
+              }}
+              options={moneyOpts(tickColor, gridColor)}
+            />
+          ) : (
+            <EmptyChart label={t('insights.noData')} />
+          )}
         </ChartCard>
 
         {/* Top-right: Profit Margin Trend */}
@@ -432,7 +484,7 @@ export default function Insights() {
               { value: 3,  label: t('insights.period3Months') },
               { value: 6,  label: t('insights.period6Months') },
               { value: 12, label: t('insights.period12Months') },
-            ]} />
+            ].filter((o) => o.value <= maxCompareMonths)} />
           }
         >
           {compareData && (
@@ -440,8 +492,8 @@ export default function Insights() {
               data={{
                 labels: compareData.labels.map(tMonthAbbr),
                 datasets: [
-                  { label: t('insights.revenue'),  data: compareData.revenue,  backgroundColor: '#2563EB', borderRadius: 6 },
-                  { label: t('insights.expenses'), data: compareData.expenses, backgroundColor: '#DC2626', borderRadius: 6 },
+                  { label: t('insights.revenue'),  data: compareData.revenue,  backgroundColor: '#2563EB', borderRadius: 6, maxBarThickness: 72 },
+                  { label: t('insights.expenses'), data: compareData.expenses, backgroundColor: '#DC2626', borderRadius: 6, maxBarThickness: 72 },
                 ],
               }}
               options={legendOpts(tickColor, gridColor)}
@@ -466,7 +518,12 @@ export default function Insights() {
             <Bar
               data={{
                 labels: velocityData.labels,
-                datasets: [{ label: t('insights.revenueLabel'), data: velocityData.values, backgroundColor: '#8B5CF6', borderRadius: 6 }],
+                datasets: [{
+                  label: t('insights.revenueLabel'),
+                  data: velocityData.values,
+                  backgroundColor: getProductColors(velocityData.labels),
+                  borderRadius: 6,
+                }],
               }}
               options={velocityOpts(tickColor, gridColor)}
             />
@@ -481,7 +538,12 @@ export default function Insights() {
             <Bar
               data={{
                 labels: charts.gross_profit.labels,
-                datasets: [{ label: t('insights.grossProfitLabel'), data: charts.gross_profit.values, backgroundColor: '#0891B2', borderRadius: 6 }],
+                datasets: [{
+                  label: t('insights.grossProfitLabel'),
+                  data: charts.gross_profit.values,
+                  backgroundColor: getProductColors(charts.gross_profit.labels),
+                  borderRadius: 6,
+                }],
               }}
               options={velocityOpts(tickColor, gridColor)}
             />
@@ -582,7 +644,17 @@ function EmptyChart({ label }) {
 function legendOpts(tickColor, gridColor) {
   return {
     responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { labels: { color: tickColor, font: { size: 11 }, boxWidth: 14 } } },
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { labels: { color: tickColor, font: { size: 11 }, boxWidth: 14 } },
+      tooltip: {
+        mode: 'index',
+        intersect: false,
+        callbacks: {
+          label: (ctx) => ` ${ctx.dataset.label}: TZS ${formatNumber(ctx.parsed.y)}`,
+        },
+      },
+    },
     scales: {
       x: { ticks: { color: tickColor, font: { size: 10 } }, grid: { display: false } },
       y: { ticks: { color: tickColor, font: { size: 10 }, callback: (v) => formatNumber(v) }, grid: { color: gridColor }, beginAtZero: true },
@@ -645,7 +717,11 @@ function doughnutOpts(tickColor) {
       },
       tooltip: {
         callbacks: {
-          label: (ctx) => ` ${ctx.label}: TZS ${formatNumber(ctx.parsed)}`,
+          label: (ctx) => {
+            const total = ctx.dataset.data.reduce((sum, value) => sum + Number(value || 0), 0);
+            const percent = total > 0 ? (Number(ctx.parsed || 0) / total) * 100 : 0;
+            return ` ${ctx.label}: TZS ${formatNumber(ctx.parsed)} (${formatPercent(percent)}%)`;
+          },
         },
       },
     },

@@ -1,6 +1,6 @@
-from datetime import datetime
 from sqlalchemy import Numeric
 from extensions import db
+from utils.time import eat_now, isoformat_eat
 
 
 # ── Lookup tables (normalization) ─────────────────────────────────────────────
@@ -60,7 +60,7 @@ class User(db.Model):
     locked_until = db.Column(db.DateTime, nullable=True)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     is_email_verified = db.Column(db.Boolean, nullable=False, default=False)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=eat_now)
 
     # Relationships
     cashiers = db.relationship(
@@ -112,7 +112,7 @@ class User(db.Model):
             "role": self.role,
             "is_active": self.is_active,
             "is_email_verified": self.is_email_verified,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_at": isoformat_eat(self.created_at),
             "has_clickpesa_configured": bool(self.clickpesa_client_id and self.clickpesa_api_key),
         }
 
@@ -145,7 +145,7 @@ class Product(db.Model):
     quantity =  db.Column(Numeric(10, 2), nullable=False, default=0)
     low_stock_threshold = db.Column(Numeric(10, 2), nullable=False, default=5)
     is_deleted = db.Column(db.Boolean, nullable=False, default=False)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=eat_now)
 
     category_obj = db.relationship("ProductCategory")
     unit_obj     = db.relationship("Unit")
@@ -176,7 +176,7 @@ class Product(db.Model):
             "quantity":      float(self.quantity),
             "low_stock_threshold": float(self.low_stock_threshold),
             "is_low_stock":  self.is_low_stock,
-            "created_at":    self.created_at.isoformat() if self.created_at else None,
+            "created_at":    isoformat_eat(self.created_at),
         }
 
 
@@ -195,7 +195,7 @@ class Sale(db.Model):
         nullable=False,
     )
     total_amount    = db.Column(db.Numeric(10, 2), nullable=False)
-    sale_date       = db.Column(db.DateTime, nullable=False, default=datetime.now, index=True)
+    sale_date       = db.Column(db.DateTime, nullable=False, default=eat_now, index=True)
     notes           = db.Column(db.Text, nullable=True)
     payment_method  = db.Column(db.String(20), nullable=True)   # cash | mobile_money
     payment_status  = db.Column(db.String(20), nullable=True)   # paid | pending | confirmed | failed
@@ -209,7 +209,7 @@ class Sale(db.Model):
         data = {
             "sale_id": self.sale_id,
             "total_amount": float(self.total_amount),
-            "sale_date": self.sale_date.isoformat() if self.sale_date else None,
+            "sale_date": isoformat_eat(self.sale_date),
             "recorded_by": self.recorded_by,
             "recorder_name": self.recorder.full_name if self.recorder else None,
             "notes": self.notes,
@@ -268,7 +268,7 @@ class Expense(db.Model):
     description = db.Column(db.String(255), nullable=True)
     amount = db.Column(db.Numeric(10, 2), nullable=False)
     expense_date = db.Column(db.Date, nullable=False, index=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=eat_now)
 
     category_obj = db.relationship("ExpenseCategory")
 
@@ -284,7 +284,7 @@ class Expense(db.Model):
             "description":  self.description,
             "amount":       float(self.amount),
             "expense_date": self.expense_date.isoformat() if self.expense_date else None,
-            "created_at":   self.created_at.isoformat() if self.created_at else None,
+            "created_at":   isoformat_eat(self.created_at),
         }
 
 
@@ -305,7 +305,7 @@ class Payment(db.Model):
     external_id    = db.Column(db.String(100), nullable=False, unique=True, index=True)
     transaction_id = db.Column(db.String(100), nullable=True)   # AzamPay's reference
     status         = db.Column(db.String(20), nullable=False, default="pending")
-    initiated_at   = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    initiated_at   = db.Column(db.DateTime, nullable=False, default=eat_now)
     confirmed_at   = db.Column(db.DateTime, nullable=True)
 
     sale = db.relationship("Sale", backref=db.backref("payment", uselist=False))
@@ -320,8 +320,8 @@ class Payment(db.Model):
             "external_id":    self.external_id,
             "transaction_id": self.transaction_id,
             "status":         self.status,
-            "initiated_at":   self.initiated_at.isoformat() if self.initiated_at else None,
-            "confirmed_at":   self.confirmed_at.isoformat() if self.confirmed_at else None,
+            "initiated_at":   isoformat_eat(self.initiated_at),
+            "confirmed_at":   isoformat_eat(self.confirmed_at),
         }
 
 
@@ -338,13 +338,13 @@ class PasswordReset(db.Model):
     token_hash = db.Column(db.String(255), nullable=False, index=True)
     expires_at = db.Column(db.DateTime, nullable=False)
     used_at = db.Column(db.DateTime, nullable=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=eat_now)
 
     user = db.relationship("User")
 
     @property
     def is_expired(self):
-        return datetime.utcnow() >= self.expires_at
+        return eat_now() >= self.expires_at
 
     @property
     def is_used(self):
@@ -369,7 +369,7 @@ class Notification(db.Model):
     title = db.Column(db.String(255), nullable=False)
     body = db.Column(db.Text, nullable=True)
     is_read = db.Column(db.Boolean, nullable=False, default=False)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=eat_now)
     related_id = db.Column(db.Integer, nullable=True)
 
     def to_dict(self):
@@ -379,7 +379,7 @@ class Notification(db.Model):
             "title": self.title,
             "body": self.body,
             "is_read": self.is_read,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_at": isoformat_eat(self.created_at),
             "related_id": self.related_id,
         }
 
@@ -397,13 +397,13 @@ class EmailVerification(db.Model):
     token_hash = db.Column(db.String(255), nullable=False, index=True)
     expires_at = db.Column(db.DateTime, nullable=False)
     verified_at = db.Column(db.DateTime, nullable=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=eat_now)
 
     user = db.relationship("User")
 
     @property
     def is_expired(self):
-        return datetime.utcnow() >= self.expires_at
+        return eat_now() >= self.expires_at
 
     @property
     def is_used(self):

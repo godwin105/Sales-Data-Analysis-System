@@ -8,7 +8,6 @@ Routes:
 """
 import uuid
 import traceback
-from datetime import datetime
 from decimal import Decimal, InvalidOperation
 
 from flask import Blueprint, request, jsonify
@@ -18,6 +17,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from extensions import db
 from models import Product, Sale, SaleItem, Payment, User
 from utils.decorators import cashier_or_admin_required
+from utils.time import eat_now, isoformat_eat
 from services.clickpesa import initiate_ussd_push
 
 payments_bp = Blueprint("payments", __name__, url_prefix="/api/payments")
@@ -86,7 +86,7 @@ def initiate():
             user_id        = owner_id,
             recorded_by    = current_user.user_id,
             total_amount   = total_amount,
-            sale_date      = datetime.now(),
+            sale_date      = eat_now(),
             notes          = notes,
             payment_method = "mobile_money",
             payment_status = "pending",
@@ -198,7 +198,7 @@ def payment_status(external_id):
     # This handles the case where the customer cancelled but the ClickPesa
     # webhook was never received (e.g. webhook URL not yet configured).
     if payment.status == "pending":
-        elapsed = (datetime.utcnow() - payment.initiated_at).total_seconds()
+        elapsed = (eat_now() - payment.initiated_at).total_seconds()
         if elapsed > USSD_EXPIRY_SECONDS:
             payment.status = "failed"
             payment.sale.payment_status = "failed"
@@ -214,7 +214,7 @@ def payment_status(external_id):
         "phone_number":   payment.phone_number,
         "amount":         float(payment.amount),
         "transaction_id": payment.transaction_id,
-        "confirmed_at":   payment.confirmed_at.isoformat() if payment.confirmed_at else None,
+        "confirmed_at":   isoformat_eat(payment.confirmed_at),
     }), 200
 
 
@@ -323,7 +323,7 @@ def clickpesa_callback():
     if tx_id:
         payment.transaction_id = str(tx_id)
     if new_status == "confirmed":
-        payment.confirmed_at = datetime.utcnow()
+        payment.confirmed_at = eat_now()
 
     payment.sale.payment_status = new_status
 

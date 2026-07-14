@@ -19,7 +19,7 @@ import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { extractError } from '../api/client';
-import { formatTZS, formatNumber, formatDateTime } from '../utils/format';
+import { formatTZS, formatNumber, formatDateTime, toIsoDate } from '../utils/format';
 import PageSpinner from '../components/PageSpinner';
 import EmptyState from '../components/EmptyState';
 
@@ -51,9 +51,7 @@ export default function Dashboard() {
   }, []);
 
   // Month selectors — declared before early returns so hook order is stable
-  const todayDate = new Date();
-  const curYear = todayDate.getFullYear();
-  const curMonth = todayDate.getMonth() + 1;
+  const [curYear, curMonth] = toIsoDate().split('-').map(Number);
 
   const [topMonth, setTopMonth] = useState({ year: curYear, month: curMonth });
   const [topData, setTopData] = useState(null);
@@ -69,7 +67,7 @@ export default function Dashboard() {
 
   // monthOptions uses t() so labels update automatically when language changes
   const monthOptions = Array.from({ length: 12 }, (_, i) => {
-    const d = new Date(curYear, todayDate.getMonth() - i, 1);
+    const d = new Date(curYear, curMonth - 1 - i, 1);
     const m = d.getMonth() + 1;
     const y = d.getFullYear();
     return { year: y, month: m, label: `${t(`months.${m}`)} ${y}` };

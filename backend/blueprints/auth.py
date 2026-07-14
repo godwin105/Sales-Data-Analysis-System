@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 import base64
 import os
 import re
@@ -19,6 +19,7 @@ from extensions import db, bcrypt
 from models import User, PasswordReset, Sale, EmailVerification
 from utils.decorators import admin_required
 from utils.email_utils import send_email
+from utils.time import eat_now
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
@@ -188,8 +189,9 @@ def login():
         return _err(GENERIC_BAD_CREDS, 401)
 
     # Lockout check
-    if user.locked_until and user.locked_until > datetime.utcnow():
-        remaining = int((user.locked_until - datetime.utcnow()).total_seconds() // 60) + 1
+    now = eat_now()
+    if user.locked_until and user.locked_until > now:
+        remaining = int((user.locked_until - now).total_seconds() // 60) + 1
         return _err(
             f"Account locked due to too many failed attempts. "
             f"Try again in {remaining} minute(s).",
@@ -205,7 +207,7 @@ def login():
 
         if user.failed_login_attempts >= max_attempts:
             lockout_minutes = current_app.config["ACCOUNT_LOCKOUT_MINUTES"]
-            user.locked_until = datetime.utcnow() + timedelta(minutes=lockout_minutes)
+            user.locked_until = eat_now() + timedelta(minutes=lockout_minutes)
             user.failed_login_attempts = 0
             db.session.commit()
             return _err(
@@ -584,7 +586,7 @@ def _send_verification_email(user):
     """Generate a verification token and email it to the user."""
     token = secrets.token_urlsafe(32)
     token_hash = _hash_token(token)
-    expires_at = datetime.utcnow() + timedelta(
+    expires_at = eat_now() + timedelta(
         minutes=current_app.config["EMAIL_VERIFICATION_TOKEN_MINUTES"]
     )
 
@@ -649,7 +651,7 @@ def verify_email(token):
         return jsonify({"valid": False, "error": "Invalid or expired verification link."}), 400
 
     ev.user.is_email_verified = True
-    ev.verified_at = datetime.utcnow()
+    ev.verified_at = eat_now()
     db.session.commit()
 
     return jsonify({
@@ -704,7 +706,7 @@ def forgot_password():
     if user:
         # Invalidate any existing unused tokens for this user
         PasswordReset.query.filter_by(user_id=user.user_id, used_at=None).update(
-            {PasswordReset.used_at: datetime.utcnow()},
+            {PasswordReset.used_at: eat_now()},
             synchronize_session=False,
         )
 
@@ -712,7 +714,7 @@ def forgot_password():
         token = secrets.token_urlsafe(32)
         token_hash = _hash_token(token)
 
-        expires_at = datetime.utcnow() + timedelta(
+        expires_at = eat_now() + timedelta(
             minutes=current_app.config["PASSWORD_RESET_TOKEN_MINUTES"]
         )
 
@@ -818,7 +820,7 @@ def submit_reset_password(token):
     ).decode("utf-8")
     pr.user.failed_login_attempts = 0
     pr.user.locked_until = None
-    pr.used_at = datetime.utcnow()
+    pr.used_at = eat_now()
     db.session.commit()
 
     return jsonify({

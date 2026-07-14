@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { reportsApi } from '../api/misc';
 import { useToast } from '../context/ToastContext';
 import { extractError } from '../api/client';
-import { formatTZS, formatNumber, toIsoDate } from '../utils/format';
+import { formatDateTime, formatTZS, formatNumber, toIsoDate } from '../utils/format';
 import EmptyState from '../components/EmptyState';
 
 const NAVY = '#1E3A5F';
@@ -160,7 +160,7 @@ export default function Reports() {
               <div className="text-xs mt-0.5" style={{ color: '#93C5FD' }}>{d('subtitle')}</div>
             </div>
             <div className="text-right text-xs text-white space-y-1 shrink-0">
-              <div><span className="font-semibold">{d('statementDate')}:</span> {new Date().toLocaleString()}</div>
+              <div><span className="font-semibold">{d('statementDate')}:</span> {formatDateTime(new Date().toISOString(), i18n.language)}</div>
               <div><span className="font-semibold">{t('reports.period')}:</span> {report.period_label}</div>
               <div><span className="font-semibold">{t('reports.type')}:</span> {report.type_label}</div>
             </div>

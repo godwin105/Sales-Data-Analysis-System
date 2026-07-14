@@ -7,6 +7,7 @@ from sqlalchemy import func
 from extensions import db
 from models import Sale, SaleItem, Product, Expense, ExpenseCategory, Unit
 from blueprints.expenses import profit_loss_for_period
+from utils.time import eat_today, isoformat_eat
 
 dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/api/dashboard")
 
@@ -16,7 +17,7 @@ dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/api/dashboard")
 def dashboard():
     """All data the React Dashboard page needs in a single payload."""
     owner_id = current_user.owner_id
-    today = date.today()
+    today = eat_today()
 
 
     today_start = datetime.combine(today, datetime.min.time())
@@ -84,7 +85,7 @@ def dashboard():
     recent_sales = [
         {
             "sale_id": s.sale_id,
-            "sale_date": s.sale_date.isoformat() if s.sale_date else None,
+            "sale_date": isoformat_eat(s.sale_date),
             "total_amount": float(s.total_amount),
             "recorder_name": s.recorder.full_name if s.recorder else "—",
         }
@@ -119,7 +120,7 @@ def cashier_dashboard():
     """Dashboard payload scoped to the logged-in cashier's own activity."""
     owner_id   = current_user.owner_id
     cashier_id = current_user.user_id
-    today      = date.today()
+    today      = eat_today()
     today_start = datetime.combine(today, datetime.min.time())
     today_end   = today_start + timedelta(days=1)
 
@@ -196,7 +197,7 @@ def cashier_dashboard():
         "recent_sales": [
             {
                 "sale_id":        s.sale_id,
-                "sale_date":      s.sale_date.isoformat(),
+                "sale_date":      isoformat_eat(s.sale_date),
                 "total_amount":   float(s.total_amount),
                 "items_count":    len(s.items),
                 "payment_method": s.payment_method,
@@ -281,7 +282,7 @@ def _build_sales_trend(owner_id, today, top_products):
 def sales_trend_by_month():
     """Per-product daily units sold for any given month."""
     owner_id = current_user.owner_id
-    today = date.today()
+    today = eat_today()
     year = request.args.get("year", type=int, default=today.year)
     month = request.args.get("month", type=int, default=today.month)
     try:
@@ -307,7 +308,7 @@ def sales_trend_by_month():
 def top_products_by_month():
     """Top 5 selling products for a given year/month (defaults to current month)."""
     owner_id = current_user.owner_id
-    today = date.today()
+    today = eat_today()
     year = request.args.get("year", type=int, default=today.year)
     month = request.args.get("month", type=int, default=today.month)
     try:
@@ -328,7 +329,7 @@ def top_products_by_month():
 def expenses_by_month():
     """Expense breakdown for a given year/month (defaults to current month)."""
     owner_id = current_user.owner_id
-    today = date.today()
+    today = eat_today()
     year = request.args.get("year", type=int, default=today.year)
     month = request.args.get("month", type=int, default=today.month)
     try:

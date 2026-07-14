@@ -13,9 +13,9 @@ const TYPE_ICON = {
 };
 
 function timeAgo(isoString) {
-  // Backend returns UTC without 'Z'; appending it prevents JS from treating it as local time
-  const utc = isoString.endsWith('Z') ? isoString : isoString + 'Z';
-  const diff = Date.now() - new Date(utc).getTime();
+  const hasOffset = isoString.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(isoString);
+  const value = hasOffset ? isoString : `${isoString}+03:00`;
+  const diff = Date.now() - new Date(value).getTime();
   const mins = Math.floor(diff / 60_000);
   if (mins < 1) return 'Just now';
   if (mins < 60) return `${mins}m ago`;

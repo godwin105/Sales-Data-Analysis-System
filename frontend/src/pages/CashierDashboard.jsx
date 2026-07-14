@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { dashboardApi } from '../api/misc';
 import { extractError } from '../api/client';
 import { useToast } from '../context/ToastContext';
-import { formatTZS } from '../utils/format';
+import { formatDateTime, formatTZS, todayLong } from '../utils/format';
 import PageSpinner from '../components/PageSpinner';
 import EmptyState from '../components/EmptyState';
 
@@ -31,7 +31,7 @@ function KpiCard({ icon: Icon, label, value, sub, color }) {
 }
 
 export default function CashierDashboard() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const toast = useToast();
   const { isAdmin, user } = useAuth();
   const [data, setData] = useState(null);
@@ -58,23 +58,8 @@ export default function CashierDashboard() {
   const recentSales = data?.recent_sales || [];
   const lowStockItems = kpi.low_stock_items || [];
 
-  const today = new Date().toLocaleDateString(undefined, {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-  });
+  const today = todayLong(i18n.language);
 
-  function formatTime(iso) {
-    if (!iso) return '—';
-    return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }
-
-  function formatDate(iso) {
-    if (!iso) return '—';
-    const d = new Date(iso);
-    const isToday = d.toDateString() === new Date().toDateString();
-    return isToday
-      ? formatTime(iso)
-      : d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' + formatTime(iso);
-  }
 
   return (
     <div className="space-y-6">
@@ -130,7 +115,7 @@ export default function CashierDashboard() {
       {/* Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* Recent Sales — takes 2/3 width */}
+        {/* Recent Sales - takes 2/3 width */}
         <div className="lg:col-span-2 card">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold text-slate-700 dark:text-slate-200">
@@ -156,11 +141,11 @@ export default function CashierDashboard() {
                 <div key={s.sale_id} className="flex items-center justify-between py-3 gap-2">
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                      {formatDate(s.sale_date)}
+                      {formatDateTime(s.sale_date, i18n.language)}
                     </p>
                     <p className="text-xs text-slate-400 mt-0.5">
                       {s.items_count} {t('cashierDashboard.items')}
-                      {s.payment_method && ` · ${s.payment_method}`}
+                      {s.payment_method && ` | ${s.payment_method}`}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
@@ -177,7 +162,7 @@ export default function CashierDashboard() {
           )}
         </div>
 
-        {/* Low Stock Panel — takes 1/3 width */}
+        {/* Low Stock Panel - takes 1/3 width */}
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold text-slate-700 dark:text-slate-200">

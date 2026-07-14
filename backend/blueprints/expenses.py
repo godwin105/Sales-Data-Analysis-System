@@ -11,6 +11,7 @@ from sqlalchemy.orm import joinedload
 from extensions import db
 from models import Expense, Sale, SaleItem, Product, ExpenseCategory, Notification
 from utils.decorators import cashier_or_admin_required
+from utils.time import eat_today
 
 expenses_bp = Blueprint("expenses", __name__, url_prefix="/api/expenses")
 
@@ -139,7 +140,7 @@ def _validate_expense_payload(data):
     else:
         try:
             expense_date = datetime.strptime(expense_date_raw, "%Y-%m-%d").date()
-            if expense_date > date.today():
+            if expense_date > eat_today():
                 errors["expense_date"] = "Expense date cannot be in the future."
         except ValueError:
             errors["expense_date"] = "Invalid date format."

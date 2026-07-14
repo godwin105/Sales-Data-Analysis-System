@@ -10,6 +10,7 @@ from extensions import db
 from models import Product, Sale, SaleItem, Notification
 from sqlalchemy.orm import joinedload
 from utils.decorators import cashier_or_admin_required
+from utils.time import eat_now
 
 sales_bp = Blueprint("sales", __name__, url_prefix="/api/sales")
 
@@ -108,7 +109,7 @@ def record_sale():
             user_id=owner_id,
             recorded_by=current_user.user_id,
             total_amount=total_amount,
-            sale_date=datetime.now(),
+            sale_date=eat_now(),
             notes=notes,
         )
         db.session.add(sale)

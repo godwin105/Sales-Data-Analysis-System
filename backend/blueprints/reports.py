@@ -20,6 +20,7 @@ from extensions import db
 from models import Sale, SaleItem, Expense, ExpenseCategory
 from blueprints.expenses import profit_loss_for_period
 from utils.decorators import admin_required
+from utils.time import eat_now, eat_today
 
 reports_bp = Blueprint("reports", __name__, url_prefix="/api/reports")
 
@@ -154,7 +155,7 @@ _TR = {
 # ── Period resolver ───────────────────────────────────────────────────────────
 def resolve_period(period, date_from_str, date_to_str):
     """Returns (start_dt, end_dt, period_label, error_msg)."""
-    today = date.today()
+    today = eat_today()
     err = None
 
     if period == "daily":
@@ -365,7 +366,7 @@ def download_pdf():
         import traceback; traceback.print_exc()
         return jsonify({"error": "Report generation failed. Please try again."}), 500
 
-    filename = f"report_{report_type}_{period}_{date.today().isoformat()}.pdf"
+    filename = f"report_{report_type}_{period}_{eat_today().isoformat()}.pdf"
     return send_file(
         BytesIO(pdf_bytes),
         mimetype="application/pdf",
@@ -419,7 +420,7 @@ class _FooterCanvas(rl_canvas.Canvas):
         # Generated timestamp (centre) and page number (right)
         self.setFont("Helvetica", 7.5)
         self.setFillColor(_SLATE)
-        ts = datetime.now().strftime("%d %B %Y  %H:%M")
+        ts = eat_now().strftime("%d %B %Y  %H:%M")
         self.drawCentredString(w / 2, y, f"{self._tr['generated']}: {ts}")
         self.drawRightString(w - 15 * mm, y, f"{self._tr['page']} {page_num} {self._tr['of']} {total}")
         self.restoreState()
@@ -450,7 +451,7 @@ def _render_pdf(report, business_name, owner_name, lang="en"):
     P_note      = _ps("Note",     fontSize=7,  textColor=_SLATE, fontName="Helvetica-Oblique", leading=10)
 
     type_label = tr["type_labels"].get(report.get("type_key", ""), report["type_label"])
-    now_str    = datetime.now().strftime("%Y-%m-%d  %H:%M:%S")
+    now_str    = eat_now().strftime("%Y-%m-%d  %H:%M:%S")
     story      = []
 
     # ── 1. HEADER BAND ───────────────────────────────────────────────────────

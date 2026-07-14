@@ -16,11 +16,11 @@ import { insightsApi } from '../api/misc';
 import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
 import { extractError } from '../api/client';
-import { formatNumber, formatQuantity, formatTZS } from '../utils/format';
+import { formatNumber, formatQuantity, formatTZS, toIsoDate } from '../utils/format';
 import PageSpinner from '../components/PageSpinner';
 import EmptyState from '../components/EmptyState';
 
-const TODAY = new Date();
+const [EAT_YEAR, EAT_MONTH] = toIsoDate().split('-').map(Number);
 
 const EN_MONTH_ABB = { Jan:1, Feb:2, Mar:3, Apr:4, May:5, Jun:6, Jul:7, Aug:8, Sep:9, Oct:10, Nov:11, Dec:12 };
 
@@ -44,8 +44,8 @@ export default function Insights() {
   const tDay       = (day)  => t(`days.${day}`, day);
   const tCat       = (cat)  => t(`categories.stock.${cat}`, cat);
 
-  const [selYear,  setSelYear]  = useState(TODAY.getFullYear());
-  const [selMonth, setSelMonth] = useState(TODAY.getMonth() + 1);
+  const [selYear,  setSelYear]  = useState(EAT_YEAR);
+  const [selMonth, setSelMonth] = useState(EAT_MONTH);
 
   const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
@@ -58,7 +58,7 @@ export default function Insights() {
   const [velocityData,    setVelocityData]    = useState(null);
   const [velocityLoading, setVelocityLoading] = useState(false);
 
-  const isCurrentMonth = selYear === TODAY.getFullYear() && selMonth === (TODAY.getMonth() + 1);
+  const isCurrentMonth = selYear === EAT_YEAR && selMonth === EAT_MONTH;
 
   // Persisted across period changes so the prev boundary stays consistent
   const [businessStart, setBusinessStart] = useState(null);

@@ -10,13 +10,14 @@ from extensions import db
 from models import Sale, SaleItem, Product, ProductCategory, Expense
 from blueprints.expenses import profit_loss_for_period
 from utils.decorators import admin_required
+from utils.time import eat_today
 
 analytics_bp = Blueprint("analytics", __name__, url_prefix="/api/insights")
 
 
 def _parse_period():
     """Return (year, month) from ?year=&month= args, clamped to current month."""
-    today = date.today()
+    today = eat_today()
     try:
         y = int(request.args.get("year",  today.year))
         m = int(request.args.get("month", today.month))
@@ -57,7 +58,7 @@ def _business_start(owner_id):
 @admin_required
 def insights():
     owner_id   = current_user.owner_id
-    today      = date.today()
+    today      = eat_today()
     sel_year, sel_month = _parse_period()
     is_current = (sel_year == today.year and sel_month == today.month)
 

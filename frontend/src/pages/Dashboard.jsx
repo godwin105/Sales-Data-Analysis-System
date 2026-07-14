@@ -252,7 +252,7 @@ export default function Dashboard() {
                     data: displayTopData.values,
                     backgroundColor: CHART_COLORS,
                     borderRadius: 6,
-                    barThickness: 65,
+                    barThickness: 50,
                   }],
                 }}
                 options={verticalBarOpts(tickColor, gridColor, displayTopData.units || [])}

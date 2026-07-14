@@ -94,15 +94,17 @@ def dashboard():
 
     # ========================================================================
     # CHARTS (FR-20, FR-21, FR-22)
-    # top_products queried once; same list drives both bar chart and trend lines
+    # all_sold: every product with sales this month (drives trend tooltip)
+    # top5: first 5 of that list (already sorted desc) → bar chart
     # ========================================================================
-    top_products = _get_top_products(owner_id, month_start, next_month_start)
+    all_sold = _get_top_products(owner_id, month_start, next_month_start, limit=None)
+    top5 = all_sold[:5]
     charts = {
-        "trend": _build_sales_trend(owner_id, today, top_products),
+        "trend": _build_sales_trend(owner_id, today, all_sold),
         "top_products": {
-            "labels": [r.name for r in top_products],
-            "values": [int(r.qty_sold) for r in top_products],
-            "units":  [r.unit_symbol or "pcs" for r in top_products],
+            "labels": [r.name for r in top5],
+            "values": [int(r.qty_sold) for r in top5],
+            "units":  [r.unit_symbol or "pcs" for r in top5],
         },
         "expenses": _build_expense_breakdown(owner_id, month_start, next_month_start),
     }
@@ -211,9 +213,10 @@ def cashier_dashboard():
 # =========================================================================
 # CHART BUILDERS
 # =========================================================================
-def _get_top_products(owner_id, start_dt, end_dt):
-    """FR-21: top 5 products by units sold (quantity) for a period."""
-    return (
+def _get_top_products(owner_id, start_dt, end_dt, limit=5):
+    """Products by units sold for a period, ordered descending.
+    Pass limit=None to get every product that had any sales."""
+    q = (
         db.session.query(
             Product.product_id,
             Product.name,
@@ -230,14 +233,15 @@ def _get_top_products(owner_id, start_dt, end_dt):
         )
         .group_by(Product.product_id, Product.name, Unit.symbol)
         .order_by(func.sum(SaleItem.quantity).desc())
-        .limit(5)
-        .all()
     )
+    if limit is not None:
+        q = q.limit(limit)
+    return q.all()
 
 
-def _build_trend_datasets(owner_id, month_start, days, start_dt, end_dt, top_products):
+def _build_trend_datasets(owner_id, label_start, days, start_dt, end_dt, top_products):
     """Shared helper: per-product daily units sold for a date range."""
-    labels = [(month_start + timedelta(days=i)).strftime("%b %d") for i in range(days)]
+    labels = [(label_start + timedelta(days=i)).strftime("%b %d") for i in range(days)]
     if not top_products:
         return {"labels": labels, "datasets": []}
 
@@ -261,20 +265,44 @@ def _build_trend_datasets(owner_id, month_start, days, start_dt, end_dt, top_pro
         day_map = {}
         for row in rows:
             k = row.day if isinstance(row.day, date) else datetime.strptime(str(row.day), "%Y-%m-%d").date()
-            day_map[k] = int(row.total or 0)
-        values = [day_map.get(month_start + timedelta(days=i), 0) for i in range(days)]
+            day_map[k] = float(row.total or 0)
+        values = [day_map.get(label_start + timedelta(days=i), 0) for i in range(days)]
         datasets.append({"name": product.name, "values": values, "unit": product.unit_symbol or "pcs"})
 
     return {"labels": labels, "datasets": datasets}
 
 
+def _first_sale_in_period(owner_id, start_dt, end_dt):
+    """Return the date of the earliest sale in [start_dt, end_dt), or None."""
+    result = (
+        db.session.query(func.min(Sale.sale_date))
+        .filter(
+            Sale.user_id == owner_id,
+            Sale.sale_date >= start_dt,
+            Sale.sale_date < end_dt,
+        )
+        .scalar()
+    )
+    if result is None:
+        return None
+    return result.date() if isinstance(result, datetime) else result
+
+
 def _build_sales_trend(owner_id, today, top_products):
-    """FR-20: per-product daily units sold in the current month (day 1 to today)."""
+    """FR-20: per-product daily units sold in the current month.
+    Starts from one day before the first sale so the graph shows a rise from zero."""
     month_start = today.replace(day=1)
     start_dt = datetime.combine(month_start, datetime.min.time())
     end_dt = datetime.combine(today + timedelta(days=1), datetime.min.time())
-    days = (today - month_start).days + 1
-    return _build_trend_datasets(owner_id, month_start, days, start_dt, end_dt, top_products)
+
+    first_sale = _first_sale_in_period(owner_id, start_dt, end_dt)
+    if first_sale and first_sale > month_start:
+        label_start = max(month_start, first_sale - timedelta(days=1))
+    else:
+        label_start = month_start
+
+    days = (today - label_start).days + 1
+    return _build_trend_datasets(owner_id, label_start, days, start_dt, end_dt, top_products)
 
 
 @dashboard_bp.route("/sales-trend", methods=["GET"])
@@ -293,14 +321,21 @@ def sales_trend_by_month():
         return jsonify({"error": "Invalid year or month"}), 400
 
     if year == today.year and month == today.month:
-        days = (today - month_start).days + 1
         cap_end = datetime.combine(today + timedelta(days=1), datetime.min.time())
     else:
-        days = (end_dt.date() - month_start).days
         cap_end = end_dt
 
-    top_products = _get_top_products(owner_id, start_dt, cap_end)
-    return jsonify(_build_trend_datasets(owner_id, month_start, days, start_dt, cap_end, top_products)), 200
+    top_products = _get_top_products(owner_id, start_dt, cap_end, limit=None)
+
+    # Anchor: start one day before the first sale so the graph shows a rise from zero
+    first_sale = _first_sale_in_period(owner_id, start_dt, cap_end)
+    if first_sale and first_sale > month_start:
+        label_start = max(month_start, first_sale - timedelta(days=1))
+    else:
+        label_start = month_start
+
+    days = (cap_end.date() - label_start).days
+    return jsonify(_build_trend_datasets(owner_id, label_start, days, start_dt, cap_end, top_products)), 200
 
 
 @dashboard_bp.route("/top-products", methods=["GET"])

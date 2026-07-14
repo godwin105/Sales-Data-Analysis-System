@@ -19,17 +19,39 @@ import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { extractError } from '../api/client';
-import { formatTZS, formatNumber, formatDateTime, toIsoDate } from '../utils/format';
+import { formatTZS, formatNumber, formatQuantity, formatDateTime, toIsoDate } from '../utils/format';
+import { getProductColors } from '../utils/productColors';
 import PageSpinner from '../components/PageSpinner';
 import EmptyState from '../components/EmptyState';
+
+// Gradient-fill plugin — creates a top-to-transparent gradient under line charts.
+// Runs once per draw; no chart.update() call so it doesn't loop.
+const trendGradientPlugin = {
+  id: 'trendGradient',
+  beforeDraw(chart) {
+    if (chart.config.type !== 'line') return;
+    const { ctx, chartArea } = chart;
+    if (!chartArea) return;
+    chart.data.datasets.forEach((ds) => {
+      if (!ds._gradientTop || !ds.fill) return;
+      const g = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+      g.addColorStop(0, ds._gradientTop);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ds.backgroundColor = g;
+    });
+  },
+};
 
 ChartJS.register(
   CategoryScale, LinearScale,
   PointElement, LineElement, BarElement, ArcElement,
   Tooltip, Legend, Filler,
+  trendGradientPlugin,
 );
 
 const CHART_COLORS = ['#2563EB', '#16A34A', '#F59E0B', '#DC2626', '#8B5CF6', '#06B6D4'];
+const TREND_BORDER     = '#2563EB';
+const TREND_GRAD_TOP   = 'rgba(37,99,235,0.22)';
 
 export default function Dashboard() {
   const toast = useToast();
@@ -124,14 +146,12 @@ export default function Dashboard() {
   const { kpi, recent_sales, charts } = data;
   const displayTopData = topData || charts.top_products;
   const displayTrendData = trendData || charts.trend;
-  const displayExpenseData = expenseData || charts.expenses;
-  // OPTION B (active): trendTotalValues sums all products per day — needed by the Line chart
-  // OPTION C (inactive): remove/comment this const when switching back to the stacked Bar
   const trendTotalValues = (displayTrendData.datasets || []).length > 0
-    ? displayTrendData.labels.map((_, i) =>
-        displayTrendData.datasets.reduce((sum, ds) => sum + (ds.values[i] || 0), 0)
+    ? (displayTrendData.labels || []).map((_, i) =>
+        (displayTrendData.datasets || []).reduce((sum, ds) => sum + (ds.values[i] || 0), 0)
       )
     : [];
+  const displayExpenseData = expenseData || charts.expenses;
   const tickColor = isDark ? '#94A3B8' : '#64748B';
   const gridColor = isDark ? '#334155' : '#E2E8F0';
   const expenseLabels = displayExpenseData.labels.map((label) => t(`categories.expenses.${label}`, label));
@@ -184,16 +204,21 @@ export default function Dashboard() {
                   datasets: [{
                     label: t('dashboard.salesTrend'),
                     data: trendTotalValues,
-                    borderColor: '#2563EB',
-                    backgroundColor: 'rgba(37,99,235,0.08)',
+                    borderColor: TREND_BORDER,
+                    backgroundColor: TREND_GRAD_TOP, // gradient plugin replaces this before draw
+                    _gradientTop: TREND_GRAD_TOP,
                     fill: true,
-                    tension: 0.35,
-                    pointRadius: 3,
-                    pointHoverRadius: 6,
-                    borderWidth: 2.5,
+                    tension: 0.4,
+                    // Only render a visible dot on days that actually had sales
+                    pointRadius: trendTotalValues.map(v => v > 0 ? 4.5 : 0),
+                    pointHoverRadius: 8,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: TREND_BORDER,
+                    pointBorderWidth: 2.5,
+                    borderWidth: 3,
                   }],
                 }}
-                options={singleLineTrendOpts(tickColor, gridColor, displayTrendData.datasets)}
+                options={singleLineTrendOpts(tickColor, gridColor, displayTrendData.datasets, isDark)}
               />
 
               {/* ── OPTION C (inactive): stacked bar — one segment per product ──
@@ -204,7 +229,7 @@ export default function Dashboard() {
                     label: ds.name,
                     data: ds.values,
                     unit: ds.unit || 'pcs',
-                    backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
+                    backgroundColor: getProductColors([ds.name])[0],
                     borderRadius: 3,
                     stack: 'daily',
                   })),
@@ -250,7 +275,7 @@ export default function Dashboard() {
                   datasets: [{
                     label: 'Units',
                     data: displayTopData.values,
-                    backgroundColor: CHART_COLORS,
+                    backgroundColor: getProductColors(displayTopData.labels),
                     borderRadius: 6,
                     barThickness: 50,
                   }],
@@ -430,31 +455,49 @@ function KpiCard({ label, value, icon: Icon, color, href, lowStockItems }) {
   );
 }
 
-function singleLineTrendOpts(tickColor, gridColor, productDatasets = []) {
+function singleLineTrendOpts(tickColor, gridColor, productDatasets = [], isDark = false) {
   return {
     responsive: true, maintainAspectRatio: false,
+    animation: { duration: 700, easing: 'easeInOutCubic' },
+    interaction: { mode: 'index', intersect: false },
     plugins: {
       legend: { display: false },
       tooltip: {
         mode: 'index',
         intersect: false,
+        backgroundColor: isDark ? 'rgba(15,23,42,0.96)' : 'rgba(255,255,255,0.98)',
+        titleColor:  isDark ? '#E2E8F0' : '#1E293B',
+        bodyColor:   isDark ? '#94A3B8' : '#64748B',
+        borderColor: isDark ? '#334155' : '#E2E8F0',
+        borderWidth: 1,
+        padding: 10,
+        boxPadding: 4,
         callbacks: {
-          label: (ctx) => ` Total: ${formatNumber(ctx.parsed.y)}`,
+          label: (ctx) => {
+            if (!ctx.parsed.y) return null;
+            return ` Total: ${formatQuantity(ctx.parsed.y)} units`;
+          },
           afterBody: (items) => {
             const idx = items[0]?.dataIndex;
             if (idx === undefined) return [];
-            return productDatasets
+            const lines = productDatasets
               .filter((ds) => (ds.values[idx] || 0) > 0)
-              .map((ds) => `  ${ds.name}: ${formatNumber(ds.values[idx])} ${ds.unit || 'pcs'}`);
+              .sort((a, b) => (b.values[idx] || 0) - (a.values[idx] || 0))
+              .slice(0, 5)
+              .map((ds) => `  ${ds.name}: ${formatQuantity(ds.values[idx])} ${ds.unit || 'pcs'}`);
+            return lines.length > 0 ? ['', ...lines] : [];
           },
         },
       },
     },
     scales: {
-      x: { ticks: { color: tickColor, font: { size: 10 } }, grid: { display: false } },
+      x: {
+        ticks: { color: tickColor, font: { size: 10 }, maxTicksLimit: 12 },
+        grid: { display: false },
+      },
       y: {
-        ticks: { color: tickColor, font: { size: 10 }, callback: (v) => formatNumber(v) },
-        grid: { color: gridColor, drawBorder: false },
+        ticks: { color: tickColor, font: { size: 10 }, callback: (v) => formatQuantity(v) },
+        grid: { color: gridColor, lineWidth: 1 },
         beginAtZero: true,
       },
     },

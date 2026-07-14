@@ -9,9 +9,10 @@ export const dashboardApi = {
 };
 
 export const insightsApi = {
-  load:     (year, month)        => api.get('/api/insights',         { params: { year, month } }),
-  compare:  (months, year, month) => api.get('/api/insights/compare', { params: { months, year, month } }),
-  velocity: (months, year, month) => api.get('/api/insights/velocity',{ params: { months, year, month } }),
+  load:          (year, month)              => api.get('/api/insights',                { params: { year, month } }),
+  compare:       (months, year, month)      => api.get('/api/insights/compare',        { params: { months, year, month } }),
+  velocity:      (months, year, month)      => api.get('/api/insights/velocity',       { params: { months, year, month } }),
+  weeklyRevenue: (year, month, week)        => api.get('/api/insights/weekly-revenue', { params: { year, month, week } }),
 };
 
 export const reportsApi = {

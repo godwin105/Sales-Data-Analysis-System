@@ -166,11 +166,11 @@ export default function Reports() {
               <Filter size={16} />
               {loading ? t('reports.generating') : t('reports.generate')}
             </button>
-            <button type="button" onClick={downloadPdf} className="btn-success" disabled={!report || report.is_empty || downloading}>
+            <button type="button" onClick={downloadPdf} className="btn-danger" disabled={!report || report.is_empty || downloading}>
               <Download size={16} />
               {downloading ? t('reports.downloading') : t('reports.download')}
             </button>
-            <button type="button" onClick={downloadExcel} className="btn-secondary" disabled={!report || report.is_empty || downloadingExcel}>
+            <button type="button" onClick={downloadExcel} className="btn-success" disabled={!report || report.is_empty || downloadingExcel}>
               <Sheet size={16} />
               {downloadingExcel ? t('reports.downloadingExcel') : t('reports.downloadExcel')}
             </button>

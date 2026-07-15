@@ -28,11 +28,13 @@ _LOGO_PATH = os.path.join(os.path.dirname(__file__), "..", "static", "favicon-19
 
 # ── Brand palette ─────────────────────────────────────────────────────────────
 _NAVY     = colors.HexColor("#1E3A5F")
+_TH_COLOR = colors.HexColor("#1D5C44")
 _BRAND    = colors.HexColor("#2563EB")
-_LIGHT    = colors.HexColor("#EFF6FF")
-_MID      = colors.HexColor("#DBEAFE")
+_LIGHT    = colors.HexColor("#F0FDF4")
+_MID      = colors.HexColor("#DCFCE7")
 _SLATE    = colors.HexColor("#64748B")
 _BORDER   = colors.HexColor("#CBD5E1")
+_TBL_LINE = colors.HexColor("#64748B")
 _GREEN    = colors.HexColor("#16A34A")
 _GREEN_BG = colors.HexColor("#F0FDF4")
 _RED      = colors.HexColor("#DC2626")
@@ -343,6 +345,38 @@ def preview():
     return jsonify({"report": payload}), 200
 
 
+@reports_bp.route("/download-excel", methods=["GET"])
+@admin_required
+def download_excel():
+    report_type = request.args.get("type", "summary")
+    period      = request.args.get("period", "monthly")
+    date_from   = request.args.get("from", "")
+    date_to     = request.args.get("to", "")
+    lang        = request.args.get("lang", "en")
+
+    start_dt, end_dt, label, err = resolve_period(period, date_from, date_to)
+    if err and "may take" not in err:
+        return jsonify({"error": err}), 400
+
+    report = build_report(current_user.owner_id, report_type, start_dt, end_dt, label)
+    if report["is_empty"]:
+        return jsonify({"error": "No data to generate a report for this period."}), 400
+
+    try:
+        xlsx_bytes = _render_excel(report, current_user.business_name, current_user.full_name, lang)
+    except Exception:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": "Excel generation failed. Please try again."}), 500
+
+    filename = f"report_{report_type}_{period}_{eat_today().isoformat()}.xlsx"
+    return send_file(
+        BytesIO(xlsx_bytes),
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        as_attachment=True,
+        download_name=filename,
+    )
+
+
 @reports_bp.route("/download", methods=["GET"])
 @admin_required
 def download_pdf():
@@ -373,6 +407,279 @@ def download_pdf():
         as_attachment=True,
         download_name=filename,
     )
+
+
+# ── Excel renderer ────────────────────────────────────────────────────────────
+def _render_excel(report, business_name, owner_name, lang="en"):
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+
+    tr         = _TR.get(lang, _TR["en"])
+    type_label = tr["type_labels"].get(report.get("type_key", "summary"), report["type_label"])
+    profit     = float(report["net_profit"])
+    is_pos     = profit >= 0
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = type_label[:31]
+
+    NAVY_F  = PatternFill("solid", fgColor="1E3A5F")
+    TH_FILL = PatternFill("solid", fgColor="1D5C44")
+    BLUE_F  = PatternFill("solid", fgColor="DCFCE7")
+    ALT_F   = PatternFill("solid", fgColor="F8FAFC")
+    LBL_F   = PatternFill("solid", fgColor="F1F5F9")
+    GREEN_F = PatternFill("solid", fgColor="F0FDF4")
+    RED_F   = PatternFill("solid", fgColor="FEF2F2")
+
+    thin = Side(style="thin", color="64748B")
+    B_   = Border(left=thin, right=thin, top=thin, bottom=thin)
+    LA   = Alignment(horizontal="left",   vertical="center", wrap_text=True)
+    CA   = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    RA   = Alignment(horizontal="right",  vertical="center", wrap_text=True)
+
+    def wcell(r, c, v, font=None, fill=None, align=None, border=None, fmt=None):
+        cell = ws.cell(row=r, column=c, value=v)
+        if font:   cell.font   = font
+        if fill:   cell.fill   = fill
+        if align:  cell.alignment = align
+        if border: cell.border = border
+        if fmt:    cell.number_format = fmt
+        return cell
+
+    def merge_row(r, c1, c2, v, font=None, fill=None, align=LA, height=None):
+        ws.merge_cells(f"{get_column_letter(c1)}{r}:{get_column_letter(c2)}{r}")
+        cell = ws.cell(row=r, column=c1, value=v)
+        if font:  cell.font  = font
+        if fill:  cell.fill  = fill
+        cell.alignment = align
+        if height: ws.row_dimensions[r].height = height
+        return cell
+
+    row = [1]  # mutable so nested helpers can increment it
+
+    def R():
+        return row[0]
+
+    def nextrow(n=1):
+        row[0] += n
+
+    # ── 1. Header band ────────────────────────────────────────────────────────
+    merge_row(R(), 1, 7, business_name.upper(),
+              font=Font(name="Calibri", bold=True, color="FFFFFF", size=14),
+              fill=TH_FILL, height=24)
+    nextrow()
+    merge_row(R(), 1, 7,
+              f"{tr['subtitle']}  ·  {type_label}  ·  {report['period_label']}",
+              font=Font(name="Calibri", color="93C5FD", size=9),
+              fill=TH_FILL, height=16)
+    nextrow(2)  # subtitle + blank
+
+    # ── 2. Info box ───────────────────────────────────────────────────────────
+    now_str   = eat_now().strftime("%Y-%m-%d %H:%M:%S")
+    type_key  = report.get("type_key", "summary")
+    pl_key   = "net_profit" if is_pos else "net_loss"
+    pl_fill  = GREEN_F if is_pos else RED_F
+    pl_color = "166534" if is_pos else "991B1B"
+
+    # (label, value, is_net_profit_row)
+    info_data = [
+        (tr["business_name"],  business_name,             False),
+        (tr["account_owner"],  owner_name,                False),
+        (tr["report_type"],    type_label,                False),
+        (tr["period"],         report["period_label"],    False),
+        (tr["statement_date"], now_str,                   False),
+    ]
+    if type_key == "sales":
+        info_data.append((tr["gross_revenue"], f"TZS {float(report['gross_revenue']):,.0f}", False))
+    elif type_key == "expenses":
+        info_data.append((tr["total_expenses"], f"TZS {float(report['total_expenses']):,.0f}", False))
+    elif type_key == "summary":
+        info_data.append((tr["gross_revenue"],  f"TZS {float(report['gross_revenue']):,.0f}",  False))
+        info_data.append((tr["total_expenses"], f"TZS {float(report['total_expenses']):,.0f}", False))
+    # always append net profit for all types
+    info_data.append((tr[pl_key], f"TZS {abs(profit):,.0f}", True))
+
+    for lbl, val, is_pl in info_data:
+        ws.merge_cells(f"A{R()}:B{R()}")
+        ws.merge_cells(f"C{R()}:G{R()}")
+        lc = ws.cell(row=R(), column=1, value=lbl)
+        vc = ws.cell(row=R(), column=3, value=val)
+        if is_pl:
+            lc.font = Font(name="Calibri", bold=True, size=9, color=pl_color)
+            lc.fill = pl_fill
+            vc.font = Font(name="Calibri", bold=True, size=9, color=pl_color)
+            vc.fill = pl_fill
+        else:
+            lc.font = Font(name="Calibri", bold=True, size=9)
+            lc.fill = LBL_F
+            vc.font = Font(name="Calibri", size=9)
+        lc.alignment = LA
+        vc.alignment = LA
+        ws.row_dimensions[R()].height = 15
+        nextrow()
+
+    nextrow()  # blank after info box
+
+    # ── Section heading helper ────────────────────────────────────────────────
+    def sect_head(label):
+        merge_row(R(), 1, 7, label,
+                  font=Font(name="Calibri", bold=True, color="166534", size=9),
+                  fill=BLUE_F, height=16)
+        nextrow()
+
+    TH_FONT   = Font(name="Calibri", bold=True, color="FFFFFF", size=8)
+    DATA_FONT = Font(name="Calibri", size=9)
+    BOLD9     = Font(name="Calibri", bold=True, size=9)
+
+    # ── 3. Sales table ────────────────────────────────────────────────────────
+    if report["show_revenue"]:
+        sect_head(tr["sales_sect"])
+        if report.get("sales_rows"):
+            for ci, h in enumerate([
+                tr["col_sn"], tr["col_date"], tr["col_details"],
+                tr["col_qty"], tr["col_recorded"], tr["col_amount"], tr["col_balance"]
+            ], 1):
+                wcell(R(), ci, h, font=TH_FONT, fill=TH_FILL, align=CA, border=B_)
+            ws.row_dimensions[R()].height = 28
+            nextrow()
+
+            for i, rd in enumerate(report["sales_rows"]):
+                ff    = ALT_F if i % 2 == 0 else None
+                names = rd.get("details") or ["—"]
+                qtys  = rd.get("qty")     or ["—"]
+                for ci, (v, al) in enumerate([
+                    (rd["sn"],            CA),
+                    (rd["date"],          LA),
+                    ("\n".join(names),    LA),
+                    ("\n".join(qtys),     CA),
+                    (rd["recorded_by"],   LA),
+                    (rd["amount"],        RA),
+                    (rd["cumulative"],    RA),
+                ], 1):
+                    c = wcell(R(), ci, v, font=DATA_FONT, align=al, border=B_,
+                              fmt="#,##0" if ci in (6, 7) else None)
+                    if ff: c.fill = ff
+                if max(len(names), len(qtys)) > 1:
+                    ws.row_dimensions[R()].height = 14 * max(len(names), len(qtys))
+                nextrow()
+
+            for ci, (v, al) in enumerate([
+                ("", CA), ("", CA), ("", CA), ("", CA),
+                (tr["total"], RA),
+                (float(report["gross_revenue"]), RA),
+                ("", CA),
+            ], 1):
+                wcell(R(), ci, v, font=BOLD9, fill=BLUE_F, align=al, border=B_,
+                      fmt="#,##0" if ci == 6 else None)
+            nextrow()
+        else:
+            merge_row(R(), 1, 7, tr["no_sales"],
+                      font=Font(name="Calibri", italic=True, size=9, color="94A3B8"))
+            nextrow()
+        nextrow()  # blank between sections
+
+    # ── 4. Expense table ──────────────────────────────────────────────────────
+    if report["show_expenses"]:
+        sect_head(tr["expense_sect"])
+        if report.get("expense_rows"):
+            for ci, h in enumerate([
+                tr["col_sn"], tr["col_date"], tr["col_category"],
+                tr["col_desc"], tr["col_amount"], tr["col_cumulative"]
+            ], 1):
+                wcell(R(), ci, h, font=TH_FONT, fill=TH_FILL, align=CA, border=B_)
+            ws.row_dimensions[R()].height = 28
+            nextrow()
+
+            for i, rd in enumerate(report["expense_rows"]):
+                ff      = ALT_F if i % 2 == 0 else None
+                cat_lbl = tr["expense_cats"].get(rd["category"], rd["category"])
+                for ci, (v, al) in enumerate([
+                    (rd["sn"],           CA),
+                    (rd["date"],         LA),
+                    (cat_lbl,            LA),
+                    (rd["description"],  LA),
+                    (rd["amount"],       RA),
+                    (rd["cumulative"],   RA),
+                ], 1):
+                    c = wcell(R(), ci, v, font=DATA_FONT, align=al, border=B_,
+                              fmt="#,##0" if ci in (5, 6) else None)
+                    if ff: c.fill = ff
+                nextrow()
+
+            for ci, (v, al) in enumerate([
+                ("", CA), ("", CA), ("", CA),
+                (tr["total"],                    RA),
+                (float(report["total_expenses"]), RA),
+                ("", CA),
+            ], 1):
+                wcell(R(), ci, v, font=BOLD9, fill=BLUE_F, align=al, border=B_,
+                      fmt="#,##0" if ci == 5 else None)
+            nextrow()
+        else:
+            merge_row(R(), 1, 7, tr["no_expenses"],
+                      font=Font(name="Calibri", italic=True, size=9, color="94A3B8"))
+            nextrow()
+        nextrow()  # blank between sections
+
+    # ── 5. Financial summary ─────────────────────────────────────────────────
+    if report["show_profit"]:
+        sect_head(tr["financial_sect"])
+
+        def fs_row(lbl, val, indent=False, highlight=False, pl=False):
+            ws.merge_cells(f"A{R()}:C{R()}")
+            ws.merge_cells(f"D{R()}:G{R()}")
+            lc = ws.cell(row=R(), column=1, value=("  " if indent else "") + lbl)
+            vc = ws.cell(row=R(), column=4, value=val)
+            if pl:
+                f_pl     = GREEN_F if is_pos else RED_F
+                col_pl   = "16A34A" if is_pos else "DC2626"
+                lc.fill  = f_pl;  vc.fill  = f_pl
+                lc.font  = Font(name="Calibri", bold=True, color=col_pl, size=11)
+                vc.font  = Font(name="Calibri", bold=True, color=col_pl, size=11)
+                ws.row_dimensions[R()].height = 22
+            elif highlight:
+                lc.fill  = BLUE_F;  vc.fill  = BLUE_F
+                lc.font  = Font(name="Calibri", bold=True, color="166534", size=9)
+                vc.font  = Font(name="Calibri", bold=True, color="166534", size=9)
+            else:
+                col = "64748B" if indent else "0F172A"
+                sz  = 8 if indent else 9
+                lc.font = Font(name="Calibri", size=sz, color=col)
+                vc.font = Font(name="Calibri", size=sz, color=col)
+            lc.alignment = LA
+            vc.alignment = RA
+            if isinstance(val, (int, float)):
+                vc.number_format = "#,##0"
+            nextrow()
+
+        if report["show_revenue"]:
+            fs_row(tr["total_sales"],   report["total_sales"])
+            fs_row(tr["gross_revenue"], float(report["gross_revenue"]))
+            fs_row(tr["cogs"],          float(report["cogs"]), indent=True)
+            fs_row(tr["gross_profit"],  float(report["gross_profit"]), highlight=True)
+        if report["show_expenses"]:
+            for cat, amt in report["expenses"].items():
+                cat_lbl = tr["expense_cats"].get(cat, cat)
+                fs_row(cat_lbl, float(amt))
+            fs_row(tr["total_expenses"], float(report["total_expenses"]))
+        pl_lbl = tr["net_profit"] if is_pos else tr["net_loss"]
+        fs_row(pl_lbl.upper(), float(abs(profit)), pl=True)
+        nextrow()
+
+    # ── 6. Disclaimer ─────────────────────────────────────────────────────────
+    merge_row(R(), 1, 7, tr["disclaimer"],
+              font=Font(name="Calibri", italic=True, size=7, color="94A3B8"),
+              align=Alignment(horizontal="left", wrap_text=True),
+              height=30)
+
+    # ── Column widths ─────────────────────────────────────────────────────────
+    for ci, w in enumerate([5, 14, 30, 14, 18, 16, 16], 1):
+        ws.column_dimensions[get_column_letter(ci)].width = w
+
+    buf = BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
 
 
 # ── Footer canvas: stamps "Page X of Y" after full build ─────────────────────
@@ -466,7 +773,7 @@ def _render_pdf(report, business_name, owner_name, lang="en"):
     ]
     hdr_tbl = Table([[left_cell, right_cell]], colWidths=[pw * 0.55, pw * 0.45])
     hdr_tbl.setStyle(TableStyle([
-        ("BACKGROUND",    (0, 0), (-1, -1), _NAVY),
+        ("BACKGROUND",    (0, 0), (-1, -1), _TH_COLOR),
         ("TOPPADDING",    (0, 0), (-1, -1), 11),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 11),
         ("LEFTPADDING",   (0, 0), (0, 0),   14),
@@ -484,7 +791,7 @@ def _render_pdf(report, business_name, owner_name, lang="en"):
     P_val_pl   = _ps("ValPL", fontSize=9, fontName="Helvetica-Bold", leading=13,
                      textColor=_GREEN if is_profit else _RED)
     P_val_blue = _ps("ValBL", fontSize=9, fontName="Helvetica-Bold", leading=13,
-                     textColor=_NAVY)
+                     textColor=colors.HexColor("#166534"))
 
     N_STATIC = 4
     info_rows = [
@@ -494,16 +801,24 @@ def _render_pdf(report, business_name, owner_name, lang="en"):
         [Paragraph(tr["period"],        P_lbl), Paragraph(_html.escape(report["period_label"]), P_val)],
     ]
 
+    _pl_row = (tr[pl_key], f"TZS {abs(profit):,.0f}", P_val_pl, _GREEN_BG if is_profit else _RED_BG)
     if type_key == "profit":
-        hl_data = [(tr[pl_key],          f"TZS {abs(profit):,.0f}",                          P_val_pl,   _GREEN_BG if is_profit else _RED_BG)]
+        hl_data = [_pl_row]
     elif type_key == "sales":
-        hl_data = [(tr["gross_revenue"], f"TZS {float(report['gross_revenue']):,.0f}",        P_val_blue, _MID)]
+        hl_data = [
+            (tr["gross_revenue"], f"TZS {float(report['gross_revenue']):,.0f}", P_val_blue, _MID),
+            _pl_row,
+        ]
     elif type_key == "expenses":
-        hl_data = [(tr["total_expenses"],f"TZS {float(report['total_expenses']):,.0f}",       P_val_blue, _MID)]
+        hl_data = [
+            (tr["total_expenses"], f"TZS {float(report['total_expenses']):,.0f}", P_val_blue, _MID),
+            _pl_row,
+        ]
     else:  # summary
         hl_data = [
             (tr["gross_revenue"],  f"TZS {float(report['gross_revenue']):,.0f}",  P_val_blue, _MID),
             (tr["total_expenses"], f"TZS {float(report['total_expenses']):,.0f}", P_val_blue, _LIGHT),
+            _pl_row,
         ]
 
     for label, val_str, val_style, _ in hl_data:
@@ -515,9 +830,9 @@ def _render_pdf(report, business_name, owner_name, lang="en"):
         ("BOTTOMPADDING", (0, 0), (-1, -1),           5),
         ("LEFTPADDING",   (0, 0), (-1, -1),           8),
         ("RIGHTPADDING",  (0, 0), (-1, -1),           8),
-        ("LINEBELOW",     (0, 0), (-1, N_STATIC - 1), 0.3, _BORDER),
-        ("LINEAFTER",     (0, 0), (0, -1),            0.5, _BORDER),
-        ("BOX",           (0, 0), (-1, -1),           0.8, _BORDER),
+        ("LINEBELOW",     (0, 0), (-1, N_STATIC - 1), 0.5, _TBL_LINE),
+        ("LINEAFTER",     (0, 0), (0, -1),            0.5, _TBL_LINE),
+        ("BOX",           (0, 0), (-1, -1),           1.0, _TBL_LINE),
     ]
     for i, (_, _, _, bg) in enumerate(hl_data):
         info_style_cmds.append(("BACKGROUND", (0, N_STATIC + i), (-1, N_STATIC + i), bg))
@@ -621,7 +936,7 @@ def _render_pdf(report, business_name, owner_name, lang="en"):
 
         P_pl_lbl = _ps("PLlbl", fontSize=11, textColor=pl_color, fontName="Helvetica-Bold", leading=16)
         P_pl_val = _ps("PLval", fontSize=14, textColor=pl_color, fontName="Helvetica-Bold", leading=20, alignment=TA_RIGHT)
-        P_gp_val = _ps("GPval", fontSize=9,  textColor=_NAVY,    fontName="Helvetica-Bold", leading=13, alignment=TA_RIGHT)
+        P_gp_val = _ps("GPval", fontSize=9,  textColor=colors.HexColor("#166534"), fontName="Helvetica-Bold", leading=13, alignment=TA_RIGHT)
 
         sum_rows = []
         if report["show_revenue"]:
@@ -647,8 +962,8 @@ def _render_pdf(report, business_name, owner_name, lang="en"):
             ("LEFTPADDING",   (0, 0), (-1, -1), 8),
             ("RIGHTPADDING",  (0, 0), (-1, -1), 8),
             ("ALIGN",         (1, 0), (1, -1),  "RIGHT"),
-            ("LINEBELOW",     (0, 0), (-1, -2), 0.3, _BORDER),
-            ("BOX",           (0, 0), (-1, -1), 0.8, _BORDER),
+            ("LINEBELOW",     (0, 0), (-1, -2), 0.5, _TBL_LINE),
+            ("BOX",           (0, 0), (-1, -1), 1.0, _TBL_LINE),
             ("BACKGROUND",    (0, -1), (-1, -1), pl_bg),
             ("LINEABOVE",     (0, -1), (-1, -1), 1.5, pl_color),
         ]))
@@ -678,7 +993,7 @@ def _render_pdf(report, business_name, owner_name, lang="en"):
 def _base_table_style(n_rows):
     """Common TableStyle for transaction tables: light-blue header, alternating rows, bold totals."""
     ts = [
-        ("BACKGROUND",    (0, 0), (-1, 0),  _NAVY),
+        ("BACKGROUND",    (0, 0), (-1, 0),  _TH_COLOR),
         ("TEXTCOLOR",     (0, 0), (-1, 0),  _WHITE),
         ("FONTNAME",      (0, 0), (-1, 0),  "Helvetica-Bold"),
         ("FONTSIZE",      (0, 0), (-1, -1), 8),
@@ -686,11 +1001,12 @@ def _base_table_style(n_rows):
         ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
         ("LEFTPADDING",   (0, 0), (-1, -1), 4),
         ("RIGHTPADDING",  (0, 0), (-1, -1), 4),
-        ("GRID",          (0, 0), (-1, -1), 0.3, _BORDER),
+        ("GRID",          (0, 0), (-1, -1), 0.5, _TBL_LINE),
+        ("BOX",           (0, 0), (-1, -1), 1.0, _TBL_LINE),
         ("VALIGN",        (0, 0), (-1, -1), "TOP"),
         ("BACKGROUND",    (0, -1), (-1, -1), _MID),
         ("FONTNAME",      (0, -1), (-1, -1), "Helvetica-Bold"),
-        ("LINEABOVE",     (0, -1), (-1, -1), 1.0, _NAVY),
+        ("LINEABOVE",     (0, -1), (-1, -1), 1.5, _TH_COLOR),
     ]
     for i in range(1, n_rows - 1):
         if i % 2 == 0:

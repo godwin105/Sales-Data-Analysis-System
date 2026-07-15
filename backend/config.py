@@ -96,3 +96,7 @@ class Config:
     # Get these from: ClickPesa Dashboard → Applications → your app → API Keys
     CLICKPESA_CLIENT_ID = os.environ.get("CLICKPESA_CLIENT_ID", "")
     CLICKPESA_API_KEY   = os.environ.get("CLICKPESA_API_KEY", "")
+    # Public base URL of this app — used to build the webhook callback URL
+    # that is sent with every USSD push request (backup to dashboard setting).
+    # Example: https://sales-data-analysis-system-5e6bi.ondigitalocean.app
+    APP_BASE_URL        = os.environ.get("APP_BASE_URL", "")

@@ -110,12 +110,15 @@ def initiate_ussd_push(
     order_reference: str,
     client_id: str = None,
     api_key: str = None,
+    callback_url: str = None,
 ) -> dict:
     """
     Send a mobile-money USSD push to the customer's phone.
 
     Pass client_id + api_key to use the business owner's own ClickPesa merchant
     account (money goes directly to them). Omit to use the platform credentials.
+    Pass callback_url to include a per-request webhook URL in the body (supported
+    by some ClickPesa API versions — acts as backup to the dashboard setting).
     """
     normalized = _normalize_phone(phone)
     payload = {
@@ -124,6 +127,8 @@ def initiate_ussd_push(
         "orderReference": order_reference,
         "phoneNumber":    normalized,
     }
+    if callback_url:
+        payload["callbackUrl"] = callback_url
 
     account = "owner" if (client_id and api_key) else "platform"
     print(f"[ClickPesa] USSD push → phone={normalized} amount={payload['amount']} ref={order_reference} account={account}")

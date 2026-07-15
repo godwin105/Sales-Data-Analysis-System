@@ -130,6 +130,11 @@ def initiate():
         owner_api_key   = (owner.clickpesa_api_key   if owner else None) or None
 
         app = current_app._get_current_object()
+        # Build the webhook callback URL from the configured app base URL so
+        # ClickPesa can deliver payment results even if the dashboard setting
+        # is missing or wrong.
+        base_url = current_app.config.get("APP_BASE_URL", "").rstrip("/")
+        cb_url = f"{base_url}/api/payments/callback" if base_url else None
 
         def _push():
             with app.app_context():
@@ -140,6 +145,7 @@ def initiate():
                         order_reference = order_ref,
                         client_id       = owner_client_id,
                         api_key         = owner_api_key,
+                        callback_url    = cb_url,
                     )
                     # Update channel / transaction_id from ClickPesa response
                     pay = db.session.query(Payment).filter_by(external_id=order_ref).first()

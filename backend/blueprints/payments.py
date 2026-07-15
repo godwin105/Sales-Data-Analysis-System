@@ -19,9 +19,61 @@ from extensions import db
 from models import Product, Sale, SaleItem, Payment, User
 from utils.decorators import cashier_or_admin_required
 from utils.time import eat_now, isoformat_eat
-from services.clickpesa import initiate_ussd_push
+import time as _time
+
+from services.clickpesa import initiate_ussd_push, check_payment_status
 
 payments_bp = Blueprint("payments", __name__, url_prefix="/api/payments")
+
+
+def _poll_clickpesa(app, order_ref, tx_id, client_id, api_key, expiry_secs):
+    """
+    Poll ClickPesa's payment status API every 5 s as a webhook fallback.
+    Runs in the same background thread as _push(), after the initial push commit.
+    Stops as soon as the payment is resolved or the USSD session deadline passes.
+    """
+    success_signals = {"SUCCESS", "SUCCESSFUL", "COMPLETED", "PAID", "PROCESSING"}
+    failed_signals  = {"FAILED", "FAILURE", "DECLINED", "CANCELLED", "CANCELED", "REJECTED"}
+
+    _time.sleep(8)  # Give customer time to see and respond to the USSD prompt
+    deadline = _time.time() + expiry_secs - 12  # Stop before the auto-fail window
+
+    while _time.time() < deadline:
+        with app.app_context():
+            try:
+                pay = db.session.query(Payment).filter_by(external_id=order_ref).first()
+                if not pay or pay.status != "pending":
+                    print(f"[ClickPesa poll] {order_ref} already resolved, stopping")
+                    return
+
+                data    = check_payment_status(tx_id, client_id=client_id, api_key=api_key)
+                raw     = (data.get("status") or "").upper()
+                col     = (data.get("collectionStatus") or "").upper()
+                print(f"[ClickPesa poll] {order_ref} → status={raw!r} collection={col!r}")
+
+                if raw in success_signals or col == "SUCCESS":
+                    pay.status            = "confirmed"
+                    pay.confirmed_at      = eat_now()
+                    pay.sale.payment_status = "confirmed"
+                    if data.get("channel"):
+                        pay.provider = data["channel"]
+                    db.session.commit()
+                    print(f"[ClickPesa poll] CONFIRMED {order_ref}")
+                    return
+                elif raw in failed_signals:
+                    pay.status              = "failed"
+                    pay.sale.payment_status = "failed"
+                    db.session.commit()
+                    print(f"[ClickPesa poll] FAILED {order_ref}")
+                    return
+
+            except SQLAlchemyError:
+                db.session.rollback()
+            except Exception as exc:
+                print(f"[ClickPesa poll] status check unavailable ({exc}), stopping poll")
+                return  # Status endpoint might not exist — webhook is the only path
+
+        _time.sleep(5)
 
 
 # ── Initiate ──────────────────────────────────────────────────────────────────
@@ -137,6 +189,7 @@ def initiate():
         cb_url = f"{base_url}/api/payments/callback" if base_url else None
 
         def _push():
+            cp_tx_id = None
             with app.app_context():
                 try:
                     cp_resp = initiate_ussd_push(
@@ -154,6 +207,7 @@ def initiate():
                             pay.provider = cp_resp["channel"]
                         if cp_resp.get("id"):
                             pay.transaction_id = cp_resp["id"]
+                            cp_tx_id = cp_resp["id"]
                         db.session.commit()
                 except Exception:
                     traceback.print_exc()
@@ -176,6 +230,12 @@ def initiate():
                     except Exception:
                         db.session.rollback()
                         traceback.print_exc()
+                    return  # Push failed — skip polling
+
+            # Push succeeded: poll ClickPesa for payment status every 5 s
+            # as a fallback for when webhooks are not delivered.
+            if cp_tx_id:
+                _poll_clickpesa(app, order_ref, cp_tx_id, owner_client_id, owner_api_key, USSD_EXPIRY_SECONDS)
 
         threading.Thread(target=_push, daemon=True).start()
 

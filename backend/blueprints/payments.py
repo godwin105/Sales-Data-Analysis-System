@@ -20,23 +20,23 @@ from models import Product, Sale, SaleItem, Payment, User
 from utils.decorators import cashier_or_admin_required
 from utils.time import eat_now, isoformat_eat
 import time as _time
-
 from services.clickpesa import initiate_ussd_push, check_payment_status
 
 payments_bp = Blueprint("payments", __name__, url_prefix="/api/payments")
 
 
-def _poll_clickpesa(app, order_ref, tx_id, client_id, api_key, expiry_secs):
+def _poll_clickpesa(app, order_ref, client_id, api_key, expiry_secs):
     """
-    Poll ClickPesa's payment status API every 5 s as a webhook fallback.
-    Runs in the same background thread as _push(), after the initial push commit.
-    Stops as soon as the payment is resolved or the USSD session deadline passes.
+    Poll ClickPesa's status API every 8 s as a webhook fallback.
+    Only marks the payment CONFIRMED — never FAILED — because ClickPesa
+    returns transient states (PROCESSING, PENDING) while the USSD prompt
+    is still active on the customer's phone.
+    Failure is handled by the webhook callback or the auto-fail in /status.
     """
-    success_signals = {"SUCCESS", "SUCCESSFUL", "COMPLETED", "PAID", "PROCESSING"}
-    failed_signals  = {"FAILED", "FAILURE", "DECLINED", "CANCELLED", "CANCELED", "REJECTED"}
+    confirmed_signals = {"SUCCESS", "SUCCESSFUL", "COMPLETED", "PAID"}
 
-    _time.sleep(8)  # Give customer time to see and respond to the USSD prompt
-    deadline = _time.time() + expiry_secs - 12  # Stop before the auto-fail window
+    _time.sleep(20)  # let the customer see and respond to the USSD prompt
+    deadline = _time.time() + expiry_secs - 30
 
     while _time.time() < deadline:
         with app.app_context():
@@ -46,34 +46,33 @@ def _poll_clickpesa(app, order_ref, tx_id, client_id, api_key, expiry_secs):
                     print(f"[ClickPesa poll] {order_ref} already resolved, stopping")
                     return
 
-                data    = check_payment_status(order_ref, client_id=client_id, api_key=api_key)
-                raw     = (data.get("status") or "").upper()
-                col     = (data.get("collectionStatus") or "").upper()
+                data = check_payment_status(order_ref, client_id=client_id, api_key=api_key)
+                raw  = (data.get("status") or "").upper()
+                col  = (data.get("collectionStatus") or "").upper()
                 print(f"[ClickPesa poll] {order_ref} → status={raw!r} collection={col!r}")
 
-                if raw in success_signals or col == "SUCCESS":
-                    pay.status            = "confirmed"
-                    pay.confirmed_at      = eat_now()
+                if raw in confirmed_signals or col == "SUCCESS":
+                    pay.status              = "confirmed"
+                    pay.confirmed_at        = eat_now()
                     pay.sale.payment_status = "confirmed"
                     if data.get("channel"):
                         pay.provider = data["channel"]
                     db.session.commit()
                     print(f"[ClickPesa poll] CONFIRMED {order_ref}")
                     return
-                elif raw in failed_signals:
-                    pay.status              = "failed"
-                    pay.sale.payment_status = "failed"
-                    db.session.commit()
-                    print(f"[ClickPesa poll] FAILED {order_ref}")
-                    return
+
+                # Any other status (PROCESSING, PENDING, FAILED, unknown) —
+                # do NOT act on it; keep polling until the deadline.
+                print(f"[ClickPesa poll] {order_ref} not yet confirmed (status={raw!r}), retrying…")
 
             except SQLAlchemyError:
                 db.session.rollback()
             except Exception as exc:
-                print(f"[ClickPesa poll] status check unavailable ({exc}), stopping poll")
-                return  # Status endpoint might not exist — webhook is the only path
+                # Status endpoint unavailable — webhook is the only path left.
+                print(f"[ClickPesa poll] status check failed ({exc}), stopping poll")
+                return
 
-        _time.sleep(5)
+        _time.sleep(15)
 
 
 # ── Initiate ──────────────────────────────────────────────────────────────────
@@ -182,14 +181,9 @@ def initiate():
         owner_api_key   = (owner.clickpesa_api_key   if owner else None) or None
 
         app = current_app._get_current_object()
-        # Build the webhook callback URL from the configured app base URL so
-        # ClickPesa can deliver payment results even if the dashboard setting
-        # is missing or wrong.
-        base_url = current_app.config.get("APP_BASE_URL", "").rstrip("/")
-        cb_url = f"{base_url}/api/payments/callback" if base_url else None
 
         def _push():
-            cp_tx_id = None
+            push_ok = False
             with app.app_context():
                 try:
                     cp_resp = initiate_ussd_push(
@@ -198,20 +192,18 @@ def initiate():
                         order_reference = order_ref,
                         client_id       = owner_client_id,
                         api_key         = owner_api_key,
-                        callback_url    = cb_url,
                     )
-                    # Update channel / transaction_id from ClickPesa response
                     pay = db.session.query(Payment).filter_by(external_id=order_ref).first()
                     if pay:
                         if cp_resp.get("channel"):
                             pay.provider = cp_resp["channel"]
                         if cp_resp.get("id"):
                             pay.transaction_id = cp_resp["id"]
-                            cp_tx_id = cp_resp["id"]
                         db.session.commit()
+                    push_ok = True
                 except Exception:
                     traceback.print_exc()
-                    # Push failed — mark payment failed and restore stock
+                    # Push failed — restore stock and mark payment failed
                     try:
                         pay = db.session.query(Payment).filter_by(external_id=order_ref).first()
                         if pay and pay.status == "pending":
@@ -230,12 +222,11 @@ def initiate():
                     except Exception:
                         db.session.rollback()
                         traceback.print_exc()
-                    return  # Push failed — skip polling
 
-            # Push succeeded but response had no collectedAmount — poll ClickPesa
-            # using the orderReference as fallback for webhook-less confirmation.
-            if cp_tx_id:
-                _poll_clickpesa(app, order_ref, order_ref, owner_client_id, owner_api_key, USSD_EXPIRY_SECONDS)
+            if push_ok:
+                # USSD prompt is on the customer's phone — poll for confirmation
+                # as a fallback in case the webhook is not delivered.
+                _poll_clickpesa(app, order_ref, owner_client_id, owner_api_key, USSD_EXPIRY_SECONDS)
 
         threading.Thread(target=_push, daemon=True).start()
 
@@ -259,7 +250,7 @@ def initiate():
 
 
 # ── Poll status ───────────────────────────────────────────────────────────────
-USSD_EXPIRY_SECONDS = 120  # auto-fail after 120 seconds if no webhook received
+USSD_EXPIRY_SECONDS = 180  # auto-fail after 180 s (3 min) — matches USSD session lifetime
 
 @payments_bp.route("/status/<external_id>", methods=["GET"])
 @cashier_or_admin_required
@@ -378,39 +369,23 @@ def clickpesa_callback():
     )
 
     if not order_ref:
-        print(f"[ClickPesa callback] WARNING: no orderReference in payload keys={list(data.keys())}")
         return jsonify({"message": "ok"}), 200
 
     payment = db.session.query(Payment).filter_by(external_id=order_ref).first()
-    if not payment:
-        print(f"[ClickPesa callback] WARNING: payment not found for ref={order_ref}")
-        return jsonify({"message": "ok"}), 200
-    if payment.status != "pending":
-        print(f"[ClickPesa callback] payment {order_ref} already {payment.status}, skipping")
+    if not payment or payment.status != "pending":
         return jsonify({"message": "ok"}), 200
 
     # Map ClickPesa status → internal status (handle multiple variants)
-    # "PROCESSING" means ClickPesa collected from the customer; settlement to
-    # merchant is still processing but the money is guaranteed — treat as success.
-    success_signals = {"SUCCESS", "SUCCESSFUL", "COMPLETED", "PAID", "PROCESSING"}
+    success_signals = {"SUCCESS", "SUCCESSFUL", "COMPLETED", "PAID"}
     failed_signals  = {"FAILED", "FAILURE", "DECLINED", "CANCELLED", "CANCELED", "REJECTED"}
     success_events  = {"PAYMENT RECEIVED", "PAYMENT_RECEIVED", "PAYMENT SUCCESS", "PAYMENT_SUCCESS"}
     failed_events   = {"PAYMENT FAILED", "PAYMENT_FAILED", "PAYMENT FAILURE", "PAYMENT_FAILURE"}
 
-    # ClickPesa sends two status fields: "status" (settlement) and "collectionStatus"
-    # (collection from customer). Either SUCCESS means money was received.
-    collection_status = (
-        data.get("collectionStatus") or data.get("collection_status") or ""
-    ).upper()
-
-    if status_raw in success_signals or event in success_events or collection_status == "SUCCESS":
+    if status_raw in success_signals or event in success_events:
         new_status = "confirmed"
-        print(f"[ClickPesa callback] CONFIRMED ref={order_ref} status={status_raw} event={event} collection={collection_status}")
     elif status_raw in failed_signals or event in failed_events:
         new_status = "failed"
-        print(f"[ClickPesa callback] FAILED ref={order_ref} status={status_raw} event={event}")
     else:
-        print(f"[ClickPesa callback] UNRECOGNIZED ref={order_ref} status={status_raw!r} event={event!r} collection={collection_status!r}")
         return jsonify({"message": "ok"}), 200
 
     payment.status = new_status

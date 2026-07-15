@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Plus, Trash2, ShoppingCart, AlertTriangle,
   Smartphone, Banknote, CheckCircle, XCircle,
-  Loader, Clock, RefreshCw, Scan,
+  Loader, Clock, RefreshCw,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { salesApi } from '../api/sales';
@@ -49,10 +49,6 @@ export default function RecordSale() {
 
   const pollRef    = useRef(null);
   const countdownRef = useRef(null);
-
-  // ── Barcode scanner ─────────────────────────────────────────────────────────
-  const [scanInput, setScanInput] = useState('');
-  const scanRef = useRef(null);
 
   const nextRowId = useMemo(
     () => () => Math.max(0, ...items.map((i) => i.rowId)) + 1,
@@ -166,35 +162,6 @@ export default function RecordSale() {
       const { data } = await salesApi.inStockProducts();
       setProducts(data.products);
     } catch { /* non-critical */ }
-  }
-
-  async function handleBarcodeScan(code) {
-    try {
-      const { data } = await stockApi.getByBarcode(code);
-      const p = data.product;
-      setItems((arr) => {
-        const existing = arr.find((i) => String(i.product_id) === String(p.product_id));
-        if (existing) {
-          return arr.map((i) =>
-            i.rowId === existing.rowId
-              ? { ...i, quantity: String(Number(i.quantity) + 1) }
-              : i
-          );
-        }
-        const emptyRow = arr.find((i) => !i.product_id);
-        if (emptyRow) {
-          return arr.map((i) =>
-            i.rowId === emptyRow.rowId ? { ...i, product_id: String(p.product_id) } : i
-          );
-        }
-        const newId = Math.max(0, ...arr.map((i) => i.rowId)) + 1;
-        return [...arr, { rowId: newId, product_id: String(p.product_id), quantity: '1' }];
-      });
-      toast.success(t('sales.barcodeAdded', { name: p.name }));
-    } catch {
-      toast.error(t('sales.barcodeNotFound', { code }));
-    }
-    scanRef.current?.focus();
   }
 
   async function handleSubmit(e) {
@@ -440,28 +407,6 @@ export default function RecordSale() {
         <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-4">
           {t('sales.saleItems')}
         </h3>
-
-        {/* Barcode scanner input */}
-        <div className="flex items-center gap-2 mb-4 pb-4 border-b border-slate-100 dark:border-slate-700">
-          <Scan size={16} className="text-slate-400 flex-shrink-0" />
-          <input
-            ref={scanRef}
-            type="text"
-            value={scanInput}
-            onChange={(e) => setScanInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                const code = scanInput.trim();
-                setScanInput('');
-                if (code) handleBarcodeScan(code);
-              }
-            }}
-            placeholder={t('sales.scanBarcodePlaceholder')}
-            className="form-input text-sm font-mono flex-1"
-            autoComplete="off"
-          />
-        </div>
 
         <div className="space-y-3">
           {/* Column labels — hidden on mobile */}

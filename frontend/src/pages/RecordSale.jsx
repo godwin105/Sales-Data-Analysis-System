@@ -16,7 +16,7 @@ import PageSpinner from '../components/PageSpinner';
 import EmptyState from '../components/EmptyState';
 
 const POLL_MS      = 4000;   // poll every 4 seconds
-const TIMEOUT_SECS = 60;     // safety-net: server auto-fails at 50s, UI normally resolves before this
+const TIMEOUT_SECS = 60;     // safety-net: server auto-fails at 120s, UI normally resolves before this
 
 export default function RecordSale() {
   const toast    = useToast();

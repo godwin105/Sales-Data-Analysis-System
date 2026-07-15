@@ -193,7 +193,7 @@ def initiate():
 
 
 # ── Poll status ───────────────────────────────────────────────────────────────
-USSD_EXPIRY_SECONDS = 50  # auto-fail after 60 seconds if no webhook received
+USSD_EXPIRY_SECONDS = 120  # auto-fail after 120 seconds if no webhook received
 
 @payments_bp.route("/status/<external_id>", methods=["GET"])
 @cashier_or_admin_required
@@ -319,12 +319,20 @@ def clickpesa_callback():
         return jsonify({"message": "ok"}), 200
 
     # Map ClickPesa status → internal status (handle multiple variants)
-    success_signals = {"SUCCESS", "SUCCESSFUL", "COMPLETED", "PAID"}
+    # "PROCESSING" means ClickPesa collected from the customer; settlement to
+    # merchant is still processing but the money is guaranteed — treat as success.
+    success_signals = {"SUCCESS", "SUCCESSFUL", "COMPLETED", "PAID", "PROCESSING"}
     failed_signals  = {"FAILED", "FAILURE", "DECLINED", "CANCELLED", "CANCELED", "REJECTED"}
     success_events  = {"PAYMENT RECEIVED", "PAYMENT_RECEIVED", "PAYMENT SUCCESS", "PAYMENT_SUCCESS"}
     failed_events   = {"PAYMENT FAILED", "PAYMENT_FAILED", "PAYMENT FAILURE", "PAYMENT_FAILURE"}
 
-    if status_raw in success_signals or event in success_events:
+    # ClickPesa sends two status fields: "status" (settlement) and "collectionStatus"
+    # (collection from customer). Either SUCCESS means money was received.
+    collection_status = (
+        data.get("collectionStatus") or data.get("collection_status") or ""
+    ).upper()
+
+    if status_raw in success_signals or event in success_events or collection_status == "SUCCESS":
         new_status = "confirmed"
     elif status_raw in failed_signals or event in failed_events:
         new_status = "failed"

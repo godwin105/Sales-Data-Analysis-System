@@ -196,6 +196,10 @@ def history():
 
     query = db.session.query(Sale).filter_by(user_id=current_user.owner_id)
 
+    # Cashiers see only their own sales; owners see all
+    if current_user.is_cashier:
+        query = query.filter(Sale.recorded_by == current_user.user_id)
+
     warnings = []
 
     if date_from:
@@ -236,9 +240,12 @@ def history():
 @cashier_or_admin_required
 def get_sale(sale_id):
     """Get a single sale with all line items."""
-    sale = db.session.query(Sale).filter_by(
+    query = db.session.query(Sale).filter_by(
         sale_id=sale_id, user_id=current_user.owner_id,
-    ).first()
+    )
+    if current_user.is_cashier:
+        query = query.filter(Sale.recorded_by == current_user.user_id)
+    sale = query.first()
     if sale is None:
         return jsonify({"error": "Sale not found."}), 404
     return jsonify({"sale": sale.to_dict(include_items=True)}), 200

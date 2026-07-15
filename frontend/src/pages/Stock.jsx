@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Plus, Search, Edit2, Package2, RefreshCw, Trash2, PlusCircle, Barcode } from 'lucide-react';
+import { Plus, Search, Edit2, Package2, RefreshCw, Trash2, PlusCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { stockApi } from '../api/stock';
 import { useToast } from '../context/ToastContext';
@@ -213,7 +213,6 @@ function ProductForm({ initial, categories, units, onCancel, onSuccess, onCatego
   const isEdit = !!initial;
   const [form, setForm] = useState({
     name: initial?.name || '',
-    barcode: initial?.barcode || '',
     category: initial?.category || '',
     unit: initial?.unit || 'pcs',
     purchase_price: initial?.purchase_price ?? '',
@@ -288,23 +287,6 @@ function ProductForm({ initial, categories, units, onCancel, onSuccess, onCatego
           placeholder={t('stock.form.productPlaceholder')}
         />
         {errors.name && <p className="form-error">{errors.name}</p>}
-      </div>
-
-      <div>
-        <label className="form-label flex items-center gap-1.5">
-          <Barcode size={14} className="text-slate-400" />
-          {t('stock.form.barcode')} <span className="text-slate-400 font-normal">{t('common.optional')}</span>
-        </label>
-        <input
-          type="text"
-          value={form.barcode}
-          onChange={(e) => update('barcode', e.target.value)}
-          className={`form-input font-mono text-sm ${errors.barcode ? 'error' : ''}`}
-          placeholder={t('stock.form.barcodePlaceholder')}
-          maxLength={50}
-          autoComplete="off"
-        />
-        {errors.barcode && <p className="form-error">{errors.barcode}</p>}
       </div>
 
       <div className="grid grid-cols-2 gap-3">

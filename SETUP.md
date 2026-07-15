@@ -8,35 +8,32 @@ Follow this guide if you are setting up the project on your machine for the firs
 
 You need all four installed and on your `PATH`:
 
-| Software | How to install on Windows | Verify |
+| Software | How to install | Verify |
 |---|---|---|
-| **Python 3.11+** | <https://www.python.org/downloads/> — tick "Add Python to PATH" during install. | `python --version` |
-| **Node.js 18+** (includes npm) | <https://nodejs.org/> — pick the LTS installer. | `node --version` and `npm --version` |
-| **MySQL** | Easiest: install **XAMPP** from <https://www.apachefriends.org/> — gives you MySQL + phpMyAdmin in one click. | Open XAMPP Control Panel → Start MySQL |
+| **Python 3.11+** | <https://www.python.org/downloads/> — tick "Add Python to PATH" during install | `python --version` |
+| **Node.js 18+** | <https://nodejs.org/> — pick the LTS installer | `node --version` |
+| **MySQL** | Easiest: install **XAMPP** from <https://www.apachefriends.org/> — gives you MySQL + phpMyAdmin in one click | Open XAMPP Control Panel → Start MySQL |
 | **Git** | <https://git-scm.com/download/win> | `git --version` |
 
-Open **PowerShell** and check each one:
+Open **PowerShell** and verify each one:
 
 ```powershell
-python --version    # should print Python 3.11.x or higher
-node --version      # should print v18.x.x or higher
-npm --version       # should print 9.x.x or higher
-git --version       # any recent version is fine
+python --version    # Python 3.11.x or higher
+node --version      # v18.x.x or higher
+npm --version       # 9.x.x or higher
+git --version       # any recent version
 ```
-
-If any command says "not recognized", install that piece first.
 
 ---
 
 ## 2. Clone the repository
 
 ```powershell
-cd to  wherever you keep the project
 git clone https://github.com/godwin105/Sales-Data-Analysis-System.git "Sales Data Analysis System"
 cd "Sales Data Analysis System"
 ```
 
-You should now see two folders side by side: `backend/` and `frontend/`.
+You should now see two folders: `backend/` and `frontend/`.
 
 ---
 
@@ -44,18 +41,24 @@ You should now see two folders side by side: `backend/` and `frontend/`.
 
 1. **Start MySQL** via XAMPP Control Panel.
 2. Open **phpMyAdmin** at <http://localhost/phpmyadmin>.
-3. Create a new database called `sales_data_analysis_system` (collation: `utf8mb4_unicode_ci`).
+3. Create a new database called `sales_analysis_db` (collation: `utf8mb4_unicode_ci`).
 4. Select the new database → **Import** → choose `backend/schema.sql` → Go.
-5. Run each migration in order:
-   - Import `backend/migrations/release2_add_soft_delete.sql`
-   - Import `backend/migrations/uat_add_password_resets.sql`
-   - Import `backend/migrations/uat_add_is_active.sql`
+5. Run each migration **in order** by importing them one at a time:
 
-After import you should see five tables: `users`, `products`, `sales`, `sale_items`, `expenses`, plus `password_resets`.
+| Order | File | Purpose |
+|---|---|---|
+| 1 | `migrations/release2_add_soft_delete.sql` | Soft-delete support for products |
+| 2 | `migrations/release_decimal_quantities.sql` | Fractional quantities (e.g. 0.5 kg) |
+| 3 | `migrations/uat_add_password_resets.sql` | Email-based password reset |
+| 4 | `migrations/uat_add_is_active.sql` | Enable/disable cashier accounts |
+| 5 | `migrations/add_email_verification.sql` | Email verification on registration |
+| 6 | `migrations/add_first_last_name.sql` | First/last name fields on users |
+
+After all imports you should see tables: `users`, `products`, `sales`, `sale_items`, `expenses`, `payments`, `notifications`, `password_resets`.
 
 ---
 
-## 4. Set up the backend (Terminal #1)
+## 4. Set up the backend (Terminal 1)
 
 ```powershell
 cd backend
@@ -64,17 +67,17 @@ cd backend
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 
-# If PowerShell blocks the activation script, run this once:
+# If PowerShell blocks the script, run this once first:
 #   Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Create .env file
-
+# Create your .env file (copy the example and fill it in)
+copy .env.example .env
 ```
 
-In `.env`, fill in the following at minimum:
+Open `.env` and fill in at minimum:
 
 ```ini
 SECRET_KEY=replace-with-a-long-random-string
@@ -83,109 +86,103 @@ JWT_SECRET_KEY=replace-with-a-different-long-random-string
 MYSQL_HOST=localhost
 MYSQL_USER=root
 MYSQL_PASSWORD=             # XAMPP default is empty
-MYSQL_DB=sales_data_analysis_system
+MYSQL_DB=sales_analysis_db
 
 CORS_ORIGINS=http://localhost:5173
 FRONTEND_URL=http://localhost:5173
 
-# (Optional, for password-reset emails. Leave commented for dry-run mode.)
+# Optional — password-reset emails. Leave commented for dry-run mode (link prints to console).
 # MAIL_USERNAME=youraddress@gmail.com
 # MAIL_PASSWORD=your-app-password
-# MAIL_DEFAULT_SENDER=youraddress@gmail.com
+
+# Optional — ClickPesa mobile money integration.
+# Get these from: ClickPesa Dashboard → Applications → your app → API Keys
+# CLICKPESA_CLIENT_ID=your-client-id
+# CLICKPESA_API_KEY=your-api-key
 ```
 
->  **Generate strong secrets** with: `python -c "import secrets; print(secrets.token_hex(32))"`
+> **Generate strong secrets:** `python -c "import secrets; print(secrets.token_hex(32))"`
 
-Now start the Flask server:
+Start the Flask server:
 
 ```powershell
 python app.py
 ```
 
-You will see:
+You should see:
 ```
 * Running on http://127.0.0.1:5000
 ```
 
-Open <http://localhost:5000/api/health> in your browser — you should get `{"status": "ok"}`. Leave this terminal running.
+Open <http://localhost:5000/api/health> — you should get `{"status": "ok"}`. Leave this terminal running.
 
 ---
 
-## 5. Set up the frontend (Terminal #2)
+## 5. Set up the frontend (Terminal 2)
 
 Open a **new** PowerShell window (keep the backend running in the first one):
 
 ```powershell
-cd "D:\4th Year\FYP\Sales Data Analysis System\frontend" (Mine use your directory where project is located)
+cd path\to\Sales Data Analysis System\frontend
 
-# Install Node dependencies (takes 1–3 minutes the first time)
 npm install
 
-# Create .env
-# The default value (VITE_API_URL=http://localhost:5000) works as-is.
-
-# Start the dev server
 npm run dev
 ```
 
 You should see:
 ```
-  VITE v5.x  ready in 800 ms
+  VITE v5.x  ready
 
   ➜  Local:   http://localhost:5173/
-  ➜  Network: use --host to expose
 ```
 
-Open <http://localhost:5173> — you'll land on the login page. Click **Create an account**, register your business, and start using the system.
+Open <http://localhost:5173> — you will land on the login page. Click **Create an account**, register your business, and start using the system.
 
 ---
 
 ## 6. Daily routine
 
-After the initial setup, you only need to do this each time you work on the project:
+After the initial setup, each time you work on the project:
 
 1. **Start XAMPP MySQL.**
-2. **Terminal #1 (backend):**
+2. **Terminal 1 (backend):**
    ```powershell
-   cd choose your working directory
+   cd path\to\Sales Data Analysis System\backend
    .\venv\Scripts\Activate.ps1
    python app.py
    ```
-3. **Terminal #2 (frontend):**
+3. **Terminal 2 (frontend):**
    ```powershell
-   cd choose your working directory
+   cd path\to\Sales Data Analysis System\frontend
    npm run dev
    ```
 4. Open <http://localhost:5173>.
 
-To stop: press `Ctrl+C` in each terminal.
+Press `Ctrl+C` in each terminal to stop.
 
 ---
 
 ## 7. Troubleshooting
 
 ### "ModuleNotFoundError" when running `python app.py`
-You haven't activated the venv. Run `.\venv\Scripts\Activate.ps1` first your prompt should change to `(venv)`.
-
-### "ImportError: No module named 'flask_jwt_extended'"
-Run `pip install -r requirements.txt` again from inside the activated venv.
+You haven't activated the venv. Run `.\venv\Scripts\Activate.ps1` first — your prompt should change to `(venv)`.
 
 ### "Access denied for user 'root'@'localhost'"
 Wrong MySQL password in `.env`. XAMPP's default is empty (`MYSQL_PASSWORD=`).
 
 ### "Can't connect to MySQL server"
-You forgot to start MySQL. Open XAMPP Control Panel and click "Start" next to MySQL.
+You forgot to start MySQL. Open XAMPP Control Panel and click **Start** next to MySQL.
 
 ### "CORS error" in browser console
-Check that `CORS_ORIGINS=http://localhost:5173` is in `backend/.env` and you restarted the Flask server.
+Check that `CORS_ORIGINS=http://localhost:5173` is in `backend/.env` and restart the Flask server.
 
-### "Network Error" when logging in (frontend)
-Backend isn't running. Check Terminal #1.
+### "Network Error" when logging in
+Backend is not running. Check Terminal 1.
 
 ### `npm install` fails with permission errors
 Run PowerShell as Administrator, or delete `node_modules/` and `package-lock.json`, then retry.
 
-### Login redirects me back to login immediately
+### Login redirects back to login immediately
 JWT secret changed since you last logged in. Clear browser localStorage:
-- Open DevTools (F12) → Application → Local Storage → Clear All
-
+- DevTools (F12) → Application → Local Storage → Clear All

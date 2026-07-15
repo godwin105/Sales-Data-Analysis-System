@@ -159,6 +159,7 @@ def check_payment_status(order_reference: str, client_id: str = None, api_key: s
         headers={"Authorization": _get_token(client_id=client_id, api_key=api_key)},
         timeout=10,
     )
-    print(f"[ClickPesa status] GET {order_reference} → {resp.status_code}: {resp.text[:200]}")
-    _safe_raise(resp)
+    print(f"[ClickPesa status] GET {order_reference} → {resp.status_code}: {resp.text[:300]}")
+    if not resp.ok:
+        raise RuntimeError(f"ClickPesa {resp.status_code}: {resp.text[:200]}")
     return resp.json()

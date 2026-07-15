@@ -208,24 +208,6 @@ def initiate():
                         if cp_resp.get("id"):
                             pay.transaction_id = cp_resp["id"]
                             cp_tx_id = cp_resp["id"]
-
-                        # ClickPesa returns collectedAmount in the push response when
-                        # money is collected synchronously (e.g. Airtel Money direct debit).
-                        # PROCESSING = collected from customer, settlement in progress.
-                        resp_status = (cp_resp.get("status") or "").upper()
-                        try:
-                            collected = float(cp_resp.get("collectedAmount") or 0)
-                        except (TypeError, ValueError):
-                            collected = 0.0
-
-                        _sync_success = {"PROCESSING", "SUCCESS", "SUCCESSFUL", "COMPLETED", "PAID"}
-                        if resp_status in _sync_success and collected > 0:
-                            pay.status              = "confirmed"
-                            pay.confirmed_at        = eat_now()
-                            pay.sale.payment_status = "confirmed"
-                            cp_tx_id = None  # No need to poll
-                            print(f"[ClickPesa] Confirmed from push response: ref={order_ref} status={resp_status} collected={collected}")
-
                         db.session.commit()
                 except Exception:
                     traceback.print_exc()

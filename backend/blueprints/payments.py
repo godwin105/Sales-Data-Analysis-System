@@ -312,10 +312,15 @@ def clickpesa_callback():
     )
 
     if not order_ref:
+        print(f"[ClickPesa callback] WARNING: no orderReference in payload keys={list(data.keys())}")
         return jsonify({"message": "ok"}), 200
 
     payment = db.session.query(Payment).filter_by(external_id=order_ref).first()
-    if not payment or payment.status != "pending":
+    if not payment:
+        print(f"[ClickPesa callback] WARNING: payment not found for ref={order_ref}")
+        return jsonify({"message": "ok"}), 200
+    if payment.status != "pending":
+        print(f"[ClickPesa callback] payment {order_ref} already {payment.status}, skipping")
         return jsonify({"message": "ok"}), 200
 
     # Map ClickPesa status → internal status (handle multiple variants)
@@ -334,9 +339,12 @@ def clickpesa_callback():
 
     if status_raw in success_signals or event in success_events or collection_status == "SUCCESS":
         new_status = "confirmed"
+        print(f"[ClickPesa callback] CONFIRMED ref={order_ref} status={status_raw} event={event} collection={collection_status}")
     elif status_raw in failed_signals or event in failed_events:
         new_status = "failed"
+        print(f"[ClickPesa callback] FAILED ref={order_ref} status={status_raw} event={event}")
     else:
+        print(f"[ClickPesa callback] UNRECOGNIZED ref={order_ref} status={status_raw!r} event={event!r} collection={collection_status!r}")
         return jsonify({"message": "ok"}), 200
 
     payment.status = new_status

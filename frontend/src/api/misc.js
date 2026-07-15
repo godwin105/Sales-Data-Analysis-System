@@ -26,4 +26,7 @@ export const reportsApi = {
   // For programmatic download with auth header to save it in the app
   download: (params) =>
     api.get('/api/reports/download', { params, responseType: 'blob' }),
+
+  downloadExcel: (params) =>
+    api.get('/api/reports/download-excel', { params, responseType: 'blob' }),
 };

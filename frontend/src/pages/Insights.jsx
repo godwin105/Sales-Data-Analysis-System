@@ -301,7 +301,7 @@ export default function Insights() {
                       <div className="min-w-0">
                         <p className="font-semibold text-slate-800 dark:text-slate-100 text-sm truncate">{s.name}</p>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                          {t('insights.sellingPerDay', { rate: formatQuantity(s.daily_rate), left: formatQuantity(s.units_left) })}
+                          {t('insights.sellingPerDay', { rate: formatQuantity(s.daily_rate), left: formatQuantity(s.units_left), unit: s.unit || 'pcs' })}
                         </p>
                       </div>
                       <span className="text-sm font-bold text-danger self-start sm:self-auto sm:whitespace-nowrap">
@@ -331,8 +331,8 @@ export default function Insights() {
                     <div key={s.name} className="flex flex-col gap-1 bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                       <p className="font-semibold text-slate-800 dark:text-slate-100 text-sm truncate min-w-0">{s.name}</p>
                       <div className="text-xs text-slate-500 dark:text-slate-400 sm:text-right flex gap-3 sm:block">
-                        <p>{formatQuantity(s.units_stock)} {t('insights.inStock')}</p>
-                        <p>{formatQuantity(s.units_sold_30d)} {t('insights.soldIn30d')}</p>
+                        <p>{formatQuantity(s.units_stock)} {s.unit || 'pcs'} {t('insights.inStock')}</p>
+                        <p>{formatQuantity(s.units_sold_30d)} {s.unit || 'pcs'} {t('insights.soldIn30d')}</p>
                       </div>
                     </div>
                   ))}

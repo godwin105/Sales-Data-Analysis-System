@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Download, FileText, Filter } from 'lucide-react';
+import { Download, FileText, Filter, Sheet } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { reportsApi } from '../api/misc';
 import { useToast } from '../context/ToastContext';
@@ -7,7 +7,8 @@ import { extractError } from '../api/client';
 import { formatDateTime, formatTZS, formatNumber, toIsoDate } from '../utils/format';
 import EmptyState from '../components/EmptyState';
 
-const NAVY = '#1E3A5F';
+const NAVY     = '#1E3A5F';
+const TH_COLOR = '#1D5C44';
 
 export default function Reports() {
   const toast = useToast();
@@ -23,6 +24,7 @@ export default function Reports() {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [downloadingExcel, setDownloadingExcel] = useState(false);
   const [error, setError] = useState(null);
 
   const REPORT_TYPES = [
@@ -64,6 +66,38 @@ export default function Reports() {
       setReport(null);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function downloadExcel() {
+    setDownloadingExcel(true);
+    try {
+      const response = await reportsApi.downloadExcel(buildParams());
+      const blob = new Blob([response.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a   = document.createElement('a');
+      a.href     = url;
+      a.download = `report_${filters.type}_${filters.period}_${toIsoDate()}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      toast.success(t('reports.downloadedExcelToast'));
+    } catch (err) {
+      let msg = t('reports.downloadFailed');
+      try {
+        const errBlob = err?.response?.data;
+        if (errBlob instanceof Blob) {
+          const text = await errBlob.text();
+          const json = JSON.parse(text);
+          if (json?.error) msg = json.error;
+        }
+      } catch {}
+      toast.error(msg);
+    } finally {
+      setDownloadingExcel(false);
     }
   }
 
@@ -136,6 +170,10 @@ export default function Reports() {
               <Download size={16} />
               {downloading ? t('reports.downloading') : t('reports.download')}
             </button>
+            <button type="button" onClick={downloadExcel} className="btn-secondary" disabled={!report || report.is_empty || downloadingExcel}>
+              <Sheet size={16} />
+              {downloadingExcel ? t('reports.downloadingExcel') : t('reports.downloadExcel')}
+            </button>
           </div>
         </div>
       </form>
@@ -152,7 +190,7 @@ export default function Reports() {
       ) : (
         <div className="card overflow-hidden p-0">
           {/* 1. Header band */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 px-6 py-5" style={{ backgroundColor: NAVY }}>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 px-6 py-5" style={{ backgroundColor: TH_COLOR }}>
             <div>
               <div className="text-lg font-bold text-white uppercase tracking-wide leading-tight">
                 {report.business_name}
@@ -173,37 +211,36 @@ export default function Reports() {
               const profit   = report.net_profit;
               const isProfit = profit >= 0;
 
+              const netProfitRow = {
+                label: isProfit ? t('reports.netProfit') : t('reports.netLoss'),
+                value: formatTZS(Math.abs(profit)),
+                color: isProfit ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300',
+                bg:    isProfit ? 'bg-green-100 dark:bg-green-900/40'  : 'bg-red-100 dark:bg-red-900/40',
+              };
+
               let highlights = [];
               if (typeKey === 'profit') {
-                highlights = [{
-                  label: isProfit ? t('reports.netProfit') : t('reports.netLoss'),
-                  value: formatTZS(Math.abs(profit)),
-                  color: isProfit ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300',
-                  bg:    isProfit ? 'bg-green-50 dark:bg-green-900/30'   : 'bg-red-50 dark:bg-red-900/30',
-                }];
+                highlights = [netProfitRow];
               } else if (typeKey === 'sales') {
-                highlights = [{
-                  label: t('reports.grossRevenue'),
-                  value: formatTZS(report.gross_revenue),
-                  color: 'text-blue-900 dark:text-blue-200',
-                  bg:    'bg-blue-100 dark:bg-blue-900/30',
-                }];
+                highlights = [
+                  { label: t('reports.grossRevenue'), value: formatTZS(report.gross_revenue), color: 'text-green-800 dark:text-green-200', bg: 'bg-green-50 dark:bg-green-900/20' },
+                  netProfitRow,
+                ];
               } else if (typeKey === 'expenses') {
-                highlights = [{
-                  label: t('reports.totalExpenses'),
-                  value: formatTZS(report.total_expenses),
-                  color: 'text-blue-900 dark:text-blue-200',
-                  bg:    'bg-blue-100 dark:bg-blue-900/30',
-                }];
+                highlights = [
+                  { label: t('reports.totalExpenses'), value: formatTZS(report.total_expenses), color: 'text-green-800 dark:text-green-200', bg: 'bg-green-50 dark:bg-green-900/20' },
+                  netProfitRow,
+                ];
               } else {
                 highlights = [
-                  { label: t('reports.grossRevenue'),  value: formatTZS(report.gross_revenue),  color: 'text-blue-900 dark:text-blue-200', bg: 'bg-blue-100 dark:bg-blue-900/30' },
-                  { label: t('reports.totalExpenses'), value: formatTZS(report.total_expenses), color: 'text-blue-900 dark:text-blue-200', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+                  { label: t('reports.grossRevenue'),  value: formatTZS(report.gross_revenue),  color: 'text-green-800 dark:text-green-200', bg: 'bg-green-50 dark:bg-green-900/20' },
+                  { label: t('reports.totalExpenses'), value: formatTZS(report.total_expenses), color: 'text-green-800 dark:text-green-200', bg: 'bg-green-50 dark:bg-green-900/20' },
+                  netProfitRow,
                 ];
               }
 
               return (
-                <table className="w-full text-sm border border-slate-200 dark:border-slate-600">
+                <table className="w-full text-sm border border-slate-400 dark:border-slate-500">
                   <tbody>
                     {[
                       [d('businessName'), report.business_name],
@@ -211,14 +248,14 @@ export default function Reports() {
                       [t('reports.type'), report.type_label],
                       [t('reports.period'), report.period_label],
                     ].map(([label, value], i) => (
-                      <tr key={i} className="border-b border-slate-200 dark:border-slate-600">
-                        <td className="w-2/5 py-2 px-3 font-semibold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800">{label}</td>
+                      <tr key={i} className="border-b border-slate-400 dark:border-slate-500">
+                        <td className="w-2/5 py-2 px-3 font-semibold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 border-r border-slate-400 dark:border-slate-500">{label}</td>
                         <td className="py-2 px-3 text-slate-800 dark:text-slate-200">{value}</td>
                       </tr>
                     ))}
                     {highlights.map((h, i) => (
-                      <tr key={i} className={h.bg}>
-                        <td className={`w-2/5 py-2 px-3 font-bold ${h.color}`}>{h.label}</td>
+                      <tr key={i} className={`border-b border-slate-400 dark:border-slate-500 last:border-b-0 ${h.bg}`}>
+                        <td className={`w-2/5 py-2 px-3 font-bold border-r border-slate-400 dark:border-slate-500 ${h.color}`}>{h.label}</td>
                         <td className={`py-2 px-3 font-bold ${h.color}`}>{h.value}</td>
                       </tr>
                     ))}
@@ -235,7 +272,7 @@ export default function Reports() {
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs border-collapse min-w-[680px]">
                       <thead>
-                        <tr style={{ backgroundColor: NAVY }} className="text-white">
+                        <tr style={{ backgroundColor: TH_COLOR }} className="text-white">
                           <Th center>{d('colSn')}</Th>
                           <Th>{d('colDate')}</Th>
                           <Th>{d('colDetails')}</Th>
@@ -247,7 +284,7 @@ export default function Reports() {
                       </thead>
                       <tbody>
                         {report.sales_rows.map((r, i) => (
-                          <tr key={i} className={i % 2 === 0 ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-white dark:bg-slate-900'}>
+                          <tr key={i} className={i % 2 === 0 ? 'bg-green-50 dark:bg-green-900/20' : 'bg-white dark:bg-slate-900'}>
                             <Td center>{r.sn}</Td>
                             <Td>{r.date}</Td>
                             <Td>
@@ -265,7 +302,7 @@ export default function Reports() {
                             <Td right>{formatNumber(r.cumulative)}</Td>
                           </tr>
                         ))}
-                        <tr className="bg-blue-100 dark:bg-blue-900/40 font-bold border-t-2 border-blue-300">
+                        <tr className="bg-green-100 dark:bg-green-900/40 font-bold border-t-2 border-green-400">
                           <td colSpan={4} className="border border-slate-200 dark:border-slate-700 p-2" />
                           <td className="border border-slate-200 dark:border-slate-700 p-2 text-right text-slate-700 dark:text-slate-300">{d('total')}</td>
                           <td className="border border-slate-200 dark:border-slate-700 p-2 text-right text-slate-800 dark:text-slate-100">{formatNumber(report.gross_revenue)}</td>
@@ -288,7 +325,7 @@ export default function Reports() {
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs border-collapse min-w-[600px]">
                       <thead>
-                        <tr style={{ backgroundColor: NAVY }} className="text-white">
+                        <tr style={{ backgroundColor: TH_COLOR }} className="text-white">
                           <Th center>{d('colSn')}</Th>
                           <Th>{d('colDate')}</Th>
                           <Th>{d('colCategory')}</Th>
@@ -299,7 +336,7 @@ export default function Reports() {
                       </thead>
                       <tbody>
                         {report.expense_rows.map((r, i) => (
-                          <tr key={i} className={i % 2 === 0 ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-white dark:bg-slate-900'}>
+                          <tr key={i} className={i % 2 === 0 ? 'bg-green-50 dark:bg-green-900/20' : 'bg-white dark:bg-slate-900'}>
                             <Td center>{r.sn}</Td>
                             <Td>{r.date}</Td>
                             <Td>{expenseCategoryLabel(r.category)}</Td>
@@ -308,7 +345,7 @@ export default function Reports() {
                             <Td right>{formatNumber(r.cumulative)}</Td>
                           </tr>
                         ))}
-                        <tr className="bg-blue-100 dark:bg-blue-900/40 font-bold border-t-2 border-blue-300">
+                        <tr className="bg-green-100 dark:bg-green-900/40 font-bold border-t-2 border-green-400">
                           <td colSpan={3} className="border border-slate-200 dark:border-slate-700 p-2" />
                           <td className="border border-slate-200 dark:border-slate-700 p-2 text-right text-slate-700 dark:text-slate-300">{d('total')}</td>
                           <td className="border border-slate-200 dark:border-slate-700 p-2 text-right text-slate-800 dark:text-slate-100">{formatNumber(report.total_expenses)}</td>
@@ -327,7 +364,7 @@ export default function Reports() {
             {report.show_profit && (
               <div>
                 <SectHeading>{d('financialSummary')}</SectHeading>
-                <table className="w-full text-sm border border-slate-200 dark:border-slate-600">
+                <table className="w-full text-sm border border-slate-400 dark:border-slate-500">
                   <tbody>
                     {report.show_revenue && (
                       <>
@@ -347,7 +384,7 @@ export default function Reports() {
                       const profit    = report.net_profit;
                       const isProfit  = profit >= 0;
                       const plColor   = isProfit ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300';
-                      const plBg      = isProfit ? 'bg-green-50 dark:bg-green-900/30' : 'bg-red-50 dark:bg-red-900/30';
+                      const plBg      = isProfit ? 'bg-green-100 dark:bg-green-900/40' : 'bg-red-100 dark:bg-red-900/40';
                       const borderCol = isProfit ? 'border-green-600' : 'border-red-600';
                       const plLabel   = isProfit ? t('reports.netProfit') : t('reports.netLoss');
                       return (
@@ -377,7 +414,7 @@ export default function Reports() {
 
 function SectHeading({ children }) {
   return (
-    <div className="text-xs font-bold uppercase tracking-wider mb-2 text-blue-800 dark:text-blue-300">
+    <div className="text-xs font-bold uppercase tracking-wider mb-2 text-green-800 dark:text-green-300">
       {children}
     </div>
   );
@@ -393,7 +430,7 @@ function Th({ children, right, center }) {
 
 function Td({ children, right, center }) {
   return (
-    <td className={`p-2 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 align-top ${center ? 'text-center' : right ? 'text-right' : ''}`}>
+    <td className={`p-2 border border-slate-400 dark:border-slate-600 text-slate-800 dark:text-slate-200 align-top ${center ? 'text-center' : right ? 'text-right' : ''}`}>
       {children}
     </td>
   );
@@ -402,14 +439,14 @@ function Td({ children, right, center }) {
 function SumRow({ label, value, indent, highlight }) {
   if (highlight) {
     return (
-      <tr className="border-b border-slate-200 dark:border-slate-600 bg-blue-50 dark:bg-blue-900/20">
-        <td className="py-2 px-3 font-bold text-blue-900 dark:text-blue-200">{label}</td>
-        <td className="py-2 px-3 text-right font-bold text-blue-900 dark:text-blue-200">{value}</td>
+      <tr className="border-b border-slate-400 dark:border-slate-500 bg-green-50 dark:bg-green-900/20">
+        <td className="py-2 px-3 font-bold text-green-800 dark:text-green-200">{label}</td>
+        <td className="py-2 px-3 text-right font-bold text-green-800 dark:text-green-200">{value}</td>
       </tr>
     );
   }
   return (
-    <tr className="border-b border-slate-200 dark:border-slate-600">
+    <tr className="border-b border-slate-400 dark:border-slate-500">
       <td className={`py-2 px-3 font-medium ${indent ? 'pl-6 text-slate-500 dark:text-slate-400 text-xs' : 'text-slate-600 dark:text-slate-400'}`}>{label}</td>
       <td className={`py-2 px-3 text-right ${indent ? 'text-slate-500 dark:text-slate-400 text-xs' : 'text-slate-800 dark:text-slate-200'}`}>{value}</td>
     </tr>

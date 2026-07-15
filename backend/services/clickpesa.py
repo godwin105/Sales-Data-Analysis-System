@@ -18,8 +18,11 @@ import time
 import requests
 from flask import current_app
 
-# Module-level token cache: (token_string, expires_at_epoch)
+# Platform-credential token cache: (token_string, expires_at_epoch)
 _token_cache: tuple[str, float] = ("", 0.0)
+
+# Per-owner token cache: { "client_id:api_key" -> (token_string, expires_at_epoch) }
+_owner_token_cache: dict[str, tuple[str, float]] = {}
 
 BASE_URL = "https://api.clickpesa.com"
 
@@ -57,7 +60,12 @@ def _get_token(client_id: str = None, api_key: str = None) -> str:
     global _token_cache
 
     if client_id and api_key:
-        # Owner-specific credentials — always fetch fresh
+        # Owner-specific credentials — cache per owner (55-min window)
+        cache_key = f"{client_id}:{api_key}"
+        cached_tok, cached_exp = _owner_token_cache.get(cache_key, ("", 0.0))
+        if cached_tok and time.time() < cached_exp - 60:
+            return cached_tok
+
         resp = requests.post(
             f"{BASE_URL}/third-parties/generate-token",
             headers={"client-id": client_id, "api-key": api_key},
@@ -67,7 +75,9 @@ def _get_token(client_id: str = None, api_key: str = None) -> str:
         body = resp.json()
         if not body.get("success"):
             raise RuntimeError(f"ClickPesa token rejected: {body}")
-        return body["token"]
+        token = body["token"]
+        _owner_token_cache[cache_key] = (token, time.time() + 3600)
+        return token
 
     # Platform credentials — use module-level cache
     token, expires_at = _token_cache

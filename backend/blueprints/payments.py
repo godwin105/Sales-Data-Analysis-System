@@ -7,10 +7,11 @@ Routes:
   POST /api/payments/callback         ClickPesa webhook (no JWT, external call)
 """
 import uuid
+import threading
 import traceback
 from decimal import Decimal, InvalidOperation
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import current_user
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -113,47 +114,9 @@ def initiate():
             status       = "pending",
         )
         db.session.add(payment)
-        # Do NOT commit yet — push must succeed first.
 
-        # ── Send USSD push via ClickPesa ──────────────────────────────────────
-        owner = db.session.get(User, owner_id)
-        owner_client_id = owner.clickpesa_client_id if owner else None
-        owner_api_key   = owner.clickpesa_api_key   if owner else None
-
-        try:
-            cp_resp = initiate_ussd_push(
-                phone           = phone,
-                amount          = float(total_amount),
-                order_reference = order_ref,
-                client_id       = owner_client_id or None,
-                api_key         = owner_api_key   or None,
-            )
-        except Exception as exc:
-            # Push failed before reaching the customer — roll back everything
-            # so no sale or stock change is recorded.
-            db.session.rollback()
-            traceback.print_exc()
-            return jsonify({
-                "error": (
-                    f"Payment push failed: {exc}. "
-                    "The sale was NOT recorded — please try again."
-                ),
-            }), 502
-
-        # Push reached the customer's phone — now commit the sale.
-        channel         = cp_resp.get("channel") or None
-        customer_amount = float(total_amount)
-
-        if channel:
-            payment.provider = channel
-        if cp_resp.get("id"):
-            payment.transaction_id = cp_resp["id"]
-        if cp_resp.get("collectedAmount"):
-            try:
-                customer_amount = float(cp_resp["collectedAmount"])
-            except (TypeError, ValueError):
-                pass
-
+        # Commit stock deduction and pending records immediately so the
+        # response reaches the cashier without waiting for ClickPesa.
         db.session.commit()
 
         low_stock = [
@@ -161,13 +124,62 @@ def initiate():
             if p.quantity <= p.low_stock_threshold
         ]
 
+        # ── Send USSD push in background thread ───────────────────────────────
+        owner = db.session.get(User, owner_id)
+        owner_client_id = (owner.clickpesa_client_id if owner else None) or None
+        owner_api_key   = (owner.clickpesa_api_key   if owner else None) or None
+
+        app = current_app._get_current_object()
+
+        def _push():
+            with app.app_context():
+                try:
+                    cp_resp = initiate_ussd_push(
+                        phone           = phone,
+                        amount          = float(total_amount),
+                        order_reference = order_ref,
+                        client_id       = owner_client_id,
+                        api_key         = owner_api_key,
+                    )
+                    # Update channel / transaction_id from ClickPesa response
+                    pay = db.session.query(Payment).filter_by(external_id=order_ref).first()
+                    if pay:
+                        if cp_resp.get("channel"):
+                            pay.provider = cp_resp["channel"]
+                        if cp_resp.get("id"):
+                            pay.transaction_id = cp_resp["id"]
+                        db.session.commit()
+                except Exception:
+                    traceback.print_exc()
+                    # Push failed — mark payment failed and restore stock
+                    try:
+                        pay = db.session.query(Payment).filter_by(external_id=order_ref).first()
+                        if pay and pay.status == "pending":
+                            for item in pay.sale.items:
+                                prod = (
+                                    db.session.query(Product)
+                                    .filter_by(product_id=item.product_id)
+                                    .with_for_update()
+                                    .first()
+                                )
+                                if prod:
+                                    prod.quantity += item.quantity
+                            pay.status = "failed"
+                            pay.sale.payment_status = "failed"
+                            db.session.commit()
+                    except Exception:
+                        db.session.rollback()
+                        traceback.print_exc()
+
+        threading.Thread(target=_push, daemon=True).start()
+
         return jsonify({
             "sale_id":            sale.sale_id,
             "external_id":        order_ref,
             "status":             "pending",
             "amount":             float(total_amount),
-            "customer_amount":    customer_amount,
-            "channel":            channel,
+            "customer_amount":    float(total_amount),
+            "channel":            None,
             "low_stock_warnings": low_stock,
             "message":            f"Payment request sent to {phone}. Waiting for customer to confirm.",
         }), 201

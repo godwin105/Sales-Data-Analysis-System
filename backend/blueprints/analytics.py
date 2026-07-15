@@ -8,7 +8,7 @@ from flask_jwt_extended import current_user
 from sqlalchemy import case, func
 
 from extensions import db
-from models import Sale, SaleItem, Product, ProductCategory, Expense
+from models import Sale, SaleItem, Product, ProductCategory, Expense, Unit
 from blueprints.expenses import profit_loss_for_period
 from utils.decorators import admin_required
 from utils.time import eat_today
@@ -149,6 +149,7 @@ def _stockout_projections(owner_id, today):
             func.coalesce(func.sum(
                 case((Sale.sale_id.isnot(None), SaleItem.quantity), else_=Decimal("0"))
             ), 0).label("sold"),
+            Unit.symbol.label("unit_symbol"),
         )
         .outerjoin(SaleItem, SaleItem.product_id == Product.product_id)
         .outerjoin(Sale,
@@ -156,8 +157,9 @@ def _stockout_projections(owner_id, today):
             & (Sale.user_id == owner_id)
             & (Sale.sale_date >= start_dt),
         )
+        .outerjoin(Unit, Unit.id == Product.unit_id)
         .filter(Product.user_id == owner_id, Product.is_deleted.is_(False))
-        .group_by(Product.product_id, Product.name, Product.quantity)
+        .group_by(Product.product_id, Product.name, Product.quantity, Unit.symbol)
         .all()
     )
 
@@ -172,6 +174,7 @@ def _stockout_projections(owner_id, today):
         if days_left <= 10:
             results.append({
                 "name":       r.name,
+                "unit":       r.unit_symbol or "pcs",
                 "units_left": float(qty),
                 "daily_rate": round(float(daily_rate), 1),
                 "days_left":  round(float(days_left), 1),
@@ -194,6 +197,7 @@ def _slow_moving_products(owner_id, ref_date):
             func.coalesce(func.sum(
                 case((Sale.sale_id.isnot(None), SaleItem.quantity), else_=Decimal("0"))
             ), 0).label("sold"),
+            Unit.symbol.label("unit_symbol"),
         )
         .outerjoin(SaleItem, SaleItem.product_id == Product.product_id)
         .outerjoin(Sale,
@@ -202,12 +206,13 @@ def _slow_moving_products(owner_id, ref_date):
             & (Sale.sale_date >= start_dt)
             & (Sale.sale_date < period_end),
         )
+        .outerjoin(Unit, Unit.id == Product.unit_id)
         .filter(
             Product.user_id == owner_id,
             Product.is_deleted.is_(False),
             Product.quantity > 0,
         )
-        .group_by(Product.product_id, Product.name, Product.quantity)
+        .group_by(Product.product_id, Product.name, Product.quantity, Unit.symbol)
         .all()
     )
 
@@ -215,8 +220,9 @@ def _slow_moving_products(owner_id, ref_date):
     for r in rows:
         if float(r.sold or 0) < 1:
             results.append({
-                "name":         r.name,
-                "units_stock":  float(r.quantity or 0),
+                "name":           r.name,
+                "unit":           r.unit_symbol or "pcs",
+                "units_stock":    float(r.quantity or 0),
                 "units_sold_30d": round(float(r.sold or 0), 1),
             })
     results.sort(key=lambda x: -x["units_stock"])

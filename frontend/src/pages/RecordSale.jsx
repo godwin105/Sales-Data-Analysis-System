@@ -16,7 +16,7 @@ import PageSpinner from '../components/PageSpinner';
 import EmptyState from '../components/EmptyState';
 
 const POLL_MS      = 4000;   // poll every 4 seconds
-const TIMEOUT_SECS = 130;    // must exceed USSD_EXPIRY_SECONDS (120) so we keep polling until backend decides
+const TIMEOUT_SECS = 190;    // must exceed USSD_EXPIRY_SECONDS (180) so we keep polling until backend decides
 
 export default function RecordSale() {
   const toast    = useToast();

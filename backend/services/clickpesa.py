@@ -146,3 +146,18 @@ def initiate_ussd_push(
     print(f"[ClickPesa] Response {resp.status_code}: {resp.text}")
     _safe_raise(resp)
     return resp.json()
+
+
+def check_payment_status(transaction_id: str, client_id: str = None, api_key: str = None) -> dict:
+    """
+    Query ClickPesa for the current status of a payment by its transaction ID.
+    Used to poll for confirmation when webhooks are not delivered.
+    Raises RuntimeError if the endpoint is unavailable.
+    """
+    resp = requests.get(
+        f"{BASE_URL}/third-parties/payments/{transaction_id}",
+        headers={"Authorization": _get_token(client_id=client_id, api_key=api_key)},
+        timeout=10,
+    )
+    _safe_raise(resp)
+    return resp.json()
